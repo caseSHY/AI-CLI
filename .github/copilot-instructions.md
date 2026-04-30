@@ -4,8 +4,11 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 Project-specific documentation governance rules live in:
 
+- `docs/status/CURRENT_STATUS.md`
 - `docs/agent-guides/DOC_GOVERNANCE_RULES.md`
 - `docs/agent-guides/FACT_PROPAGATION_MATRIX.md`
+
+Main test entry: `python -m pytest tests/ -v --tb=short`.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
