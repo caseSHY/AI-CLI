@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -29,7 +30,10 @@ class AgentCallFlowTests(unittest.TestCase):
             self.assertTrue(test_result["result"]["matches"])
 
             checksum = parse_stdout(run_cli("sha256sum", "sorted.txt", cwd=cwd))
-            self.assertEqual(len(checksum["result"]["entries"][0]["digest"]), 64)
+            digest = checksum["result"]["entries"][0]["digest"]
+            self.assertEqual(len(digest), 64)
+            expected = hashlib.sha256((cwd / "sorted.txt").read_bytes()).hexdigest()
+            self.assertEqual(digest, expected)
 
 
 if __name__ == "__main__":
