@@ -53,6 +53,7 @@ python -m unittest discover -s tests -v
 | **功能命令** | `test_agentutils.py`, `test_more_agent_commands.py`, `test_even_more_agent_commands.py`, `test_file_admin_commands.py`, `test_execution_and_page_commands.py`, `test_system_alias_and_encoding_commands.py`, `test_remaining_coreutils_commands.py` | unittest | 各类命令的功能验证 |
 | **CI 配置** | `test_ci_config.py` | unittest | GitHub Actions 配置存在性验证 |
 | **文档双语** | `test_docs_bilingual.py` | unittest | Markdown 文档中英双语格式检查 |
+| **文档治理** | `test_docs_governance.py` | unittest | Copilot/Agent 规则、CI 状态和 stale 文案检查 |
 | **注册表一致性** | （分布于多个文件） | 隐式 | Schema 输出与 catalog/registry 一致 |
 
 ### Property-Based 测试 / Property-Based Tests
@@ -186,6 +187,7 @@ python -m unittest discover -s tests -v
 | **Feature commands** | `test_agentutils.py`, `test_more_agent_commands.py`, `test_even_more_agent_commands.py`, `test_file_admin_commands.py`, `test_execution_and_page_commands.py`, `test_system_alias_and_encoding_commands.py`, `test_remaining_coreutils_commands.py` | unittest | Functional verification of various command groups |
 | **CI config** | `test_ci_config.py` | unittest | GitHub Actions config existence check |
 | **Bilingual docs** | `test_docs_bilingual.py` | unittest | Markdown bilingual format verification |
+| **Docs governance** | `test_docs_governance.py` | unittest | Copilot/Agent rules, CI status, and stale wording checks |
 | **Registry consistency** | (distributed) | implicit | Schema output matches catalog/registry |
 
 ### Property-Based Tests

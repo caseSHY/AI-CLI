@@ -13,6 +13,8 @@
 - [GNU Coreutils 兼容性审计](audits/GNU_COMPATIBILITY_AUDIT.md)
 - [测试与开发说明](development/TESTING.md)
 - [AI 辅助编码规范](agent-guides/CLAUDE.md)
+- [文档治理规则](agent-guides/DOC_GOVERNANCE_RULES.md)
+- [事实传播矩阵](agent-guides/FACT_PROPAGATION_MATRIX.md)
 
 ### 历史归档
 
@@ -30,7 +32,7 @@
 - `audits/`：兼容性、质量、安全边界等审计文档。
 - `development/`：测试、CI、本地开发说明。
 - `status/`：当前项目状态（唯一权威来源）。
-- `agent-guides/`：给 AI 编码助手或自动化代理使用的行为规范。
+- `agent-guides/`：给 AI 编码助手或自动化代理使用的行为规范、文档治理规则和事实传播矩阵。
 - `analysis/`：阶段性分析日志，不作为正式用户文档入口。⚠️ 历史归档
 - `reports/`：测试报告和归档输出。⚠️ 历史归档
 
@@ -49,6 +51,8 @@ The following documents are the authoritative sources for current project state:
 - [GNU Coreutils compatibility audit](audits/GNU_COMPATIBILITY_AUDIT.md)
 - [Testing and development notes](development/TESTING.md)
 - [AI coding assistant guidance](agent-guides/CLAUDE.md)
+- [Documentation governance rules](agent-guides/DOC_GOVERNANCE_RULES.md)
+- [Fact propagation matrix](agent-guides/FACT_PROPAGATION_MATRIX.md)
 
 ### Historical Archives
 
@@ -66,6 +70,6 @@ The following are point-in-time snapshots that may be outdated. **Do not treat a
 - `audits/`: compatibility, quality, and safety-boundary audits.
 - `development/`: testing, CI, and local development notes.
 - `status/`: current project status (single authoritative source).
-- `agent-guides/`: behavioral guidance for AI coding assistants or automation agents.
+- `agent-guides/`: behavioral guidance, documentation governance rules, and fact propagation matrix for AI coding assistants or automation agents.
 - `analysis/`: point-in-time analysis logs, not the primary user documentation entry. ⚠️ historical archive
 - `reports/`: test reports and archived generated output. ⚠️ historical archive

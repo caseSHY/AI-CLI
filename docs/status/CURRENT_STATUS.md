@@ -7,8 +7,8 @@
 
 | 属性 | 值 |
 |---|---|
-| **最后验证日期** | 2026-04-30 |
-| **验证基准提交** | `2450650`（上次运行测试时的 HEAD，不代表当前 HEAD） |
+| **最后验证日期** | 2026-05-01 |
+| **验证对象** | 本地工作区（基于 `07a289b`，含本轮治理规则变更） |
 | **Python 版本** | 3.14.4 (开发), CI: 3.11/3.12/3.13 |
 | **操作系统** | Windows 11 (开发), CI: ubuntu-latest + windows-latest |
 | **项目版本** | 0.1.0 |
@@ -19,13 +19,14 @@
 |---|---|
 | **推荐测试命令** | `python -m pytest tests/ -v --tb=short` |
 | **Legacy 入口** | `python -m unittest discover -s tests -v` (部分运行器) |
-| **通过** | 126 |
+| **通过** | 132 |
 | **跳过** | 54 |
 | **失败** | 0 |
 | **跳过原因** | 51: GNU 工具在 Windows 不可用（CI Ubuntu 已安装 coreutils，可运行）; 3: Windows 无 symlink 支持 |
 | **Property-based 测试** | `python -m pytest tests/test_property_based_cli.py -v` (25 测试, PROPERTY_EXAMPLES=25) |
 | **GNU 对照测试** | `python -m pytest tests/test_gnu_differential.py -v` (56 测试, CI Ubuntu 可运行) |
 | **沙箱逃逸测试** | `python -m pytest tests/test_sandbox_escape_hardening.py -v` (37 测试, 全部通过或 skip) |
+| **文档治理测试** | `python -m pytest tests/test_docs_governance.py -v` (6 测试, 全部通过) |
 | **覆盖率** | `python -m pytest tests/ --cov=src/agentutils` (需要 pytest-cov) |
 
 ### 安全状态
@@ -81,8 +82,8 @@
 
 | Property | Value |
 |---|---|
-| **Last verified** | 2026-04-30 |
-| **Last verified commit** | `2450650` (HEAD when tests were last run; not claimed as current HEAD) |
+| **Last verified** | 2026-05-01 |
+| **Verified target** | local working tree (based on `07a289b`, including this governance-rule change) |
 | **Python version** | 3.14.4 (dev), CI: 3.11/3.12/3.13 |
 | **OS** | Windows 11 (dev), CI: ubuntu-latest + windows-latest |
 | **Project version** | 0.1.0 |
@@ -93,13 +94,14 @@
 |---|---|
 | **Recommended command** | `python -m pytest tests/ -v --tb=short` |
 | **Legacy entry** | `python -m unittest discover -s tests -v` (partial runner) |
-| **Passed** | 126 |
+| **Passed** | 132 |
 | **Skipped** | 54 |
 | **Failed** | 0 |
 | **Skip reasons** | 51: GNU tools unavailable on Windows; 3: Windows no symlink support |
 | **Property-based** | `python -m pytest tests/test_property_based_cli.py -v` (25 tests, PROPERTY_EXAMPLES=25) |
 | **GNU differential** | `python -m pytest tests/test_gnu_differential.py -v` (56 tests, only 5 runnable on Windows) |
 | **Sandbox escape** | `python -m pytest tests/test_sandbox_escape_hardening.py -v` (37 tests, all pass or skip) |
+| **Docs governance** | `python -m pytest tests/test_docs_governance.py -v` (6 tests, all pass) |
 | **Coverage** | `python -m pytest tests/ --cov=src/agentutils` (requires pytest-cov) |
 
 ### Security Status
