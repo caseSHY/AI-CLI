@@ -1,0 +1,32 @@
+# Python runtime and build output
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Local environments
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# Editor and OS noise
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Local upstream GNU Coreutils cache.
+# Keep the files locally, but do not publish the vendored tarball/source tree by default.
+/vendor/gnu-coreutils/coreutils-*/
+/vendor/gnu-coreutils/*.tar.*
