@@ -8,9 +8,9 @@
 | 属性 | 值 |
 |---|---|
 | **最后验证日期** | 2026-04-30 |
-| **验证基准提交** | `dd9d8b8`（上次运行测试时的 HEAD，不代表当前 HEAD） |
+| **验证基准提交** | `2450650`（上次运行测试时的 HEAD，不代表当前 HEAD） |
 | **Python 版本** | 3.14.4 (开发), CI: 3.11/3.12/3.13 |
-| **操作系统** | Windows 11 (开发), Ubuntu latest (CI) |
+| **操作系统** | Windows 11 (开发), CI: ubuntu-latest + windows-latest |
 | **项目版本** | 0.1.0 |
 
 ### 测试
@@ -22,9 +22,9 @@
 | **通过** | 126 |
 | **跳过** | 54 |
 | **失败** | 0 |
-| **跳过原因** | 51: GNU 工具在 Windows 不可用; 3: Windows 无 symlink 支持 |
+| **跳过原因** | 51: GNU 工具在 Windows 不可用（CI Ubuntu 已安装 coreutils，可运行）; 3: Windows 无 symlink 支持 |
 | **Property-based 测试** | `python -m pytest tests/test_property_based_cli.py -v` (25 测试, PROPERTY_EXAMPLES=25) |
-| **GNU 对照测试** | `python -m pytest tests/test_gnu_differential.py -v` (56 测试, Windows 上仅 5 可运行) |
+| **GNU 对照测试** | `python -m pytest tests/test_gnu_differential.py -v` (56 测试, CI Ubuntu 可运行) |
 | **沙箱逃逸测试** | `python -m pytest tests/test_sandbox_escape_hardening.py -v` (37 测试, 全部通过或 skip) |
 | **覆盖率** | `python -m pytest tests/ --cov=src/agentutils` (需要 pytest-cov) |
 
@@ -53,28 +53,24 @@
 
 | 项目 | 状态 |
 |---|---|
-| **CI 平台** | GitHub Actions, ubuntu-latest |
-| **Python 矩阵** | 3.11, 3.12, 3.13 |
+| **CI 平台** | GitHub Actions |
+| **Ubuntu runner** | ubuntu-latest, Python 3.11/3.12/3.13 |
+| **Windows runner** | windows-latest, Python 3.11/3.12/3.13 |
 | **CI 测试命令** | `python -m pytest tests/ -v` |
-| **GNU coreutils 已安装?** | ❌ 否 — 需添加 `apt-get install coreutils` |
-| **Windows CI** | ❌ 无 — 无 Windows runner |
+| **GNU coreutils** | ✅ Ubuntu job 已安装（`apt-get install coreutils`） |
 | **CI status: not verified in this run** | — |
 
 ### 已知未解决问题
 
 | 编号 | 问题 | 优先级 |
 |---|---|---|
-| K-001 | CI 未安装 GNU coreutils，导致 GNU 对照测试被跳过 | P2 |
-| K-002 | 无 Windows CI runner | P3 |
-| K-003 | Property-based 测试在 CI 中耗时长 | P3 |
-| K-004 | CI 中的 GNU differential tests 未实际运行过 | P2 |
+| K-001 | CI 中 GNU 对照测试需要实际触发验证 | P3 |
 
 ### 建议下一步
 
-1. **CI 中安装 coreutils**: 在 `.github/workflows/ci.yml` 中添加 `sudo apt-get install -y coreutils`
-2. **设定 CI property-test 合适的 examples 数量**：当前 PROPERTY_EXAMPLES=25, ENVELOPE_EXAMPLES=15
-3. **考虑增加 Windows CI runner**: 覆盖路径、编码、权限测试
-4. **更新 golden files**: 如有行为变更需要重新生成
+1. **触发 CI 运行**：push 后观察 Ubuntu job 中 GNU 对照测试是否从 skip 变为 pass
+2. **观察 Windows CI**：关注路径/编码/sandbox 测试在 Windows runner 上的表现
+3. **更新 golden files**: 如有行为变更需要重新生成
 
 ---
 
@@ -86,9 +82,9 @@
 | Property | Value |
 |---|---|
 | **Last verified** | 2026-04-30 |
-| **Last verified commit** | `dd9d8b8` (HEAD when tests were last run; not claimed as current HEAD) |
+| **Last verified commit** | `2450650` (HEAD when tests were last run; not claimed as current HEAD) |
 | **Python version** | 3.14.4 (dev), CI: 3.11/3.12/3.13 |
-| **OS** | Windows 11 (dev), Ubuntu latest (CI) |
+| **OS** | Windows 11 (dev), CI: ubuntu-latest + windows-latest |
 | **Project version** | 0.1.0 |
 
 ### Tests
@@ -124,32 +120,27 @@
 | **GNU command name coverage** | 109/109 |
 | **Agent subset implemented** | All 113 commands (incl. 4 meta-commands) |
 | **GNU differential verified (Windows)** | sort only (5 tests), 51 skipped (no GNU tools) |
-| **GNU differential verified (CI Ubuntu)** | Not verified — CI missing coreutils |
+| **GNU differential verified (CI Ubuntu)** | Pending — coreutils installed, needs CI trigger |
 | **Compatibility description** | "JSON-first agent-friendly subset inspired by GNU Coreutils" |
 
 ### CI Status
 
 | Item | Status |
 |---|---|
-| **CI platform** | GitHub Actions, ubuntu-latest |
-| **Python matrix** | 3.11, 3.12, 3.13 |
+| **CI platform** | GitHub Actions |
+| **Ubuntu runner** | ubuntu-latest, Python 3.11/3.12/3.13 |
+| **Windows runner** | windows-latest, Python 3.11/3.12/3.13 |
 | **CI test command** | `python -m pytest tests/ -v` |
-| **GNU coreutils installed?** | ❌ No — needs `apt-get install coreutils` |
-| **Windows CI** | ❌ No Windows runner |
+| **GNU coreutils** | ✅ Installed in Ubuntu job |
 | **CI status: not verified in this run** | — |
 
 ### Known Open Issues
 
 | # | Issue | Priority |
 |---|---|---|
-| K-001 | CI missing GNU coreutils, GNU differential tests skipped | P2 |
-| K-002 | No Windows CI runner | P3 |
-| K-003 | Property-based tests runtime in CI | P3 |
-| K-004 | GNU differential tests never actually run in CI | P2 |
+| K-001 | GNU differential tests need CI trigger to verify | P3 |
 
 ### Next Required Actions
 
-1. **Install coreutils in CI**: Add `sudo apt-get install -y coreutils` to `.github/workflows/ci.yml`
-2. **Property-test examples are set appropriately**: Currently PROPERTY_EXAMPLES=25, ENVELOPE_EXAMPLES=15
-3. **Consider adding Windows CI runner**: For path, encoding, and permission test coverage
-4. **Update golden files**: If behavior changes intentionally
+1. **Trigger CI**: Push to observe GNU differential tests and Windows runner results
+2. **Update golden files**: If behavior changes intentionally

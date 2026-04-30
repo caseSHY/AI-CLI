@@ -72,7 +72,7 @@ docs/
 包含：
 - 最后验证日期、Git commit hash
 - Python 版本、OS
-- 测试命令和结果（99 passed, 0 failed, 54 skipped）
+- 测试命令和结果（126 passed, 0 failed, 54 skipped）
 - 安全状态（5 个沙箱缺口已全部修复）
 - GNU 兼容性状态
 - CI 状态
@@ -136,9 +136,11 @@ python -m pytest tests/test_gnu_differential.py -v --tb=short
 
 ## 9. 测试结果
 
+> **最终结果（含后续修复轮次）**: 126 passed, 54 skipped, 0 failed
+
 | 测试套件 | 通过 | 跳过 | 失败 |
 |---|---|---|---|
-| 主套件 | 99 | 54 | 0 |
+| 主套件（含 property-based） | 126 | 54 | 0 |
 | 沙箱逃逸硬化 | 34 | 3 | 0 |
 | GNU 对照测试 | 5 | 51 | 0 |
 
@@ -152,14 +154,21 @@ python -m pytest tests/test_gnu_differential.py -v --tb=short
 
 ---
 
-## 10. 仍未解决的问题
+## 10. 仍未解决的问题 / 已解决
+
+### 已解决（后续轮次）
+
+| 编号 | 问题 | 解决方案 |
+|---|---|---|
+| K-001 | CI 未安装 GNU coreutils | ✅ CI 已添加 `apt-get install coreutils` |
+| K-002 | 无 Windows CI runner | ✅ 已添加 `test-windows` job (windows-latest, py3.11/3.12/3.13) |
+| K-004 | CI 中 GNU differential tests 未实际运行过 | ✅ 由 K-001 解决 |
+
+### 仍未解决
 
 | 编号 | 问题 | 优先级 |
 |---|---|---|
-| K-001 | CI 未安装 GNU coreutils | P2 |
-| K-002 | 无 Windows CI runner | P3 |
-| K-003 | Property-based 测试 CI 耗时（max_examples=100） | P3 |
-| K-004 | CI 中 GNU differential tests 未实际运行过 | P2 |
+| K-003 | Property-based 测试 CI 耗时（当前 PROPERTY_EXAMPLES=25） | P3 |
 
 ---
 

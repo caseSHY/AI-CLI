@@ -6,7 +6,7 @@
 >
 > **Note**: This report was generated before the sandbox hardening fixes were applied.
 > The 6 sandbox escape gaps (SEC-001 through SEC-006) listed in §7.2 have all been
-> fixed as of 2026-04-30. Current test result: 99 passed, 0 failed, 54 skipped.
+> fixed as of 2026-04-30. Current test result: 126 passed, 0 failed, 54 skipped.
 > See `docs/analysis/DeepSeek-2026-04-30-安全加固与一致性修复-开发日志.md` for fix details.
 
 ## 1. 报告元信息

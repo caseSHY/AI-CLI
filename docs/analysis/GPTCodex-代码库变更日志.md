@@ -7,7 +7,7 @@
 > **Note (2026-04-30)**: The "remaining known gaps" section below was written
 > before the sandbox hardening fixes were applied. All 5 sandbox escape gaps
 > (dd, install, rm non-recursive, tee, truncate) have since been fixed in
-> `src/agentutils/fs_commands.py`. The current test count is 99 passed, 0 failed.
+> `src/agentutils/fs_commands.py`. The current test count is 126 passed, 0 failed.
 > See `docs/analysis/DeepSeek-2026-04-30-安全加固与一致性修复-开发日志.md` for the fix details.
 
 > 日期：2026-04-30
@@ -29,7 +29,7 @@
 - `agentutils schema` 当前登记 113 个 CLI 命令。
 - `src/agentutils/` 已拆分为协议、解析、文件系统、文本处理、系统命令、目录和注册表等模块。
 - 当前测试入口覆盖 18 个 `test_*.py` 文件。
-- 最新完整验证结果：`120 passed, 60 skipped`。
+- 最新完整验证结果：`126 passed, 54 skipped`。
 - Markdown 文档已重新按用途归档到 `docs/reference`、`docs/guides`、`docs/audits`、`docs/development`、`docs/agent-guides`、`docs/analysis`、`docs/reports`。
 
 ### DeepSeekCopilot / 既有实现：接手时已存在的主要内容
@@ -136,7 +136,7 @@ Git author metadata does not prove which model generated a specific change. This
 - `agentutils schema` now exposes 113 CLI commands.
 - The codebase is organized into protocol, parser, filesystem, text, system, catalog, and registry modules.
 - The test suite contains 18 `test_*.py` files.
-- Latest full verification: `120 passed, 60 skipped`.
+- Latest full verification: `126 passed, 54 skipped`.
 - Markdown documentation has been reorganized into purpose-specific directories under `docs/`.
 
 ### Pre-Existing / DeepSeekCopilot-Side Content
