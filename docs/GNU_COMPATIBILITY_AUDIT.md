@@ -13,10 +13,10 @@
 `agentutils` 不是完整 GNU Coreutils 替代品。
 
 - GNU Coreutils 基线命令数：109
-- `agentutils schema` 登记命令数：106
-- 与 GNU Coreutils 对应的已实现命令数：102
+- `agentutils schema` 登记命令数：113
+- 与 GNU Coreutils 对应的已实现命令数：109
 - `agentutils` 元命令/辅助命令：`catalog`、`schema`、`hash`、`ginstall`
-- 尚未实现的 GNU Coreutils 命令数：7
+- 尚未实现的 GNU Coreutils 命令数：0
 
 已实现命令对当前 Agent 友好契约有效：成功输出 JSON、错误输出 stderr JSON、
 核心行为确定、输出在相关场景下有界，并且修改类命令支持 `--dry-run`。但这些
@@ -24,7 +24,8 @@
 
 ### 尚未实现的 GNU 命令
 
-`coreutils`、`chroot`、`pinky`、`stdbuf`、`stty`、`chcon`、`runcon`。
+无。`coreutils`、`chroot`、`pinky`、`stdbuf`、`stty`、`chcon`、`runcon`
+已经以 Agent 友好的安全子集形式实现。
 
 ### 已实现命令的主要缺口
 
@@ -33,6 +34,7 @@
 | `base32` / `base64` / `basenc` | 有效子集 | 换行宽度控制、ignore-garbage 解码、GNU 精确格式；`basenc` 只覆盖 base16/base32/base64/base64url。 |
 | `basename` / `dirname` | 有效子集 | 零字节分隔和部分 GNU 路径边界行为。 |
 | `cat` | 有效子集 | 多文件、默认 stdin、编号、压缩空行、显示不可见字符。 |
+| `coreutils` / `pinky` / `chroot` / `stdbuf` / `stty` / `chcon` / `runcon` | 安全子集 | 新增覆盖剩余 GNU 命令：`coreutils` 提供命令面发现，`pinky` 返回轻量用户记录；`chroot`、`chcon`、`runcon`、`stty` 默认 dry-run/显式授权；`stdbuf` 提供可移植 buffering hints，不等同 GNU LD_PRELOAD 语义。 |
 | `chmod` / `chown` / `chgrp` | 有效子集 | 符号模式、递归、reference mode、verbose/quiet/changes、preserve-root；owner/group 名称解析依赖平台。 |
 | `cp` / `mv` | 有效子集 | archive/preserve、备份、target-directory、update、interactive/no-clobber 等。 |
 | `cut` | 有效子集 | complement、only-delimited、zero-terminated、GNU 多字节边界行为。 |
@@ -109,10 +111,10 @@ Audit date: 2026-04-30.
 `agentutils` is not a complete GNU Coreutils replacement.
 
 - GNU Coreutils command baseline: 109 commands
-- `agentutils schema` commands: 106 commands
-- Coreutils-equivalent commands implemented by `agentutils`: 102 commands
+- `agentutils schema` commands: 113 commands
+- Coreutils-equivalent commands implemented by `agentutils`: 109 commands
 - `agentutils` metadata/helper commands: `catalog`, `schema`, `hash`, `ginstall`
-- Missing GNU Coreutils commands: 7 commands
+- Missing GNU Coreutils commands: 0 commands
 
 The implemented commands are usable for the current agent-friendly contract:
 JSON success output, JSON stderr errors, deterministic core behavior, bounded
@@ -121,7 +123,8 @@ option-compatible with GNU Coreutils.
 
 ### Missing GNU Commands
 
-`coreutils`, `chroot`, `pinky`, `stdbuf`, `stty`, `chcon`, `runcon`.
+None. `coreutils`, `chroot`, `pinky`, `stdbuf`, `stty`, `chcon`, and
+`runcon` are implemented as agent-friendly safety-first subsets.
 
 ### Main Gaps In Implemented Commands
 
@@ -130,6 +133,7 @@ option-compatible with GNU Coreutils.
 | `base32` / `base64` / `basenc` | Effective subset | Wrapping controls, ignore-garbage decode behavior, GNU exact formatting; `basenc` covers only base16/base32/base64/base64url. |
 | `basename` / `dirname` | Effective subset | Zero termination and some GNU path edge-case parity. |
 | `cat` | Effective subset | Multiple files, stdin default, numbering, squeeze blank, show nonprinting characters. |
+| `coreutils` / `pinky` / `chroot` / `stdbuf` / `stty` / `chcon` / `runcon` | Safety-first subset | Covers the remaining GNU command names: `coreutils` exposes command discovery, `pinky` returns lightweight user records; `chroot`, `chcon`, `runcon`, and `stty` default to dry-run or explicit authorization; `stdbuf` provides portable buffering hints, not GNU LD_PRELOAD semantics. |
 | `chmod` / `chown` / `chgrp` | Effective subset | Symbolic modes, recursive traversal, reference mode, verbose/quiet/changes, preserve-root; owner/group name lookup depends on platform support. |
 | `cp` / `mv` | Effective subset | Archive/preserve, backup, target-directory, update, interactive/no-clobber behavior. |
 | `cut` | Effective subset | Complement, only-delimited, zero-terminated input, GNU multibyte edge behavior. |

@@ -8,6 +8,8 @@ import datetime as dt
 import operator
 import os
 import platform
+import re
+import shutil
 import subprocess
 import sys
 import time as timemod
@@ -34,6 +36,20 @@ from .protocol import (
     system_uptime_seconds,
     utc_iso,
 )
+
+
+def command_coreutils(args: argparse.Namespace) -> dict[str, Any] | bytes:
+    commands = list(getattr(args, "implemented_commands", []) or [])
+    if args.raw or args.list:
+        return lines_to_raw(commands, encoding="utf-8")
+    return {
+        "implementation": "agentutils",
+        "compatible_with": "GNU Coreutils inspired subset",
+        "gnu_option_compatible": False,
+        "json_default": True,
+        "commands": commands,
+        "count": len(commands),
+    }
 
 
 # ── date ───────────────────────────────────────────────────────────────
@@ -186,6 +202,44 @@ def command_logname(args: argparse.Namespace) -> dict[str, Any]:
     return {"login": os.environ.get("LOGNAME") or getpass.getuser()}
 
 
+def command_pinky(args: argparse.Namespace) -> dict[str, Any] | bytes:
+    active_entries = active_user_entries()
+    if args.users:
+        entries = []
+        for user in args.users:
+            matches = [entry for entry in active_entries if entry["user"] == user]
+            if matches:
+                entries.extend(matches)
+            else:
+                entries.append({"user": user, "terminal": None, "time": "", "source": "requested", "active": False})
+    else:
+        entries = active_entries
+
+    normalized = [
+        {
+            "user": entry["user"],
+            "terminal": entry.get("terminal"),
+            "time": entry.get("time", ""),
+            "source": entry.get("source", "unknown"),
+            "active": entry.get("active", True),
+        }
+        for entry in entries
+    ]
+    if args.raw:
+        lines = [
+            "\t".join(
+                [
+                    str(entry["user"]),
+                    str(entry["terminal"] or ""),
+                    str(entry["time"] or ""),
+                ]
+            ).rstrip()
+            for entry in normalized
+        ]
+        return lines_to_raw(lines, encoding="utf-8")
+    return {"count": len(normalized), "long": args.long, "entries": normalized}
+
+
 # ── uptime / tty / users / who ─────────────────────────────────────────
 
 def command_uptime(args: argparse.Namespace) -> dict[str, Any]:
@@ -288,6 +342,138 @@ def command_nice(args: argparse.Namespace) -> dict[str, Any]:
     return result
 
 
+def _validate_stdbuf_mode(raw: str | None, *, name: str) -> str | None:
+    if raw is None:
+        return None
+    if raw in {"0", "L"} or re.fullmatch(r"\d+(?:[KkMmGg])?", raw):
+        return raw
+    raise AgentError(
+        "invalid_input",
+        f"Invalid stdbuf {name} buffering mode.",
+        details={"value": raw},
+        suggestion="Use 0, L, or a byte size optionally followed by K, M, or G.",
+    )
+
+
+def command_stdbuf(args: argparse.Namespace) -> dict[str, Any]:
+    buffering = {
+        "stdin": _validate_stdbuf_mode(args.input, name="stdin"),
+        "stdout": _validate_stdbuf_mode(args.output, name="stdout"),
+        "stderr": _validate_stdbuf_mode(args.error, name="stderr"),
+    }
+    command = normalize_command_args(args.command_args)
+    if args.dry_run:
+        return {
+            "command": command,
+            "buffering": buffering,
+            "timeout_seconds": args.timeout,
+            "dry_run": True,
+            "emulation": "environment-hints",
+        }
+
+    env = os.environ.copy()
+    for stream, mode in buffering.items():
+        if mode is not None:
+            env[f"AGENTUTILS_STDBUF_{stream.upper()}"] = mode
+    if buffering["stdout"] == "0" or buffering["stderr"] == "0":
+        env["PYTHONUNBUFFERED"] = "1"
+
+    completed, timed_out = run_subprocess_capture(
+        command,
+        timeout=args.timeout,
+        max_output_bytes=args.max_output_bytes,
+        env=env,
+    )
+    assert completed is not None
+    result = subprocess_result(command, completed, timed_out=timed_out, max_output_bytes=args.max_output_bytes)
+    result["buffering"] = buffering
+    result["timeout_seconds"] = args.timeout
+    result["emulation"] = "environment-hints"
+    result["_exit_code"] = EXIT["unsafe_operation"] if timed_out else completed.returncode
+    return result
+
+
+def command_stty(args: argparse.Namespace) -> dict[str, Any] | bytes:
+    settings = list(args.settings)
+    if settings and settings[0] == "--":
+        settings = settings[1:]
+    target = args.device or "stdin"
+    is_tty = bool(args.device) or sys.stdin.isatty()
+    supported = os.name != "nt"
+
+    result: dict[str, Any] = {
+        "target": target,
+        "stdin_is_tty": sys.stdin.isatty(),
+        "supported": supported,
+        "settings": settings,
+        "dry_run": args.dry_run,
+        "changed": False,
+    }
+
+    if args.raw:
+        status = " ".join(settings) if settings else ("tty" if is_tty else "not a tty")
+        return (status + "\n").encode("utf-8")
+
+    if not settings:
+        return result
+    if args.dry_run:
+        result["planned"] = True
+        return result
+    if not args.allow_change:
+        raise AgentError(
+            "unsafe_operation",
+            "Changing terminal settings requires --allow-change.",
+            suggestion="Run with --dry-run first, then pass --allow-change if intentional.",
+        )
+    if not supported:
+        raise AgentError("invalid_input", "stty changes are not supported on this platform.")
+
+    try:
+        import termios  # type: ignore[import-not-found]
+        import tty  # type: ignore[import-not-found]
+    except ImportError as exc:
+        raise AgentError("invalid_input", "termios is not available on this platform.") from exc
+
+    opened_fd: int | None = None
+    try:
+        if args.device:
+            device_path = resolve_path(args.device, strict=True)
+            opened_fd = os.open(device_path, os.O_RDWR)
+            fd = opened_fd
+        else:
+            if not sys.stdin.isatty():
+                raise AgentError("invalid_input", "stdin is not a TTY; use --file to target a terminal device.")
+            fd = sys.stdin.fileno()
+
+        attrs = termios.tcgetattr(fd)
+        for setting in settings:
+            if setting == "raw":
+                tty.setraw(fd, when=termios.TCSADRAIN)
+                attrs = termios.tcgetattr(fd)
+            elif setting == "sane":
+                attrs[3] |= termios.ECHO | termios.ICANON | termios.ISIG
+            elif setting == "echo":
+                attrs[3] |= termios.ECHO
+            elif setting == "-echo":
+                attrs[3] &= ~termios.ECHO
+            else:
+                raise AgentError(
+                    "invalid_input",
+                    "Unsupported stty setting.",
+                    details={"setting": setting},
+                    suggestion="Supported settings are: raw, sane, echo, -echo.",
+                )
+        termios.tcsetattr(fd, termios.TCSADRAIN, attrs)
+    except OSError as exc:
+        raise AgentError("io_error", str(exc), path=args.device) from exc
+    finally:
+        if opened_fd is not None:
+            os.close(opened_fd)
+
+    result["changed"] = True
+    return result
+
+
 # ── nohup ──────────────────────────────────────────────────────────────
 
 def command_nohup(args: argparse.Namespace) -> dict[str, Any]:
@@ -332,6 +518,170 @@ def command_nohup(args: argparse.Namespace) -> dict[str, Any]:
     operation["pid"] = process.pid
     operation["started"] = True
     return {"operation": operation}
+
+
+def _consume_remainder_execution_options(args: argparse.Namespace, *, allow_flag: str) -> list[str]:
+    command_args = list(args.command_args)
+    index = 0
+    while index < len(command_args):
+        token = command_args[index]
+        if token == "--":
+            break
+        if token == "--dry-run":
+            args.dry_run = True
+            index += 1
+            continue
+        if token == allow_flag:
+            if allow_flag == "--allow-chroot":
+                args.allow_chroot = True
+            else:
+                args.allow_context = True
+            index += 1
+            continue
+        if token == "--timeout":
+            if index + 1 >= len(command_args):
+                raise AgentError("usage", "--timeout requires a value.")
+            try:
+                args.timeout = float(command_args[index + 1])
+            except ValueError as exc:
+                raise AgentError("invalid_input", "--timeout must be a number.") from exc
+            index += 2
+            continue
+        if token == "--max-output-bytes":
+            if index + 1 >= len(command_args):
+                raise AgentError("usage", "--max-output-bytes requires a value.")
+            try:
+                args.max_output_bytes = int(command_args[index + 1])
+            except ValueError as exc:
+                raise AgentError("invalid_input", "--max-output-bytes must be an integer.") from exc
+            index += 2
+            continue
+        break
+    return command_args[index:]
+
+
+def command_chroot(args: argparse.Namespace) -> dict[str, Any]:
+    root = resolve_path(args.root, strict=True)
+    if not root.is_dir():
+        raise AgentError("invalid_input", "chroot root must be a directory.", path=str(root))
+    command = normalize_command_args(_consume_remainder_execution_options(args, allow_flag="--allow-chroot"))
+    if args.dry_run:
+        return {"root": str(root), "command": command, "timeout_seconds": args.timeout, "dry_run": True}
+    if not args.allow_chroot:
+        raise AgentError(
+            "unsafe_operation",
+            "chroot changes process root and requires --allow-chroot.",
+            path=str(root),
+            suggestion="Run with --dry-run first, then pass --allow-chroot if intentional.",
+        )
+    if os.name == "nt" or not hasattr(os, "chroot"):
+        raise AgentError("invalid_input", "chroot is not supported on this platform.", path=str(root))
+
+    def enter_chroot() -> None:
+        os.chroot(root)
+        os.chdir("/")
+
+    if args.max_output_bytes < 0:
+        raise AgentError("invalid_input", "--max-output-bytes must be >= 0.")
+    try:
+        completed = subprocess.run(
+            command,
+            capture_output=True,
+            timeout=args.timeout,
+            check=False,
+            preexec_fn=enter_chroot,
+        )
+        timed_out = False
+    except FileNotFoundError as exc:
+        raise AgentError("not_found", "Command executable was not found inside the chroot.", path=command[0]) from exc
+    except PermissionError as exc:
+        raise AgentError("permission_denied", "Permission denied while executing chroot command.", path=command[0]) from exc
+    except subprocess.TimeoutExpired as exc:
+        completed = subprocess.CompletedProcess(command, EXIT["unsafe_operation"], exc.stdout or b"", exc.stderr or b"")
+        timed_out = True
+
+    result = subprocess_result(command, completed, timed_out=timed_out, max_output_bytes=args.max_output_bytes)
+    result["root"] = str(root)
+    result["timeout_seconds"] = args.timeout
+    result["_exit_code"] = EXIT["unsafe_operation"] if timed_out else completed.returncode
+    return result
+
+
+def _context_targets(paths: list[str], *, recursive: bool) -> list[Path]:
+    targets: list[Path] = []
+    for raw in paths:
+        path = resolve_path(raw, strict=True)
+        targets.append(path)
+        if recursive and path.is_dir() and not path.is_symlink():
+            targets.extend(sorted(path.rglob("*")))
+    return targets
+
+
+def command_chcon(args: argparse.Namespace) -> dict[str, Any] | bytes:
+    targets = _context_targets(args.paths, recursive=args.recursive)
+    operations = [
+        {
+            "operation": "chcon",
+            "path": str(path),
+            "context": args.context,
+            "recursive": args.recursive,
+            "no_follow": args.no_follow,
+            "dry_run": args.dry_run,
+        }
+        for path in targets
+    ]
+    if args.raw:
+        return lines_to_raw([f"{args.context}\t{operation['path']}" for operation in operations], encoding="utf-8")
+    if args.dry_run:
+        return {"count": len(operations), "operations": operations}
+    if not args.allow_context:
+        raise AgentError(
+            "unsafe_operation",
+            "Changing security context requires --allow-context.",
+            suggestion="Run with --dry-run first, then pass --allow-context if intentional.",
+        )
+    if not hasattr(os, "setxattr"):
+        raise AgentError("invalid_input", "SELinux context changes are not supported on this platform.")
+
+    encoded = args.context.encode("utf-8")
+    for path in targets:
+        try:
+            try:
+                os.setxattr(path, "security.selinux", encoded, follow_symlinks=not args.no_follow)  # type: ignore[call-arg]
+            except TypeError:
+                os.setxattr(path, "security.selinux", encoded)  # type: ignore[arg-type]
+        except PermissionError as exc:
+            raise AgentError("permission_denied", "Permission denied while changing security context.", path=str(path)) from exc
+        except OSError as exc:
+            raise AgentError("io_error", str(exc), path=str(path)) from exc
+    return {"count": len(operations), "operations": operations}
+
+
+def command_runcon(args: argparse.Namespace) -> dict[str, Any]:
+    command = normalize_command_args(_consume_remainder_execution_options(args, allow_flag="--allow-context"))
+    if args.dry_run:
+        return {"context": args.context, "command": command, "timeout_seconds": args.timeout, "dry_run": True}
+    if not args.allow_context:
+        raise AgentError(
+            "unsafe_operation",
+            "Running a command under another security context requires --allow-context.",
+            suggestion="Run with --dry-run first, then pass --allow-context if intentional.",
+        )
+    runner = shutil.which("runcon")
+    if runner is None:
+        raise AgentError("invalid_input", "SELinux runcon executable is not available on this platform.")
+    wrapped = [runner, args.context, *command]
+    completed, timed_out = run_subprocess_capture(
+        wrapped,
+        timeout=args.timeout,
+        max_output_bytes=args.max_output_bytes,
+    )
+    assert completed is not None
+    result = subprocess_result(wrapped, completed, timed_out=timed_out, max_output_bytes=args.max_output_bytes)
+    result["context"] = args.context
+    result["timeout_seconds"] = args.timeout
+    result["_exit_code"] = EXIT["unsafe_operation"] if timed_out else completed.returncode
+    return result
 
 
 # ── kill ───────────────────────────────────────────────────────────────

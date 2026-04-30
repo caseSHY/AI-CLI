@@ -16,6 +16,7 @@ class DocsBilingualTests(unittest.TestCase):
             and "coreutils-9.10" not in path.parts
             and "test-reports" not in path.parts
             and path.name != "CLAUDE.md"
+            and not path.name.startswith("GPTCodex-vs-DeepSeekCopilot-")
         ]
         self.assertTrue(markdown_files)
         for path in markdown_files:

@@ -100,6 +100,7 @@ CATALOG = [
         "why": "Useful, but often environment-specific, long-running, privileged, or less central to file work.",
         "tools": [
             "date",
+            "coreutils",
             "df",
             "du",
             "env",
@@ -132,6 +133,7 @@ CATALOG = [
             "hostid",
             "hostname",
             "logname",
+            "pinky",
             "dircolors",
             "dir",
             "vdir",

@@ -92,6 +92,9 @@ from .text_commands import (
 )
 from .system_commands import (
     command_arch,
+    command_chcon,
+    command_chroot,
+    command_coreutils,
     command_date,
     command_env,
     command_expr,
@@ -107,8 +110,12 @@ from .system_commands import (
     command_nohup,
     command_nproc,
     command_pathchk,
+    command_pinky,
     command_printenv,
+    command_runcon,
     command_sleep,
+    command_stdbuf,
+    command_stty,
     command_timeout,
     command_true,
     command_tty,
@@ -221,6 +228,11 @@ def build_parser() -> AgentArgumentParser:
 
     p = add_subparser("schema", help="Print the agentutils JSON protocol and exit codes.")
     p.set_defaults(func=command_schema)
+
+    p = add_subparser("coreutils", help="Describe or list the agentutils coreutils-inspired command surface.")
+    p.add_argument("--list", action="store_true", help="List registered command names.")
+    p.add_argument("--raw", action="store_true", help="Write one command name per line without a JSON envelope.")
+    p.set_defaults(func=command_coreutils)
 
     p = add_subparser("pwd", help="Print the current working directory as JSON.")
     p.set_defaults(func=command_pwd)
@@ -638,6 +650,12 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--raw", action="store_true", help="Write users without a JSON envelope.")
     p.set_defaults(func=command_users)
 
+    p = add_subparser("pinky", help="Return lightweight user/session records.")
+    p.add_argument("users", nargs="*", help="Optional users to include.")
+    p.add_argument("--long", "-l", action="store_true", help="Include the long-output intent in the JSON result.")
+    p.add_argument("--raw", action="store_true", help="Write tab-separated user rows without a JSON envelope.")
+    p.set_defaults(func=command_pinky)
+
     p = add_subparser("who", help="Return current process user/session information.")
     p.add_argument("--raw", action="store_true", help="Write who-like rows without a JSON envelope.")
     p.set_defaults(func=command_who)
@@ -743,6 +761,33 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("command_args", nargs=argparse.REMAINDER, help="Command and arguments to run.")
     p.set_defaults(func=command_timeout)
 
+    p = add_subparser("stdbuf", help="Run a command with portable buffering hints and bounded capture.")
+    p.add_argument("--input", "-i", help="Requested stdin buffering mode: 0, L, or a byte size.")
+    p.add_argument("--output", "-o", help="Requested stdout buffering mode: 0, L, or a byte size.")
+    p.add_argument("--error", "-e", help="Requested stderr buffering mode: 0, L, or a byte size.")
+    p.add_argument("--timeout", type=float, default=60.0, help="Safety timeout for the command.")
+    p.add_argument("--max-output-bytes", type=int, default=65536, help="Maximum captured stdout/stderr bytes each.")
+    p.add_argument("--dry-run", action="store_true", help="Report without running the command.")
+    p.add_argument("command_args", nargs=argparse.REMAINDER, help="Command and arguments to run.")
+    p.set_defaults(func=command_stdbuf)
+
+    p = add_subparser("chroot", help="Plan or run a command inside a changed root with explicit confirmation.")
+    p.add_argument("root", help="Directory to use as the new root.")
+    p.add_argument("--timeout", type=float, default=60.0, help="Safety timeout for the command.")
+    p.add_argument("--max-output-bytes", type=int, default=65536, help="Maximum captured stdout/stderr bytes each.")
+    p.add_argument("--allow-chroot", action="store_true", help="Allow a real chroot execution where supported.")
+    p.add_argument("--dry-run", action="store_true", help="Report without running the command.")
+    p.add_argument("command_args", nargs=argparse.REMAINDER, help="Command and arguments to run inside the root.")
+    p.set_defaults(func=command_chroot)
+
+    p = add_subparser("stty", help="Inspect or safely plan terminal setting changes.")
+    p.add_argument("--file", "-F", dest="device", help="Terminal device to inspect or change.")
+    p.add_argument("--allow-change", action="store_true", help="Allow applying supported terminal changes.")
+    p.add_argument("--dry-run", action="store_true", help="Report planned settings without changing the terminal.")
+    p.add_argument("--raw", action="store_true", help="Write a compact status line without a JSON envelope.")
+    p.add_argument("settings", nargs=argparse.REMAINDER, help="Settings such as raw, sane, echo, or -echo.")
+    p.set_defaults(func=command_stty)
+
     p = add_subparser("nice", help="Run a command with a niceness adjustment where supported.")
     p.add_argument("--adjustment", "-n", type=int, default=10, help="Niceness adjustment.")
     p.add_argument("--timeout", type=float, default=60.0, help="Safety timeout for the command.")
@@ -767,6 +812,25 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--dry-run", action="store_true", help="Report without starting a process.")
     p.add_argument("command_args", nargs=argparse.REMAINDER, help="Command and arguments to run.")
     p.set_defaults(func=command_nohup)
+
+    p = add_subparser("chcon", help="Plan or change SELinux security contexts with explicit confirmation.")
+    p.add_argument("context", help="Security context to apply.")
+    p.add_argument("paths", nargs="+", help="Paths whose security context should change.")
+    p.add_argument("--recursive", "-R", action="store_true", help="Apply to directory contents recursively.")
+    p.add_argument("--no-follow", action="store_true", help="Do not follow symlinks where supported.")
+    p.add_argument("--allow-context", action="store_true", help="Allow real SELinux context changes where supported.")
+    p.add_argument("--dry-run", action="store_true", help="Report operations without changing contexts.")
+    p.add_argument("--raw", action="store_true", help="Write context/path rows without a JSON envelope.")
+    p.set_defaults(func=command_chcon)
+
+    p = add_subparser("runcon", help="Plan or run a command under an SELinux context where available.")
+    p.add_argument("context", help="Security context for the command.")
+    p.add_argument("--timeout", type=float, default=60.0, help="Safety timeout for the command.")
+    p.add_argument("--max-output-bytes", type=int, default=65536, help="Maximum captured stdout/stderr bytes each.")
+    p.add_argument("--allow-context", action="store_true", help="Allow invoking the platform runcon command.")
+    p.add_argument("--dry-run", action="store_true", help="Report without running the command.")
+    p.add_argument("command_args", nargs=argparse.REMAINDER, help="Command and arguments to run.")
+    p.set_defaults(func=command_runcon)
 
     p = add_subparser("yes", help="Generate a bounded repeated line.")
     p.add_argument("words", nargs="*", help="Words to repeat. Defaults to 'y'.")

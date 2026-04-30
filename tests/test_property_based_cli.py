@@ -373,8 +373,7 @@ class JsonEnvelopePropertyTests(unittest.TestCase):
             result = run_cli("cat", "--raw", "f.txt", cwd=cwd)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stderr, "")
-            if result.stdout:
-                self.assertNotEqual(result.stdout[0], "{")
+            self.assertEqual(result.stdout, text)
 
 
 if __name__ == "__main__":
