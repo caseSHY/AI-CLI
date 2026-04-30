@@ -1,83 +1,254 @@
 # 测试说明 / Testing
 
+> 当前测试状态见 `docs/status/CURRENT_STATUS.md`
+> For current test status see `docs/status/CURRENT_STATUS.md`
+
 ## 中文说明
 
-运行完整本地测试套件：
+### 推荐测试入口
+
+**pytest 是主入口**，覆盖所有测试维度（unittest + pytest + Hypothesis + GNU differential）：
 
 ```powershell
-python -m unittest discover -s tests -v
+# 完整测试套件
+python -m pytest tests/ -v --tb=short
+
+# 不含 property-based 测试（快速反馈，约 20-30 秒）
+python -m pytest tests/ -v --tb=short -k "not (property_based or Hypothesis)"
+
+# 不含 GNU 对照测试（Windows 环境，GNU 工具通常不可用）
+python -m pytest tests/ -v --tb=short -k "not (Gnu or gnu_differential)"
 ```
 
 如果没有执行 editable install，而是直接从源码目录运行：
 
 ```powershell
 $env:PYTHONPATH = "src"
+python -m pytest tests/ -v --tb=short
+```
+
+**Legacy 入口 (unittest, 部分运行器)**：
+
+```powershell
 python -m unittest discover -s tests -v
 ```
 
-### 测试分类
+> unittest discover 只能运行 `unittest.TestCase` 子类的测试。pytest-native 测试（如有）、
+> Hypothesis 测试中的 pytest 风格 fixture 等在 unittest discover 下不会执行。
+> **推荐使用 pytest 作为主入口。**
 
-- Unit test：`tests/test_unit_protocol.py`
-- CLI black-box test：`tests/test_cli_black_box.py`
-- Golden file test：`tests/test_golden_outputs.py` 和 `tests/golden/`
-- Sandbox test：`tests/test_sandbox_and_side_effects.py`
-- Agent-call test：`tests/test_agent_call_flow.py`
-- Error / exit-code test：`tests/test_error_exit_codes.py`
-- Filesystem side-effect test：`tests/test_sandbox_and_side_effects.py`
-- CI test：`tests/test_ci_config.py`
+### 测试分类 / Test Categories
+
+| 分类 | 测试文件 | 测试类型 | 说明 |
+|---|---|---|---|
+| **单元测试** | `test_unit_protocol.py` | unittest | 协议信封、JSON 写出、AgentError |
+| **CLI 黑盒** | `test_cli_black_box.py` | unittest | 子进程调用、stdout/stderr 契约 |
+| **Agent 调用流** | `test_agent_call_flow.py` | unittest | 观察→决策→dry-run→写入→校验 |
+| **错误码** | `test_error_exit_codes.py` | unittest | JSON 错误和语义化退出码 |
+| **沙箱与副作用** | `test_sandbox_and_side_effects.py` | unittest | dry-run 不改文件、写操作只产生预期副作用 |
+| **沙箱逃逸硬化** | `test_sandbox_escape_hardening.py` | unittest | 路径遍历、symlink 逃逸、文件名注入、dry-run 零副作用、危险命令拒绝 |
+| **Golden file** | `test_golden_outputs.py` + `tests/golden/` | unittest | 稳定输出与 golden 文件对比 |
+| **GNU 对照测试** | `test_gnu_differential.py` | unittest + skip | 与真实 GNU Coreutils 输出对比（需要 GNU 工具） |
+| **Property-based** | `test_property_based_cli.py` | pytest + Hypothesis | 随机输入验证数学/逻辑不变量 |
+| **功能命令** | `test_agentutils.py`, `test_more_agent_commands.py`, `test_even_more_agent_commands.py`, `test_file_admin_commands.py`, `test_execution_and_page_commands.py`, `test_system_alias_and_encoding_commands.py`, `test_remaining_coreutils_commands.py` | unittest | 各类命令的功能验证 |
+| **CI 配置** | `test_ci_config.py` | unittest | GitHub Actions 配置存在性验证 |
+| **文档双语** | `test_docs_bilingual.py` | unittest | Markdown 文档中英双语格式检查 |
+| **注册表一致性** | （分布于多个文件） | 隐式 | Schema 输出与 catalog/registry 一致 |
+
+### Property-Based 测试 / Property-Based Tests
+
+使用 Hypothesis 框架，验证数学/逻辑不变量（如 sort 输出有序、base64 编解码往返还原）。
+
+```powershell
+# 单独运行 property-based 测试
+python -m pytest tests/test_property_based_cli.py -v --tb=short
+```
+
+- `max_examples=100`（默认）：本地全量运行约 6-8 分钟。
+- CI 建议 `max_examples=50`：可通过 `-k` 排除或修改 `pyproject.toml` 配置。
+
+### GNU 对照测试 / GNU Differential Tests
+
+对比 agentutils `--raw` 输出与 GNU Coreutils 原生命令，是最强的正确性验证。
+
+```powershell
+# 单独运行 GNU 对照测试
+python -m pytest tests/test_gnu_differential.py -v --tb=short
+```
+
+**Windows 环境**：
+- 几乎所有 GNU 工具不可用（仅 `C:\Windows\system32\sort.exe` 可用且功能受限）。
+- 51/56 测试被 `@unittest.skipIf` 跳过。
+- **skip 不等于兼容性已验证**。
+
+**Ubuntu CI 环境**：
+- 应在 CI 中安装 `coreutils` 包使测试可运行：
+  ```bash
+  sudo apt-get install -y coreutils
+  ```
+- 安装后预计 50+ 测试可实际执行。
+
+### Golden File 更新 / Golden File Update
+
+当命令行为有预期变更时，重新生成 golden 文件：
+
+```powershell
+# 手动更新 golden 输出
+$env:PYTHONPATH = "src"
+python -c "from tests.test_golden_outputs import ..."
+```
+
+### 注册表/目录一致性 / Registry/Catalog Consistency
+
+`catalog.py` 和 `registry.py` 中的命令清单必须一致。执行以下命令验证：
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m agentutils schema  # 应输出 113 个命令
+python -m agentutils catalog --pretty  # 应与 schema 输出一致
+```
+
+### Mutating Command 审计 / Mutating Command Audit
+
+每个 mutating command 必须通过：
+1. **dry-run 零副作用**：`test_sandbox_escape_hardening.py::DryRunZeroSideEffectTests`
+2. **路径遍历拒绝**：`test_sandbox_escape_hardening.py::PathTraversalBlockedTests`
+3. **危险命令拒绝**：`test_sandbox_escape_hardening.py::DangerousCommandDefaultDenyTests`
 
 ### CI
 
-GitHub Actions 工作流文件：
+GitHub Actions 工作流：`.github/workflows/ci.yml`
 
-```text
-.github/workflows/ci.yml
+- **平台**：ubuntu-latest
+- **Python 版本**：3.11, 3.12, 3.13
+- **安装**：`python -m pip install -e ".[test]"`
+- **测试命令**：`python -m pytest tests/ -v`
+- **已知差异**：CI 未安装 GNU coreutils，GNU 对照测试被跳过
+
+### 覆盖率 / Coverage
+
+```powershell
+python -m pytest tests/ --cov=src/agentutils --cov-report=term-missing
 ```
 
-CI 会以 editable mode 安装包，并运行：
-
-```bash
-PYTHONPATH=src python -m unittest discover -s tests
-```
+需要 `pytest-cov` 包。
 
 ---
 
 ## English
 
-Run the full local test suite:
+### Recommended Test Entry Point
+
+**pytest is the primary entry point**, covering all test dimensions:
 
 ```powershell
-python -m unittest discover -s tests -v
+# Full test suite
+python -m pytest tests/ -v --tb=short
+
+# Without property-based tests (fast feedback, ~20-30s)
+python -m pytest tests/ -v --tb=short -k "not (property_based or Hypothesis)"
+
+# Without GNU differential tests (Windows, where GNU tools are unavailable)
+python -m pytest tests/ -v --tb=short -k "not (Gnu or gnu_differential)"
 ```
 
-For a source checkout without editable install:
+From a source checkout without editable install:
 
 ```powershell
 $env:PYTHONPATH = "src"
+python -m pytest tests/ -v --tb=short
+```
+
+**Legacy entry (unittest, partial runner)**:
+
+```powershell
 python -m unittest discover -s tests -v
 ```
 
+> unittest discover only runs `unittest.TestCase` subclasses. pytest-native tests and
+> Hypothesis tests with pytest-style fixtures will not execute.
+> **Prefer pytest as the primary entry point.**
+
 ### Test Categories
 
-- Unit test: `tests/test_unit_protocol.py`
-- CLI black-box test: `tests/test_cli_black_box.py`
-- Golden file test: `tests/test_golden_outputs.py` and `tests/golden/`
-- Sandbox test: `tests/test_sandbox_and_side_effects.py`
-- Agent-call test: `tests/test_agent_call_flow.py`
-- Error / exit-code test: `tests/test_error_exit_codes.py`
-- Filesystem side-effect test: `tests/test_sandbox_and_side_effects.py`
-- CI test: `tests/test_ci_config.py`
+| Category | Test file | Type | Description |
+|---|---|---|---|
+| **Unit** | `test_unit_protocol.py` | unittest | Protocol envelopes, JSON writing, AgentError |
+| **CLI black-box** | `test_cli_black_box.py` | unittest | Subprocess calls, stdout/stderr contracts |
+| **Agent call flow** | `test_agent_call_flow.py` | unittest | Observe→decide→dry-run→write→verify |
+| **Error codes** | `test_error_exit_codes.py` | unittest | JSON errors and semantic exit codes |
+| **Sandbox & side effects** | `test_sandbox_and_side_effects.py` | unittest | dry-run produces no mutations; writes only expected targets |
+| **Sandbox escape hardening** | `test_sandbox_escape_hardening.py` | unittest | Path traversal, symlink escape, filename injection, dry-run zero-side-effect, dangerous command deny |
+| **Golden file** | `test_golden_outputs.py` + `tests/golden/` | unittest | Stable output compared to golden files |
+| **GNU differential** | `test_gnu_differential.py` | unittest + skip | Output comparison with real GNU Coreutils (needs GNU tools) |
+| **Property-based** | `test_property_based_cli.py` | pytest + Hypothesis | Random input validation of mathematical/logical invariants |
+| **Feature commands** | `test_agentutils.py`, `test_more_agent_commands.py`, `test_even_more_agent_commands.py`, `test_file_admin_commands.py`, `test_execution_and_page_commands.py`, `test_system_alias_and_encoding_commands.py`, `test_remaining_coreutils_commands.py` | unittest | Functional verification of various command groups |
+| **CI config** | `test_ci_config.py` | unittest | GitHub Actions config existence check |
+| **Bilingual docs** | `test_docs_bilingual.py` | unittest | Markdown bilingual format verification |
+| **Registry consistency** | (distributed) | implicit | Schema output matches catalog/registry |
+
+### Property-Based Tests
+
+Uses Hypothesis framework to verify mathematical/logical invariants.
+
+```powershell
+python -m pytest tests/test_property_based_cli.py -v --tb=short
+```
+
+- `max_examples=100` (default): ~6-8 min locally.
+- CI: recommend `max_examples=50`.
+
+### GNU Differential Tests
+
+Compares agentutils `--raw` output against real GNU Coreutils.
+
+```powershell
+python -m pytest tests/test_gnu_differential.py -v --tb=short
+```
+
+**Windows**: Almost all GNU tools unavailable. 51/56 tests skipped.
+**skip does NOT mean compatibility is verified.**
+
+**Ubuntu CI**: Should install coreutils:
+```bash
+sudo apt-get install -y coreutils
+```
+
+### Golden File Update
+
+When command behavior changes intentionally, regenerate golden files.
+
+### Registry/Catalog Consistency
+
+Commands in `catalog.py` and `registry.py` must be consistent:
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m agentutils schema  # should output 113 commands
+python -m agentutils catalog --pretty  # should match schema output
+```
+
+### Mutating Command Audit
+
+Every mutating command must pass:
+1. **dry-run zero side-effects**: `test_sandbox_escape_hardening.py::DryRunZeroSideEffectTests`
+2. **Path traversal rejection**: `test_sandbox_escape_hardening.py::PathTraversalBlockedTests`
+3. **Dangerous command denial**: `test_sandbox_escape_hardening.py::DangerousCommandDefaultDenyTests`
 
 ### CI
 
-GitHub Actions workflow:
+GitHub Actions workflow: `.github/workflows/ci.yml`
 
-```text
-.github/workflows/ci.yml
+- **Platform**: ubuntu-latest
+- **Python versions**: 3.11, 3.12, 3.13
+- **Install**: `python -m pip install -e ".[test]"`
+- **Test command**: `python -m pytest tests/ -v`
+- **Known gap**: GNU coreutils not installed, GNU differential tests are skipped
+
+### Coverage
+
+```powershell
+python -m pytest tests/ --cov=src/agentutils --cov-report=term-missing
 ```
 
-The workflow installs the package in editable mode and runs:
-
-```bash
-PYTHONPATH=src python -m unittest discover -s tests
-```
+Requires `pytest-cov`.

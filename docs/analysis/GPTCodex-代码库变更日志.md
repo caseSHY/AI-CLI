@@ -1,5 +1,15 @@
 # GPTCodex 代码库变更日志 / GPTCodex Codebase Changelog
 
+> **Status: historical archive**
+> This document describes a point-in-time state and may be outdated.
+> For current project status, see `docs/status/CURRENT_STATUS.md`.
+>
+> **Note (2026-04-30)**: The "remaining known gaps" section below was written
+> before the sandbox hardening fixes were applied. All 5 sandbox escape gaps
+> (dd, install, rm non-recursive, tee, truncate) have since been fixed in
+> `src/agentutils/fs_commands.py`. The current test count is 99 passed, 0 failed.
+> See `docs/analysis/DeepSeek-2026-04-30-安全加固与一致性修复-开发日志.md` for the fix details.
+
 > 日期：2026-04-30
 > 参考文档：`docs/analysis/GPTCodex-vs-DeepSeekCopilot-分析日志.md`
 > 视角约定：本文中的 GPTCodex 指当前会话中的我；DeepSeekCopilot 指用户指定的另一方及既有分析日志视角。

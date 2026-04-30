@@ -1,5 +1,14 @@
 # 测试结果报告 — agentutils v0.1.0
 
+> **Status: historical archive**
+> This document describes a point-in-time state (pre-sandbox-fix snapshot) and is outdated.
+> For current project status, see `docs/status/CURRENT_STATUS.md`.
+>
+> **Note**: This report was generated before the sandbox hardening fixes were applied.
+> The 6 sandbox escape gaps (SEC-001 through SEC-006) listed in §7.2 have all been
+> fixed as of 2026-04-30. Current test result: 99 passed, 0 failed, 54 skipped.
+> See `docs/analysis/DeepSeek-2026-04-30-安全加固与一致性修复-开发日志.md` for fix details.
+
 ## 1. 报告元信息
 
 | 项目 | 值 |

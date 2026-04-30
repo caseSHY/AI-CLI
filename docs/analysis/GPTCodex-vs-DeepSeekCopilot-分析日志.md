@@ -1,5 +1,9 @@
 # GPTCodex vs DeepSeekCopilot — 代码库变更分析日志
 
+> **Status: historical archive**
+> This document describes a point-in-time state and may be outdated.
+> For current project status, see `docs/status/CURRENT_STATUS.md`.
+
 > 分析日期：2026-04-30
 > 分析者：DeepSeekCopilot
 > 被分析方：GPTCodex（第三方更新者）

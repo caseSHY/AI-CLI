@@ -32,6 +32,10 @@ python -m agentutils schema --pretty
 运行测试：
 
 ```powershell
+# 推荐主入口（pytest，含 Hypothesis property-based 测试和 GNU 对照测试）
+python -m pytest tests/ -v --tb=short
+
+# Legacy 入口（unittest，部分运行器）
 python -m unittest discover -s tests -v
 ```
 
@@ -42,11 +46,12 @@ python -m unittest discover -s tests -v
 |-- src/agentutils/        # Python 包源码
 |-- tests/                 # 子进程级行为测试
 |-- docs/                  # 文档入口和分类文档目录
-|   |-- reference/         # 协议和命令面参考
+|   |-- reference/         # 协议、命令面和安全生产契约
 |   |-- guides/            # 使用指南
 |   |-- audits/            # 兼容性和质量审计
 |   |-- development/       # 测试和开发说明
-|   |-- analysis/          # 项目分析日志
+|   |-- status/            # 当前项目状态（唯一权威来源）
+|   |-- analysis/          # 项目分析日志（历史归档）
 |   |-- agent-guides/      # AI 辅助编码规范
 |   `-- reports/           # 测试报告等生成/归档文档
 |-- vendor/gnu-coreutils/  # 本地上游源码缓存，默认被 Git 忽略
@@ -57,7 +62,9 @@ python -m unittest discover -s tests -v
 ### 文档
 
 - [文档索引](docs/README.md)
+- [当前项目状态](docs/status/CURRENT_STATUS.md) ← 权威状态来源
 - [Agent 协议与示例](docs/reference/AGENTUTILS.md)
+- [安全模型](docs/reference/SECURITY_MODEL.md)
 - [中英文使用说明](docs/guides/USAGE.zh-CN.en.md)
 - [GNU Coreutils 兼容性审计](docs/audits/GNU_COMPATIBILITY_AUDIT.md)
 - [测试说明](docs/development/TESTING.md)
@@ -104,6 +111,10 @@ python -m agentutils schema --pretty
 Run tests:
 
 ```powershell
+# Recommended primary entry (pytest, includes Hypothesis property-based and GNU differential tests)
+python -m pytest tests/ -v --tb=short
+
+# Legacy entry (unittest, partial runner)
 python -m unittest discover -s tests -v
 ```
 
@@ -113,11 +124,12 @@ python -m unittest discover -s tests -v
 .
 |-- src/agentutils/        # Python package
 |-- tests/                 # subprocess-level behavior tests
-|-- docs/                  # documentation index and categorized docs
-|   |-- reference/         # protocol and command-surface reference
+|-- docs/                  # document, command-surface and security contracts
 |   |-- guides/            # usage guides
 |   |-- audits/            # compatibility and quality audits
 |   |-- development/       # testing and development notes
+|   |-- status/            # current project status (single authoritative source)
+|   |-- analysis/          # project analysis logs (historical archive)nt notes
 |   |-- analysis/          # project analysis logs
 |   |-- agent-guides/      # AI coding assistant guidance
 |   `-- reports/           # test reports and archived generated docs
@@ -129,7 +141,9 @@ python -m unittest discover -s tests -v
 ### Documentation
 
 - [Documentation index](docs/README.md)
+- [Current project status](docs/status/CURRENT_STATUS.md) ← authoritative status source
 - [Agent protocol and examples](docs/reference/AGENTUTILS.md)
+- [Security model](docs/reference/SECURITY_MODEL.md)
 - [Chinese/English user guide](docs/guides/USAGE.zh-CN.en.md)
 - [GNU Coreutils compatibility audit](docs/audits/GNU_COMPATIBILITY_AUDIT.md)
 - [Testing guide](docs/development/TESTING.md)
