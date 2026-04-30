@@ -8,7 +8,7 @@
 | 属性 | 值 |
 |---|---|
 | **最后验证日期** | 2026-04-30 |
-| **Git commit hash** | `4b26a59` |
+| **Git commit hash** | `e83e5d7` |
 | **Python 版本** | 3.14.4 (开发), CI: 3.11/3.12/3.13 |
 | **操作系统** | Windows 11 (开发), Ubuntu latest (CI) |
 | **项目版本** | 0.1.0 |
@@ -86,7 +86,7 @@
 | Property | Value |
 |---|---|
 | **Last verified** | 2026-04-30 |
-| **Git commit hash** | `4b26a59` |
+| **Git commit hash** | `e83e5d7` |
 | **Python version** | 3.14.4 (dev), CI: 3.11/3.12/3.13 |
 | **OS** | Windows 11 (dev), Ubuntu latest (CI) |
 | **Project version** | 0.1.0 |
