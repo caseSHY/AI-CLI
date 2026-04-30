@@ -46,7 +46,7 @@
 | **GNU 命令名覆盖** | 109/109 |
 | **Agent 子集实现** | 全部 113 命令（含 4 个元命令） |
 | **GNU differential verified (Windows)** | 仅 sort (5 tests), 其余 51 因缺少 GNU 工具跳过 |
-| **GNU differential verified (CI Ubuntu)** | 未验证 — CI 未安装 coreutils 包 |
+| **GNU differential verified (CI Ubuntu)** | 待验证 — coreutils 已安装，需 CI 触发 |
 | **兼容性表述** | "JSON-first agent-friendly subset inspired by GNU Coreutils" |
 
 ### CI 状态

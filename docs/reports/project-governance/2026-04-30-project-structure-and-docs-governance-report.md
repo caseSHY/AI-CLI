@@ -16,7 +16,7 @@
 - **归档** 4 个历史文档：3 个分析日志 + 1 个测试报告，全部添加 historical archive 标记
 - **更新** 文档索引：`docs/README.md` 区分当前事实源 vs 历史归档
 
-**结论**：所有修改均为文档治理，未触及业务源码。现有 99 个测试全部通过，零回归。
+**结论**：所有修改均为文档治理，未触及业务源码。现有 126 个测试全部通过，零回归。
 
 ---
 
@@ -162,7 +162,7 @@ python -m pytest tests/test_gnu_differential.py -v --tb=short
 |---|---|---|
 | K-001 | CI 未安装 GNU coreutils | ✅ CI 已添加 `apt-get install coreutils` |
 | K-002 | 无 Windows CI runner | ✅ 已添加 `test-windows` job (windows-latest, py3.11/3.12/3.13) |
-| K-004 | CI 中 GNU differential tests 未实际运行过 | ✅ 由 K-001 解决 |
+| K-004 | CI 中 GNU differential tests 未实际运行过 | ⏳ 待验证 — coreutils 已安装但 CI 尚未触发 |
 
 ### 仍未解决
 

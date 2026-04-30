@@ -119,11 +119,12 @@ python -m agentutils catalog --pretty  # 应与 schema 输出一致
 
 GitHub Actions 工作流：`.github/workflows/ci.yml`
 
-- **平台**：ubuntu-latest
+- **平台**：ubuntu-latest（test-ubuntu）+ windows-latest（test-windows）
 - **Python 版本**：3.11, 3.12, 3.13
 - **安装**：`python -m pip install -e ".[test]"`
 - **测试命令**：`python -m pytest tests/ -v`
-- **已知差异**：CI 未安装 GNU coreutils，GNU 对照测试被跳过
+- **Ubuntu job**：已安装 GNU coreutils（`apt-get install coreutils`），GNU 对照测试可运行
+- **Windows job**：覆盖路径/编码/sandbox 测试，GNU 对照测试因缺少 GNU 工具跳过
 
 ### 覆盖率 / Coverage
 
@@ -239,11 +240,12 @@ Every mutating command must pass:
 
 GitHub Actions workflow: `.github/workflows/ci.yml`
 
-- **Platform**: ubuntu-latest
+- **Platform**: ubuntu-latest (test-ubuntu) + windows-latest (test-windows)
 - **Python versions**: 3.11, 3.12, 3.13
 - **Install**: `python -m pip install -e ".[test]"`
 - **Test command**: `python -m pytest tests/ -v`
-- **Known gap**: GNU coreutils not installed, GNU differential tests are skipped
+- **Ubuntu job**: GNU coreutils installed (`apt-get install coreutils`), GNU differential tests runnable
+- **Windows job**: path/encoding/sandbox coverage; GNU differential tests skipped (no GNU tools)
 
 ### Coverage
 
