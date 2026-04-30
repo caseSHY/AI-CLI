@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
 import unittest
 
 from support import ROOT
@@ -7,6 +10,17 @@ from support import ROOT
 
 def read_text(relative: str) -> str:
     return (ROOT / relative).read_text(encoding="utf-8")
+
+
+def _agentutils_output(*args: str) -> dict:
+    """Run agentutils and return parsed JSON result dict."""
+    env = {**dict(subprocess.os.environ), "PYTHONPATH": str(ROOT / "src")}
+    cp = subprocess.run(
+        [sys.executable, "-m", "agentutils", *args],
+        capture_output=True, text=True, cwd=str(ROOT), env=env,
+        timeout=30,
+    )
+    return json.loads(cp.stdout)
 
 
 class DocsGovernanceTests(unittest.TestCase):
@@ -133,6 +147,46 @@ class DocsGovernanceTests(unittest.TestCase):
             for phrase in forbidden:
                 with self.subTest(relative=relative, phrase=phrase):
                     self.assertNotIn(phrase, text)
+
+    def test_current_status_records_correct_test_count(self) -> None:
+        status = read_text("docs/status/CURRENT_STATUS.md")
+        self.assertIn("133", status)
+        self.assertNotIn("132 passed", status)
+
+    def test_command_count_consistency_across_docs(self) -> None:
+        output = _agentutils_output("schema")
+        actual_count = output["result"]["command_count"]
+        self.assertEqual(actual_count, 114)
+
+        docs_to_check = [
+            "README.md",
+            "docs/status/CURRENT_STATUS.md",
+            "docs/development/TESTING.md",
+            "docs/audits/GNU_COMPATIBILITY_AUDIT.md",
+        ]
+        for relative in docs_to_check:
+            text = read_text(relative)
+            with self.subTest(relative=relative):
+                self.assertIn("114", text)
+
+    def test_active_docs_do_not_contain_stale_command_count(self) -> None:
+        active_docs = [
+            "README.md",
+            "docs/status/CURRENT_STATUS.md",
+            "docs/development/TESTING.md",
+            "docs/audits/GNU_COMPATIBILITY_AUDIT.md",
+        ]
+        for relative in active_docs:
+            text = read_text(relative)
+            lines = text.splitlines()
+            for i, line in enumerate(lines, 1):
+                stripped = line.strip()
+                if "schema" in stripped.lower() and "113" in stripped and "command" in stripped.lower():
+                    with self.subTest(relative=relative, line=i):
+                        self.fail(f"{relative}:{i} has stale '113 commands' near 'schema': {stripped}")
+                if "agentutils schema" in stripped and "113" in stripped:
+                    with self.subTest(relative=relative, line=i):
+                        self.fail(f"{relative}:{i} has stale '113': {stripped}")
 
 
 if __name__ == "__main__":

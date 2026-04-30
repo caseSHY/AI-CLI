@@ -13,9 +13,9 @@
 `agentutils` 不是完整 GNU Coreutils 替代品。
 
 - GNU Coreutils 基线命令数：109
-- `agentutils schema` 登记命令数：113
+- `agentutils schema` 登记命令数：114
 - 与 GNU Coreutils 对应的已实现命令数：109
-- `agentutils` 元命令/辅助命令：`catalog`、`schema`、`hash`、`ginstall`
+- `agentutils` 元命令/辅助命令：`catalog`、`schema`、`coreutils`、`hash`、`ginstall`、`tool-list`
 - 尚未实现的 GNU Coreutils 命令数：0
 
 已实现命令对当前 Agent 友好契约有效：成功输出 JSON、错误输出 stderr JSON、
@@ -111,9 +111,9 @@ Audit date: 2026-04-30.
 `agentutils` is not a complete GNU Coreutils replacement.
 
 - GNU Coreutils command baseline: 109 commands
-- `agentutils schema` commands: 113 commands
+- `agentutils schema` commands: 114 commands
 - Coreutils-equivalent commands implemented by `agentutils`: 109 commands
-- `agentutils` metadata/helper commands: `catalog`, `schema`, `hash`, `ginstall`
+- `agentutils` metadata/helper commands: `catalog`, `schema`, `coreutils`, `hash`, `ginstall`, `tool-list`
 - Missing GNU Coreutils commands: 0 commands
 
 The implemented commands are usable for the current agent-friendly contract:

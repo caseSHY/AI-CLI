@@ -105,7 +105,7 @@ python -c "from tests.test_golden_outputs import ..."
 
 ```powershell
 $env:PYTHONPATH = "src"
-python -m agentutils schema  # 应输出 113 个命令
+python -m agentutils schema  # 应输出 114 个命令
 python -m agentutils catalog --pretty  # 应与 schema 输出一致
 ```
 
@@ -227,7 +227,7 @@ Commands in `catalog.py` and `registry.py` must be consistent:
 
 ```powershell
 $env:PYTHONPATH = "src"
-python -m agentutils schema  # should output 113 commands
+python -m agentutils schema  # should output 114 commands
 python -m agentutils catalog --pretty  # should match schema output
 ```
 

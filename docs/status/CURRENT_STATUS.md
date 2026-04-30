@@ -8,7 +8,7 @@
 | 属性 | 值 |
 |---|---|
 | **最后验证日期** | 2026-05-01 |
-| **验证对象** | 本地工作区（基于 `07a289b`，含本轮治理规则变更） |
+| **验证对象** | 本地工作区（基于 `d6f8f64`，含 tool-list 命令和增强 schema） |
 | **Python 版本** | 3.14.4 (开发), CI: 3.11/3.12/3.13 |
 | **操作系统** | Windows 11 (开发), CI: ubuntu-latest + windows-latest |
 | **项目版本** | 0.1.0 |
@@ -19,7 +19,7 @@
 |---|---|
 | **推荐测试命令** | `python -m pytest tests/ -v --tb=short` |
 | **Legacy 入口** | `python -m unittest discover -s tests -v` (部分运行器) |
-| **通过** | 132 |
+| **通过** | 136 |
 | **跳过** | 54 |
 | **失败** | 0 |
 | **跳过原因** | 51: GNU 工具在 Windows 不可用（CI Ubuntu 已安装 coreutils，可运行）; 3: Windows 无 symlink 支持 |
