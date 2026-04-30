@@ -62,26 +62,26 @@ python -m agentutils ls . --recursive --max-depth 2 --limit 100
 读取文件前 4096 字节：
 
 ```powershell
-python -m agentutils cat docs/AGENTUTILS.md --max-bytes 4096
+python -m agentutils cat docs/reference/AGENTUTILS.md --max-bytes 4096
 ```
 
 统计文件行数、词数、字符数和字节数：
 
 ```powershell
-python -m agentutils wc docs/AGENTUTILS.md
+python -m agentutils wc docs/reference/AGENTUTILS.md
 ```
 
 判断路径是否是非空文件：
 
 ```powershell
-python -m agentutils test docs/AGENTUTILS.md --file --non-empty
-python -m agentutils [ -f docs/AGENTUTILS.md ]
+python -m agentutils test docs/reference/AGENTUTILS.md --file --non-empty
+python -m agentutils [ -f docs/reference/AGENTUTILS.md ]
 ```
 
 解析路径：
 
 ```powershell
-python -m agentutils readlink --canonicalize docs/AGENTUTILS.md
+python -m agentutils readlink --canonicalize docs/reference/AGENTUTILS.md
 ```
 
 提取路径组件：
@@ -94,7 +94,7 @@ python -m agentutils dirname src/agentutils/cli.py
 计算 SHA-256：
 
 ```powershell
-python -m agentutils sha256sum docs/AGENTUTILS.md
+python -m agentutils sha256sum docs/reference/AGENTUTILS.md
 python -m agentutils cksum payload.bin
 python -m agentutils sum payload.bin
 ```
@@ -390,26 +390,26 @@ python -m agentutils ls . --recursive --max-depth 2 --limit 100
 Read the first 4096 bytes of a file:
 
 ```powershell
-python -m agentutils cat docs/AGENTUTILS.md --max-bytes 4096
+python -m agentutils cat docs/reference/AGENTUTILS.md --max-bytes 4096
 ```
 
 Count lines, words, characters, and bytes:
 
 ```powershell
-python -m agentutils wc docs/AGENTUTILS.md
+python -m agentutils wc docs/reference/AGENTUTILS.md
 ```
 
 Test that a path is a non-empty file:
 
 ```powershell
-python -m agentutils test docs/AGENTUTILS.md --file --non-empty
-python -m agentutils [ -f docs/AGENTUTILS.md ]
+python -m agentutils test docs/reference/AGENTUTILS.md --file --non-empty
+python -m agentutils [ -f docs/reference/AGENTUTILS.md ]
 ```
 
 Resolve a path:
 
 ```powershell
-python -m agentutils readlink --canonicalize docs/AGENTUTILS.md
+python -m agentutils readlink --canonicalize docs/reference/AGENTUTILS.md
 ```
 
 Extract path components:
@@ -422,7 +422,7 @@ python -m agentutils dirname src/agentutils/cli.py
 Calculate SHA-256:
 
 ```powershell
-python -m agentutils sha256sum docs/AGENTUTILS.md
+python -m agentutils sha256sum docs/reference/AGENTUTILS.md
 python -m agentutils cksum payload.bin
 python -m agentutils sum payload.bin
 ```

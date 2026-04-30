@@ -596,9 +596,11 @@ def command_chgrp(args: argparse.Namespace) -> dict[str, Any]:
 def command_truncate(args: argparse.Namespace) -> dict[str, Any]:
     if args.size < 0:
         raise AgentError("invalid_input", "--size must be >= 0.")
+    cwd = Path.cwd().resolve()
     operations = []
     for raw in args.paths:
         path = resolve_path(raw)
+        require_inside_cwd(path, cwd, allow_outside_cwd=False)
         existed = path.exists()
         if not existed and args.no_create:
             raise AgentError("not_found", "Path does not exist and --no-create was passed.", path=str(path))
@@ -759,8 +761,10 @@ def command_install(args: argparse.Namespace) -> dict[str, Any]:
     source = resolve_path(args.paths[0], strict=True)
     if source.is_dir():
         raise AgentError("invalid_input", "install source must be a file.", path=str(source))
+    cwd = Path.cwd().resolve()
     requested_destination = resolve_path(args.paths[1])
     destination = destination_inside_directory(source, requested_destination)
+    require_inside_cwd(destination, cwd, allow_outside_cwd=False)
     ensure_parent(destination, create=args.parents, dry_run=args.dry_run)
     if destination.exists() and not args.allow_overwrite:
         raise AgentError(
@@ -795,10 +799,12 @@ def command_install(args: argparse.Namespace) -> dict[str, Any]:
 def command_tee(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.max_preview_bytes < 0:
         raise AgentError("invalid_input", "--max-preview-bytes must be >= 0.")
+    cwd = Path.cwd().resolve()
     data = read_stdin_bytes()
     operations = []
     for raw in args.paths:
         path = resolve_path(raw)
+        require_inside_cwd(path, cwd, allow_outside_cwd=False)
         ensure_parent(path, create=args.parents, dry_run=args.dry_run)
         operations.append(
             {
@@ -891,8 +897,7 @@ def command_rm(args: argparse.Namespace) -> dict[str, Any]:
         reason = dangerous_delete_target(path, cwd)
         if reason:
             raise AgentError("unsafe_operation", reason, path=str(path))
-        if path.is_dir() and not path.is_symlink():
-            require_inside_cwd(path, cwd, allow_outside_cwd=args.allow_outside_cwd)
+        require_inside_cwd(path, cwd, allow_outside_cwd=args.allow_outside_cwd)
         if args.dry_run:
             status = "would_remove_directory" if path.is_dir() and not path.is_symlink() else "would_remove_file"
         else:
@@ -1101,6 +1106,8 @@ def command_dd(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
     output_path = None if args.output == "-" else resolve_path(args.output)
     if output_path is not None:
+        cwd = Path.cwd().resolve()
+        require_inside_cwd(output_path, cwd, allow_outside_cwd=False)
         ensure_parent(output_path, create=args.parents, dry_run=args.dry_run)
         if output_path.exists() and not args.allow_overwrite and args.seek == 0:
             raise AgentError(

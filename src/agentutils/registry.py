@@ -19,7 +19,7 @@ _COMMAND_PRIORITY_MAP: dict[str, str] = {
     "ln": "P1", "link": "P1", "chmod": "P1", "chown": "P1",
     "chgrp": "P1", "truncate": "P1", "mktemp": "P1", "mkfifo": "P1",
     "mknod": "P1", "install": "P1", "ginstall": "P1", "tee": "P1",
-    "rmdir": "P1", "unlink": "P1", "shred": "P1",
+    "rmdir": "P1", "unlink": "P1",
     # P2 – transform / compose text
     "sort": "P2", "comm": "P2", "join": "P2", "paste": "P2",
     "shuf": "P2", "tac": "P2", "nl": "P2", "fold": "P2", "fmt": "P2",
@@ -29,12 +29,14 @@ _COMMAND_PRIORITY_MAP: dict[str, str] = {
     "base64": "P2", "base32": "P2", "basenc": "P2", "seq": "P2",
     "cksum": "P2", "sum": "P2", "b2sum": "P2",
     "sha1sum": "P2", "sha224sum": "P2", "sha384sum": "P2", "sha512sum": "P2",
+    "hash": "P2",
     # P3 – system context / execution
     "date": "P3", "coreutils": "P3", "env": "P3", "printenv": "P3", "whoami": "P3",
     "groups": "P3", "id": "P3", "uname": "P3", "arch": "P3",
     "hostname": "P3", "hostid": "P3", "logname": "P3", "uptime": "P3",
     "tty": "P3", "users": "P3", "pinky": "P3", "who": "P3", "nproc": "P3",
     "df": "P3", "du": "P3", "dd": "P3", "sync": "P3",
+    "shred": "P3",
     "dircolors": "P3", "timeout": "P3", "nice": "P3", "nohup": "P3",
     "chroot": "P3", "stdbuf": "P3", "stty": "P3", "chcon": "P3", "runcon": "P3",
     "kill": "P3", "dir": "P3", "vdir": "P3", "[": "P3",

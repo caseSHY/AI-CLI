@@ -4,14 +4,7 @@ Verifies that agentutils cannot be tricked into reading/writing/deleting
 files outside its working directory through path traversal, absolute paths,
 symlinks, malicious file names, or dry-run bypass.
 
-Documented limitations (known gaps in sandbox coverage):
-- BUG: rm without --recursive does not block outside-file paths (only
-  --recursive rm is sandboxed for directories).
-- BUG: install does not block destination paths outside cwd.
-- BUG: tee does not block output paths outside cwd.
-- BUG: truncate does not block paths outside cwd.
-These are documented here as test skips/known-issues so they become
-failing tests when the sandbox is strengthened.
+All known sandbox gaps have been fixed as of 2026-04-30.
 """
 
 from __future__ import annotations
@@ -101,31 +94,31 @@ class PathTraversalKnownGapsTests(unittest.TestCase):
     def tearDown(self) -> None:
         self._tmp.cleanup()
 
-    @unittest.skip("KNOWN GAP: rm without --recursive does not block outside-file paths")
     def test_rm_outside_file_should_be_blocked(self) -> None:
         result = run_cli("rm", str(self.outside), cwd=self.sandbox)
         self.assertNotEqual(result.returncode, 0)
         self.assertTrue(self.outside.exists())
 
-    @unittest.skip("KNOWN GAP: rm absolute outside path not blocked")
+    def test_rm_absolute_outside_should_be_blocked(self) -> None:
+        result = run_cli("rm", str(self.outside), cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(self.outside.exists())
+
     def test_rm_absolute_outside_should_be_blocked(self) -> None:
         result = run_cli("rm", str(self.outside.resolve()), cwd=self.sandbox)
         self.assertNotEqual(result.returncode, 0)
         self.assertTrue(self.outside.exists())
 
-    @unittest.skip("KNOWN GAP: tee does not block outside output paths")
     def test_tee_to_outside_should_be_blocked(self) -> None:
         result = run_cli("tee", str(self.outside), cwd=self.sandbox, input_text="danger")
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.outside.read_text(encoding="utf-8"), "outside-content")
 
-    @unittest.skip("KNOWN GAP: truncate does not block outside paths")
     def test_truncate_outside_should_be_blocked(self) -> None:
         result = run_cli("truncate", str(self.outside), "--size", "0", cwd=self.sandbox)
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.outside.read_text(encoding="utf-8"), "outside-content")
 
-    @unittest.skip("KNOWN GAP: install does not block outside destination")
     def test_install_to_outside_should_be_blocked(self) -> None:
         outside_dir = self.root / "outside_dir"
         outside_dir.mkdir()
@@ -135,7 +128,6 @@ class PathTraversalKnownGapsTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse((outside_dir / "installed").exists())
 
-    @unittest.skip("KNOWN GAP: dd does not block outside output paths")
     def test_dd_output_to_outside_should_be_blocked(self) -> None:
         inside = self.sandbox / "src.txt"
         inside.write_text("data", encoding="utf-8")
@@ -168,7 +160,6 @@ class SymlinkEscapeTests(unittest.TestCase):
         except OSError:
             return None
 
-    @unittest.skip("KNOWN GAP: tee does not resolve symlinks for sandbox check")
     def test_tee_to_symlink_preserves_outside_content(self) -> None:
         link = self._create_symlink("link.txt")
         if link is None:
@@ -187,7 +178,6 @@ class SymlinkEscapeTests(unittest.TestCase):
         self.assertTrue(self.outside.exists(),
                         "Outside file must not be deleted when removing symlink")
 
-    @unittest.skip("KNOWN GAP: truncate does not block symlink targets")
     def test_truncate_to_symlink_preserves_outside_content(self) -> None:
         link = self._create_symlink("link.txt")
         if link is None:

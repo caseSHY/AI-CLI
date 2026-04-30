@@ -47,10 +47,12 @@ CATALOG = [
             "truncate",
             "mktemp",
             "mkfifo",
+            "mknod",
             "tee",
             "rmdir",
             "unlink",
             "install",
+            "ginstall",
         ],
     },
     {
@@ -91,6 +93,7 @@ CATALOG = [
             "sha224sum",
             "sha384sum",
             "sha512sum",
+            "hash",
         ],
     },
     {
@@ -108,6 +111,7 @@ CATALOG = [
             "groups",
             "whoami",
             "uname",
+            "arch",
             "nproc",
             "timeout",
             "sleep",

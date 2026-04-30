@@ -204,16 +204,16 @@ GPTCodex 在每个平台相关调用处加入了防御性 `try/except` 和 `hasa
 
 | 文档 | 内容 |
 |------|------|
-| `AGENTUTILS.md` | 中英文协议说明、优先级模型、JSON 协议、退出码、使用示例 |
-| `USAGE.zh-CN.en.md` | 中英文使用说明、命令分类、常用示例 |
-| `GNU_COMPATIBILITY_AUDIT.md` | 中英文 GNU 兼容性审计、逐命令差距分析、客观结论 |
-| `TESTING.md` | 中英文测试说明、分类、CI 配置 |
-| `CLAUDE.md` | LLM 编码行为准则（思考优先、简单第一、手术式修改、目标驱动） |
+| `docs/reference/AGENTUTILS.md` | 中英文协议说明、优先级模型、JSON 协议、退出码、使用示例 |
+| `docs/guides/USAGE.zh-CN.en.md` | 中英文使用说明、命令分类、常用示例 |
+| `docs/audits/GNU_COMPATIBILITY_AUDIT.md` | 中英文 GNU 兼容性审计、逐命令差距分析、客观结论 |
+| `docs/development/TESTING.md` | 中英文测试说明、分类、CI 配置 |
+| `docs/agent-guides/CLAUDE.md` | LLM 编码行为准则（思考优先、简单第一、手术式修改、目标驱动） |
 
 **关键特征：**
 - 所有文档均为中英双语（中文在前，英文在后）
-- `GNU_COMPATIBILITY_AUDIT.md` 包含每个命令与 GNU 原版的详细差距表
-- `CLAUDE.md` 是一份给其他 AI 编码助手的"行为规范"
+- `docs/audits/GNU_COMPATIBILITY_AUDIT.md` 包含每个命令与 GNU 原版的详细差距表
+- `docs/agent-guides/CLAUDE.md` 是一份给其他 AI 编码助手的"行为规范"
 
 **DeepSeekCopilot 的可能方案：**
 我可能会写英文单语文档，不会主动做中英双语。兼容性审计文档的逐命令差距分析表也需要高度自律才能完成。

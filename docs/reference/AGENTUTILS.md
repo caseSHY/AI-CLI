@@ -77,11 +77,11 @@ python -m agentutils dir .
 python -m agentutils vdir .
 python -m agentutils basename src/agentutils/cli.py --suffix .py
 python -m agentutils dirname src/agentutils/cli.py
-python -m agentutils stat docs/AGENTUTILS.md
-python -m agentutils cat docs/AGENTUTILS.md --max-bytes 4096
-python -m agentutils test docs/AGENTUTILS.md --file --non-empty
-python -m agentutils [ -f docs/AGENTUTILS.md ]
-python -m agentutils sha256sum docs/AGENTUTILS.md
+python -m agentutils stat docs/reference/AGENTUTILS.md
+python -m agentutils cat docs/reference/AGENTUTILS.md --max-bytes 4096
+python -m agentutils test docs/reference/AGENTUTILS.md --file --non-empty
+python -m agentutils [ -f docs/reference/AGENTUTILS.md ]
+python -m agentutils sha256sum docs/reference/AGENTUTILS.md
 python -m agentutils sort data.txt --numeric
 python -m agentutils comm left.txt right.txt
 python -m agentutils join people.txt roles.txt --raw
@@ -219,11 +219,11 @@ python -m agentutils dir .
 python -m agentutils vdir .
 python -m agentutils basename src/agentutils/cli.py --suffix .py
 python -m agentutils dirname src/agentutils/cli.py
-python -m agentutils stat docs/AGENTUTILS.md
-python -m agentutils cat docs/AGENTUTILS.md --max-bytes 4096
-python -m agentutils test docs/AGENTUTILS.md --file --non-empty
-python -m agentutils [ -f docs/AGENTUTILS.md ]
-python -m agentutils sha256sum docs/AGENTUTILS.md
+python -m agentutils stat docs/reference/AGENTUTILS.md
+python -m agentutils cat docs/reference/AGENTUTILS.md --max-bytes 4096
+python -m agentutils test docs/reference/AGENTUTILS.md --file --non-empty
+python -m agentutils [ -f docs/reference/AGENTUTILS.md ]
+python -m agentutils sha256sum docs/reference/AGENTUTILS.md
 python -m agentutils sort data.txt --numeric
 python -m agentutils comm left.txt right.txt
 python -m agentutils join people.txt roles.txt --raw

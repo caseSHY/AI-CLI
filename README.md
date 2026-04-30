@@ -41,7 +41,14 @@ python -m unittest discover -s tests -v
 .
 |-- src/agentutils/        # Python 包源码
 |-- tests/                 # 子进程级行为测试
-|-- docs/                  # 使用说明、协议说明、兼容性审计和测试说明
+|-- docs/                  # 文档入口和分类文档目录
+|   |-- reference/         # 协议和命令面参考
+|   |-- guides/            # 使用指南
+|   |-- audits/            # 兼容性和质量审计
+|   |-- development/       # 测试和开发说明
+|   |-- analysis/          # 项目分析日志
+|   |-- agent-guides/      # AI 辅助编码规范
+|   `-- reports/           # 测试报告等生成/归档文档
 |-- vendor/gnu-coreutils/  # 本地上游源码缓存，默认被 Git 忽略
 |-- pyproject.toml         # 包元数据和构建配置
 `-- README.md
@@ -49,10 +56,11 @@ python -m unittest discover -s tests -v
 
 ### 文档
 
-- [Agent 协议与示例](docs/AGENTUTILS.md)
-- [中英文使用说明](docs/USAGE.zh-CN.en.md)
-- [GNU Coreutils 兼容性审计](docs/GNU_COMPATIBILITY_AUDIT.md)
-- [测试说明](docs/TESTING.md)
+- [文档索引](docs/README.md)
+- [Agent 协议与示例](docs/reference/AGENTUTILS.md)
+- [中英文使用说明](docs/guides/USAGE.zh-CN.en.md)
+- [GNU Coreutils 兼容性审计](docs/audits/GNU_COMPATIBILITY_AUDIT.md)
+- [测试说明](docs/development/TESTING.md)
 
 ### 发布状态
 
@@ -105,7 +113,14 @@ python -m unittest discover -s tests -v
 .
 |-- src/agentutils/        # Python package
 |-- tests/                 # subprocess-level behavior tests
-|-- docs/                  # user guide, protocol notes, compatibility audit, testing guide
+|-- docs/                  # documentation index and categorized docs
+|   |-- reference/         # protocol and command-surface reference
+|   |-- guides/            # usage guides
+|   |-- audits/            # compatibility and quality audits
+|   |-- development/       # testing and development notes
+|   |-- analysis/          # project analysis logs
+|   |-- agent-guides/      # AI coding assistant guidance
+|   `-- reports/           # test reports and archived generated docs
 |-- vendor/gnu-coreutils/  # local upstream source cache, ignored by Git by default
 |-- pyproject.toml         # package metadata and build config
 `-- README.md
@@ -113,10 +128,11 @@ python -m unittest discover -s tests -v
 
 ### Documentation
 
-- [Agent protocol and examples](docs/AGENTUTILS.md)
-- [Chinese/English user guide](docs/USAGE.zh-CN.en.md)
-- [GNU Coreutils compatibility audit](docs/GNU_COMPATIBILITY_AUDIT.md)
-- [Testing guide](docs/TESTING.md)
+- [Documentation index](docs/README.md)
+- [Agent protocol and examples](docs/reference/AGENTUTILS.md)
+- [Chinese/English user guide](docs/guides/USAGE.zh-CN.en.md)
+- [GNU Coreutils compatibility audit](docs/audits/GNU_COMPATIBILITY_AUDIT.md)
+- [Testing guide](docs/development/TESTING.md)
 
 ### Release Status
 
