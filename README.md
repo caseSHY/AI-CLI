@@ -124,13 +124,13 @@ python -m unittest discover -s tests -v
 .
 |-- src/agentutils/        # Python package
 |-- tests/                 # subprocess-level behavior tests
-|-- docs/                  # document, command-surface and security contracts
+|-- docs/                  # documentation index and categorized docs
+|   |-- reference/         # protocol, command-surface and security contracts
 |   |-- guides/            # usage guides
 |   |-- audits/            # compatibility and quality audits
 |   |-- development/       # testing and development notes
 |   |-- status/            # current project status (single authoritative source)
-|   |-- analysis/          # project analysis logs (historical archive)nt notes
-|   |-- analysis/          # project analysis logs
+|   |-- analysis/          # project analysis logs (historical archive)
 |   |-- agent-guides/      # AI coding assistant guidance
 |   `-- reports/           # test reports and archived generated docs
 |-- vendor/gnu-coreutils/  # local upstream source cache, ignored by Git by default

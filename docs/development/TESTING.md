@@ -64,8 +64,8 @@ python -m unittest discover -s tests -v
 python -m pytest tests/test_property_based_cli.py -v --tb=short
 ```
 
-- `max_examples=100`（默认）：本地全量运行约 6-8 分钟。
-- CI 建议 `max_examples=50`：可通过 `-k` 排除或修改 `pyproject.toml` 配置。
+- `max_examples` 由 `PROPERTY_EXAMPLES = 25` 和 `ENVELOPE_EXAMPLES = 15` 控制（定义在 `tests/test_property_based_cli.py` 顶部）。
+- CI 中当前值已可用，无需额外调整。
 
 ### GNU 对照测试 / GNU Differential Tests
 
@@ -195,8 +195,8 @@ Uses Hypothesis framework to verify mathematical/logical invariants.
 python -m pytest tests/test_property_based_cli.py -v --tb=short
 ```
 
-- `max_examples=100` (default): ~6-8 min locally.
-- CI: recommend `max_examples=50`.
+- `max_examples` is controlled by `PROPERTY_EXAMPLES = 25` and `ENVELOPE_EXAMPLES = 15` (defined at the top of `tests/test_property_based_cli.py`).
+- Current values are suitable for CI without adjustment.
 
 ### GNU Differential Tests
 

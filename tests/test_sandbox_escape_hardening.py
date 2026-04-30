@@ -73,15 +73,13 @@ class PathTraversalBlockedTests(unittest.TestCase):
         self.assertTrue(inside.exists(), "Inside file should not be moved")
 
 
-# ── Path traversal: commands NOT yet sandboxed (known gaps) ──────────
+# ── Path traversal: all commands are now sandboxed ──────────────────
 
 
-class PathTraversalKnownGapsTests(unittest.TestCase):
-    """Tests that document current sandbox gaps.
+class PathTraversalSandboxedTests(unittest.TestCase):
+    """Commands with sandbox path rejection (all gaps fixed as of 2026-04-30).
 
-    These tests use @unittest.skip because the commands don't yet reject
-    outside paths.  When the sandbox is strengthened, remove the skip
-    decorator and verify the assertions.
+    These tests actively verify that outside-path writes are blocked.
     """
 
     def setUp(self) -> None:
@@ -95,11 +93,6 @@ class PathTraversalKnownGapsTests(unittest.TestCase):
         self._tmp.cleanup()
 
     def test_rm_outside_file_should_be_blocked(self) -> None:
-        result = run_cli("rm", str(self.outside), cwd=self.sandbox)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertTrue(self.outside.exists())
-
-    def test_rm_absolute_outside_should_be_blocked(self) -> None:
         result = run_cli("rm", str(self.outside), cwd=self.sandbox)
         self.assertNotEqual(result.returncode, 0)
         self.assertTrue(self.outside.exists())
