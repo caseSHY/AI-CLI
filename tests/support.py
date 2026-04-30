@@ -15,6 +15,8 @@ def test_env(extra: dict[str, str] | None = None) -> dict[str, str]:
     env = os.environ.copy()
     existing = env.get("PYTHONPATH")
     env["PYTHONPATH"] = str(SRC) if not existing else f"{SRC}{os.pathsep}{existing}"
+    env.setdefault("PYTHONIOENCODING", "utf-8")
+    env.setdefault("PYTHONUTF8", "1")
     if extra:
         env.update(extra)
     return env
@@ -26,14 +28,19 @@ def run_cli(
     input_text: str | None = None,
     extra_env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
+    result = subprocess.run(
         [sys.executable, "-m", "agentutils", *args],
         cwd=cwd or ROOT,
         env=test_env(extra_env),
-        input=input_text,
-        text=True,
+        input=None if input_text is None else input_text.encode("utf-8"),
         capture_output=True,
         check=False,
+    )
+    return subprocess.CompletedProcess(
+        result.args,
+        result.returncode,
+        result.stdout.decode("utf-8", errors="replace"),
+        result.stderr.decode("utf-8", errors="replace"),
     )
 
 

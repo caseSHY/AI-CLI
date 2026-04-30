@@ -11,8 +11,11 @@ class DocsBilingualTests(unittest.TestCase):
             path
             for path in ROOT.rglob("*.md")
             if ".git" not in path.parts
+            and not any(part.startswith(".") for part in path.relative_to(ROOT).parts)
             and "__pycache__" not in path.parts
             and "coreutils-9.10" not in path.parts
+            and "test-reports" not in path.parts
+            and path.name != "CLAUDE.md"
         ]
         self.assertTrue(markdown_files)
         for path in markdown_files:

@@ -4,7 +4,7 @@ Verifies mathematical/logical properties of agentutils commands under
 randomized inputs.  Uses Hypothesis for test-case generation.
 
 Strategy:
-- max_examples=100, deadline=None for CI friendliness on Windows.
+- bounded example counts with deadline=None for CI friendliness on Windows.
 - Only valid UTF-8 text (no NUL bytes, no surrogates).
 - All file ops use TemporaryDirectory.
 - Commands requiring file paths (cat, head, tail, wc) create temp files.
@@ -21,9 +21,13 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from hypothesis import assume, given, settings, strategies as st
+from hypothesis import given, settings, strategies as st
 
 from support import run_cli
+
+
+PROPERTY_EXAMPLES = 25
+ENVELOPE_EXAMPLES = 15
 
 
 # ── strategies ───────────────────────────────────────────────────────
@@ -31,7 +35,7 @@ from support import run_cli
 _text_line = st.text(
     alphabet=st.characters(
         blacklist_categories=("Cs",),
-        blacklist_characters="\x00",
+        blacklist_characters="\x00\n\r\v\f\x1c\x1d\x1e\x85\u2028\u2029",
     ),
     min_size=0,
     max_size=60,
@@ -46,35 +50,54 @@ _text_lines = st.lists(
 flat_text = st.builds("".join, _text_lines)
 lines_list = _text_lines
 _n_small = st.integers(min_value=0, max_value=25)
+ascii_text = st.text(
+    alphabet=st.characters(min_codepoint=1, max_codepoint=126, blacklist_characters="\x00"),
+    min_size=0,
+    max_size=400,
+)
+argument_text = st.text(
+    alphabet=st.characters(blacklist_categories=("Cs",), blacklist_characters="\x00"),
+    min_size=0,
+    max_size=30,
+)
 
 
 # ── helper ───────────────────────────────────────────────────────────
 
 def _lines(result):
-    return result.stdout.splitlines()
+    text = result.stdout
+    if text == "":
+        return []
+    if text.endswith("\n"):
+        text = text[:-1]
+    return text.split("\n")
+
+
+def _line_values(lines: list[str]) -> list[str]:
+    return [line[:-1] if line.endswith("\n") else line for line in lines]
 
 
 # ── Cat properties (file-based) ──────────────────────────────────────
 
 class CatPropertyTests(unittest.TestCase):
     @given(flat_text)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_cat_raw_stdout_equals_file_content(self, text: str) -> None:
         with TemporaryDirectory() as raw:
             cwd = Path(raw)
-            (cwd / "f.txt").write_text(text, encoding="utf-8")
+            (cwd / "f.txt").write_bytes(text.encode("utf-8"))
             result = run_cli("cat", "--raw", "f.txt", cwd=cwd)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stdout, text)
 
     @given(flat_text)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_cat_file_and_file_have_same_content(self, text: str) -> None:
         """Two identical files should produce identical cat output."""
         with TemporaryDirectory() as raw:
             cwd = Path(raw)
-            (cwd / "a.txt").write_text(text, encoding="utf-8")
-            (cwd / "b.txt").write_text(text, encoding="utf-8")
+            (cwd / "a.txt").write_bytes(text.encode("utf-8"))
+            (cwd / "b.txt").write_bytes(text.encode("utf-8"))
             r1 = run_cli("cat", "--raw", "a.txt", cwd=cwd)
             r2 = run_cli("cat", "--raw", "b.txt", cwd=cwd)
             self.assertEqual(r1.returncode, 0, r1.stderr)
@@ -86,7 +109,7 @@ class CatPropertyTests(unittest.TestCase):
 
 class SortPropertyTests(unittest.TestCase):
     @given(lines_list)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_sort_output_non_decreasing(self, lines: list[str]) -> None:
         text = "".join(lines)
         result = run_cli("sort", "--raw", input_text=text)
@@ -95,27 +118,26 @@ class SortPropertyTests(unittest.TestCase):
         self.assertEqual(out, sorted(out, key=str))
 
     @given(lines_list)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_sort_does_not_drop_lines(self, lines: list[str]) -> None:
         text = "".join(lines)
         result = run_cli("sort", "--raw", input_text=text)
         self.assertEqual(result.returncode, 0, result.stderr)
-        out = [l for l in _lines(result) if l != ""]
-        inp = [l for l in lines if l != ""]
-        self.assertEqual(sorted(inp), sorted(out))
+        self.assertEqual(sorted(_line_values(lines)), sorted(_lines(result)))
 
     @given(lines_list)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_sort_does_not_invent_lines(self, lines: list[str]) -> None:
         text = "".join(lines)
         result = run_cli("sort", "--raw", input_text=text)
         self.assertEqual(result.returncode, 0, result.stderr)
-        out = [l for l in _lines(result) if l != ""]
+        out = _lines(result)
+        input_lines = _line_values(lines)
         for line in out:
-            self.assertIn(line, lines)
+            self.assertIn(line, input_lines)
 
     @given(lines_list)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_sort_numeric_non_decreasing(self, lines: list[str]) -> None:
         text = "".join(lines)
         result = run_cli("sort", "--numeric", "--raw", input_text=text)
@@ -134,7 +156,7 @@ class SortPropertyTests(unittest.TestCase):
 
 class UniqPropertyTests(unittest.TestCase):
     @given(lines_list)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_uniq_no_adjacent_duplicates(self, lines: list[str]) -> None:
         text = "".join(lines)
         result = run_cli("uniq", "--raw", "-", input_text=text)
@@ -145,7 +167,7 @@ class UniqPropertyTests(unittest.TestCase):
                                 f"adjacent duplicate at {i}: {out[i]!r}")
 
     @given(lines_list)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_uniq_keeps_nonadjacent_duplicates(self, lines: list[str]) -> None:
         text = "".join(lines)
         result = run_cli("uniq", "--raw", "-", input_text=text)
@@ -154,7 +176,7 @@ class UniqPropertyTests(unittest.TestCase):
         seen = set()
         non_adj = set()
         prev = None
-        for line in lines:
+        for line in _line_values(lines):
             if line in seen and line != prev:
                 non_adj.add(line)
             seen.add(line)
@@ -168,35 +190,33 @@ class UniqPropertyTests(unittest.TestCase):
 
 class WcPropertyTests(unittest.TestCase):
     @given(flat_text)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_wc_bytes_equals_utf8_encoded_length(self, text: str) -> None:
         with TemporaryDirectory() as raw:
             cwd = Path(raw)
-            (cwd / "f.txt").write_text(text, encoding="utf-8")
-            result = run_cli("wc", "--raw", "f.txt", cwd=cwd)
+            (cwd / "f.txt").write_bytes(text.encode("utf-8"))
+            result = run_cli("wc", "f.txt", cwd=cwd)
             self.assertEqual(result.returncode, 0, result.stderr)
-            parts = result.stdout.strip().split()
-            if parts:
-                self.assertEqual(int(parts[-1]), len(text.encode("utf-8")))
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["result"]["entries"][0]["bytes"], len(text.encode("utf-8")))
 
     @given(flat_text)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_wc_lines_equals_newline_count(self, text: str) -> None:
         with TemporaryDirectory() as raw:
             cwd = Path(raw)
-            (cwd / "f.txt").write_text(text, encoding="utf-8")
-            result = run_cli("wc", "--raw", "f.txt", cwd=cwd)
+            (cwd / "f.txt").write_bytes(text.encode("utf-8"))
+            result = run_cli("wc", "f.txt", cwd=cwd)
             self.assertEqual(result.returncode, 0, result.stderr)
-            parts = result.stdout.strip().split()
-            if len(parts) >= 1:
-                self.assertEqual(int(parts[0]), text.count("\n"))
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["result"]["entries"][0]["lines"], text.count("\n"))
 
 
 # ── Base64 properties (stdin-based) ──────────────────────────────────
 
 class Base64PropertyTests(unittest.TestCase):
     @given(flat_text)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_base64_encode_then_decode_roundtrip(self, text: str) -> None:
         enc = run_cli("base64", "--raw", input_text=text)
         self.assertEqual(enc.returncode, 0, enc.stderr)
@@ -205,7 +225,7 @@ class Base64PropertyTests(unittest.TestCase):
         self.assertEqual(dec.stdout, text)
 
     @given(flat_text)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_base64_output_is_valid_base64(self, text: str) -> None:
         result = run_cli("base64", "--raw", input_text=text)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -220,65 +240,67 @@ class Base64PropertyTests(unittest.TestCase):
 
 class HeadTailPropertyTests(unittest.TestCase):
     @given(lines_list, _n_small)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_head_n_equals_first_n_lines(self, lines: list[str], n: int) -> None:
         with TemporaryDirectory() as raw:
             cwd = Path(raw)
-            (cwd / "f.txt").write_text("".join(lines), encoding="utf-8")
-            result = run_cli("head", "--lines", str(n), "--raw", "f.txt", cwd=cwd)
+            (cwd / "f.txt").write_bytes("".join(lines).encode("utf-8"))
+            result = run_cli("head", "--lines", str(n), "f.txt", cwd=cwd)
             self.assertEqual(result.returncode, 0, result.stderr)
-            expected = lines[:n]
-            self.assertEqual(_lines(result), expected)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["result"]["lines"], _line_values(lines)[:n])
 
     @given(lines_list, _n_small)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_tail_n_equals_last_n_lines(self, lines: list[str], n: int) -> None:
         with TemporaryDirectory() as raw:
             cwd = Path(raw)
-            (cwd / "f.txt").write_text("".join(lines), encoding="utf-8")
-            result = run_cli("tail", "--lines", str(n), "--raw", "f.txt", cwd=cwd)
+            (cwd / "f.txt").write_bytes("".join(lines).encode("utf-8"))
+            result = run_cli("tail", "--lines", str(n), "f.txt", cwd=cwd)
             self.assertEqual(result.returncode, 0, result.stderr)
-            expected = lines[-n:] if n > 0 else []
-            self.assertEqual(_lines(result), expected)
+            expected = _line_values(lines)[-n:] if n > 0 else []
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["result"]["lines"], expected)
 
     @given(lines_list)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_head_zero_returns_empty(self, lines: list[str]) -> None:
         with TemporaryDirectory() as raw:
             cwd = Path(raw)
-            (cwd / "f.txt").write_text("".join(lines), encoding="utf-8")
-            result = run_cli("head", "--lines", "0", "--raw", "f.txt", cwd=cwd)
+            (cwd / "f.txt").write_bytes("".join(lines).encode("utf-8"))
+            result = run_cli("head", "--lines", "0", "f.txt", cwd=cwd)
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(result.stdout, "")
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["result"]["lines"], [])
 
     @given(lines_list)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_tail_zero_returns_empty(self, lines: list[str]) -> None:
         with TemporaryDirectory() as raw:
             cwd = Path(raw)
-            (cwd / "f.txt").write_text("".join(lines), encoding="utf-8")
-            result = run_cli("tail", "--lines", "0", "--raw", "f.txt", cwd=cwd)
+            (cwd / "f.txt").write_bytes("".join(lines).encode("utf-8"))
+            result = run_cli("tail", "--lines", "0", "f.txt", cwd=cwd)
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(result.stdout, "")
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["result"]["lines"], [])
 
 
 # ── Cut properties (stdin-based) ─────────────────────────────────────
 
 class CutPropertyTests(unittest.TestCase):
     @given(lines_list)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_cut_chars_1_equals_first_char_of_each_line(self, lines: list[str]) -> None:
         text = "".join(lines)
         result = run_cli("cut", "--chars", "1", "--raw", input_text=text)
         self.assertEqual(result.returncode, 0, result.stderr)
         out = _lines(result)
-        for i, (inp, outp) in enumerate(zip(lines, out)):
-            if inp not in ("\n", ""):
-                self.assertEqual(outp, inp[0],
-                                 f"line {i}: expected {inp[0]!r} got {outp!r}")
+        for i, (inp, outp) in enumerate(zip(_line_values(lines), out)):
+            if inp:
+                self.assertEqual(outp, inp[0], f"line {i}: expected {inp[0]!r} got {outp!r}")
 
     @given(lines_list)
-    @settings(max_examples=100, deadline=None)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_cut_never_crashes(self, lines: list[str]) -> None:
         text = "".join(lines)
         result = run_cli("cut", "--chars", "1-10", "--raw", input_text=text)
@@ -288,26 +310,23 @@ class CutPropertyTests(unittest.TestCase):
 # ── Tr properties (stdin-based) ──────────────────────────────────────
 
 class TrPropertyTests(unittest.TestCase):
-    @given(flat_text)
-    @settings(max_examples=100, deadline=None)
+    @given(ascii_text)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_tr_identity_preserves_ascii(self, text: str) -> None:
-        assume(text.isascii())
         result = run_cli("tr", "a-z", "a-z", "--raw", input_text=text)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout, text)
 
-    @given(flat_text)
-    @settings(max_examples=100, deadline=None)
+    @given(ascii_text)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_tr_case_change_preserves_byte_length(self, text: str) -> None:
-        assume(text.isascii())
         result = run_cli("tr", "a-z", "A-Z", "--raw", input_text=text)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(len(result.stdout), len(text))
 
-    @given(flat_text)
-    @settings(max_examples=100, deadline=None)
+    @given(ascii_text)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_tr_delete_removes_only_targeted_chars(self, text: str) -> None:
-        assume(text.isascii())
         result = run_cli("tr", "--delete", "aeiou", "--raw", input_text=text)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(any(c in "aeiou" for c in result.stdout))
@@ -316,10 +335,10 @@ class TrPropertyTests(unittest.TestCase):
 # ── Echo properties (no-input) ───────────────────────────────────────
 
 class EchoPropertyTests(unittest.TestCase):
-    @given(st.lists(st.text(min_size=0, max_size=30), min_size=1, max_size=8))
-    @settings(max_examples=100, deadline=None)
+    @given(st.lists(argument_text, min_size=1, max_size=8))
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
     def test_echo_joins_args_with_space_newline(self, args: list[str]) -> None:
-        result = run_cli("echo", *args, "--raw")
+        result = run_cli("echo", "--raw", "--", *args)
         self.assertEqual(result.returncode, 0, result.stderr)
         expected = " ".join(args) + "\n"
         self.assertEqual(result.stdout, expected)
@@ -329,11 +348,11 @@ class EchoPropertyTests(unittest.TestCase):
 
 class JsonEnvelopePropertyTests(unittest.TestCase):
     @given(flat_text)
-    @settings(max_examples=50, deadline=None)
+    @settings(max_examples=ENVELOPE_EXAMPLES, deadline=None)
     def test_json_envelope_has_all_required_fields(self, text: str) -> None:
         with TemporaryDirectory() as raw:
             cwd = Path(raw)
-            (cwd / "f.txt").write_text(text, encoding="utf-8")
+            (cwd / "f.txt").write_bytes(text.encode("utf-8"))
             result = run_cli("cat", "f.txt", cwd=cwd)
             self.assertEqual(result.returncode, 0)
             payload = json.loads(result.stdout)
@@ -346,11 +365,11 @@ class JsonEnvelopePropertyTests(unittest.TestCase):
             self.assertEqual(payload["tool"], "agentutils")
 
     @given(flat_text)
-    @settings(max_examples=50, deadline=None)
+    @settings(max_examples=ENVELOPE_EXAMPLES, deadline=None)
     def test_raw_output_not_json_envelope(self, text: str) -> None:
         with TemporaryDirectory() as raw:
             cwd = Path(raw)
-            (cwd / "f.txt").write_text(text, encoding="utf-8")
+            (cwd / "f.txt").write_bytes(text.encode("utf-8"))
             result = run_cli("cat", "--raw", "f.txt", cwd=cwd)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stderr, "")

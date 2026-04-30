@@ -18,14 +18,21 @@ def run_cli(*args: str, cwd: Path | None = None, input_text: str | None = None) 
     env = os.environ.copy()
     existing = env.get("PYTHONPATH")
     env["PYTHONPATH"] = str(SRC) if not existing else f"{SRC}{os.pathsep}{existing}"
-    return subprocess.run(
+    env.setdefault("PYTHONIOENCODING", "utf-8")
+    env.setdefault("PYTHONUTF8", "1")
+    result = subprocess.run(
         [sys.executable, "-m", "agentutils", *args],
         cwd=cwd or ROOT,
         env=env,
-        input=input_text,
-        text=True,
+        input=None if input_text is None else input_text.encode("utf-8"),
         capture_output=True,
         check=False,
+    )
+    return subprocess.CompletedProcess(
+        result.args,
+        result.returncode,
+        result.stdout.decode("utf-8", errors="replace"),
+        result.stderr.decode("utf-8", errors="replace"),
     )
 
 
