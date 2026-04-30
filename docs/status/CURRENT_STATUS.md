@@ -45,7 +45,7 @@
 | 项目 | 状态 |
 |---|---|
 | **GNU 命令名覆盖** | 109/109 |
-| **Agent 子集实现** | 全部 113 命令（含 4 个元命令） |
+| **Agent 子集实现** | 全部 114 命令（含 5 个元命令：catalog、schema、coreutils、tool-list、hash） |
 | **GNU differential verified (Windows)** | 仅 sort (5 tests), 其余 51 因缺少 GNU 工具跳过 |
 | **GNU differential verified (CI Ubuntu)** | 待验证 — coreutils 已安装，需 CI 触发 |
 | **兼容性表述** | "JSON-first agent-friendly subset inspired by GNU Coreutils" |
@@ -120,7 +120,7 @@
 | Item | Status |
 |---|---|
 | **GNU command name coverage** | 109/109 |
-| **Agent subset implemented** | All 113 commands (incl. 4 meta-commands) |
+| **Agent subset implemented** | All 114 commands (incl. 5 meta-commands: catalog, schema, coreutils, tool-list, hash) |
 | **GNU differential verified (Windows)** | sort only (5 tests), 51 skipped (no GNU tools) |
 | **GNU differential verified (CI Ubuntu)** | Pending — coreutils installed, needs CI trigger |
 | **Compatibility description** | "JSON-first agent-friendly subset inspired by GNU Coreutils" |

@@ -49,6 +49,19 @@ class AgentutilsTests(unittest.TestCase):
         self.assertIn("ls", categories[0]["tools"])
         self.assertIn("rm", categories[1]["tools"])
 
+    def test_tool_list_returns_all_commands(self) -> None:
+        payload = self.parse_stdout(run_cli("tool-list"))
+        self.assertTrue(payload["ok"])
+        tools = payload["result"]["tools"]
+        count = payload["result"]["count"]
+        self.assertGreater(count, 100)
+        self.assertEqual(len(tools), count)
+        names = {t["name"] for t in tools}
+        self.assertIn("ls", names)
+        self.assertIn("cat", names)
+        self.assertIn("tool-list", names)
+        self.assertIn("schema", names)
+
     def test_ls_and_stat_emit_json(self) -> None:
         with TemporaryDirectory() as raw:
             cwd = Path(raw)

@@ -75,7 +75,7 @@ python -m unittest discover -s tests -v
 
 ### 发布状态
 
-当前实现：`agentutils schema` 中登记 113 个 CLI 命令。
+当前实现：`agentutils schema` 中登记 114 个 CLI 命令（含 `tool-list` 等 Agent 元命令）。
 
 重要限制：本项目是受 GNU Coreutils 启发的 Agent 友好子集，不是完整的
 GNU Coreutils 克隆。
@@ -158,7 +158,7 @@ python -m unittest discover -s tests -v
 
 ### Release Status
 
-Current implementation: 113 CLI commands in `agentutils schema`.
+Current implementation: 114 CLI commands in `agentutils schema` (including agent-native meta-commands like `tool-list`).
 
 Important limitation: this project is an agent-friendly subset inspired by GNU
 Coreutils, not a full GNU Coreutils clone.

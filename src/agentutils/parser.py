@@ -8,6 +8,7 @@ from typing import Any
 
 from . import __version__
 from .catalog import priority_catalog
+from .registry import get_commands_by_priority, get_priority
 from .protocol import (
     AgentArgumentParser,
     AgentError,
@@ -151,6 +152,7 @@ def command_catalog(args: argparse.Namespace) -> dict[str, Any]:
 
 def command_schema(args: argparse.Namespace) -> dict[str, Any]:
     implemented_commands = schema_command_names(args)
+    prioritized = get_commands_by_priority()
     return {
         "protocol": {
             "stdout_success": {
@@ -175,7 +177,9 @@ def command_schema(args: argparse.Namespace) -> dict[str, Any]:
             },
         },
         "exit_codes": EXIT,
+        "command_count": len(implemented_commands),
         "implemented_commands": implemented_commands,
+        "commands_by_priority": prioritized,
         "safety": {
             "json_default": True,
             "colors": False,
@@ -185,6 +189,29 @@ def command_schema(args: argparse.Namespace) -> dict[str, Any]:
             "recursive_rm_outside_cwd_requires_explicit_flag": True,
             "raw_pipeline_output_requires_explicit_flag": True,
         },
+    }
+
+
+def command_tool_list(args: argparse.Namespace) -> dict[str, Any]:
+    """Return a compact tool list suitable for LLM function-calling context."""
+    implemented = schema_command_names(args)
+    prioritized = get_commands_by_priority()
+    tools: list[dict[str, Any]] = []
+    for name in sorted(implemented):
+        tools.append({
+            "name": name,
+            "priority": get_priority(name),
+        })
+    if args.raw:
+        import json as _json
+        return _json.dumps(
+            {"tools": tools, "count": len(tools)},
+            ensure_ascii=False,
+        ).encode("utf-8")
+    return {
+        "tools": tools,
+        "count": len(tools),
+        "priorities": prioritized,
     }
 
 
@@ -233,6 +260,10 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--list", action="store_true", help="List registered command names.")
     p.add_argument("--raw", action="store_true", help="Write one command name per line without a JSON envelope.")
     p.set_defaults(func=command_coreutils)
+
+    p = add_subparser("tool-list", help="Return a compact tool list for LLM function-calling context.")
+    p.add_argument("--raw", action="store_true", help="Write tools JSON directly without a JSON envelope.")
+    p.set_defaults(func=command_tool_list)
 
     p = add_subparser("pwd", help="Print the current working directory as JSON.")
     p.set_defaults(func=command_pwd)
