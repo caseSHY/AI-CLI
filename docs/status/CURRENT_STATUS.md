@@ -8,7 +8,7 @@
 | 属性 | 值 |
 |---|---|
 | **最后验证日期** | 2026-04-30 |
-| **Git commit hash** | `e83e5d7` |
+| **验证基准提交** | `dd9d8b8`（上次运行测试时的 HEAD，不代表当前 HEAD） |
 | **Python 版本** | 3.14.4 (开发), CI: 3.11/3.12/3.13 |
 | **操作系统** | Windows 11 (开发), Ubuntu latest (CI) |
 | **项目版本** | 0.1.0 |
@@ -86,7 +86,7 @@
 | Property | Value |
 |---|---|
 | **Last verified** | 2026-04-30 |
-| **Git commit hash** | `e83e5d7` |
+| **Last verified commit** | `dd9d8b8` (HEAD when tests were last run; not claimed as current HEAD) |
 | **Python version** | 3.14.4 (dev), CI: 3.11/3.12/3.13 |
 | **OS** | Windows 11 (dev), Ubuntu latest (CI) |
 | **Project version** | 0.1.0 |
