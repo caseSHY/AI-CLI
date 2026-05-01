@@ -1,4 +1,8 @@
-"""Core protocol layer: AgentError, envelopes, path utilities, and shared helpers."""
+"""Core protocol layer: AgentError, envelopes, path utilities, and shared helpers.
+
+This module re-exports core primitives from agentutils.core and adds
+I/O helpers, text utilities, hash utilities, and system/subprocess helpers.
+"""
 
 from __future__ import annotations
 
@@ -18,21 +22,25 @@ from typing import Any, TextIO
 
 from . import __version__
 
-# ── semantic exit codes ────────────────────────────────────────────────
-
-EXIT: dict[str, int] = {
-    "ok": 0,
-    "predicate_false": 1,
-    "general_error": 1,
-    "usage": 2,
-    "not_found": 3,
-    "permission_denied": 4,
-    "invalid_input": 5,
-    "conflict": 6,
-    "partial_failure": 7,
-    "unsafe_operation": 8,
-    "io_error": 10,
-}
+# Re-export core primitives from agentutils.core
+from .core import (  # noqa: E402, F401
+    AgentError,
+    EXIT,
+    dangerous_delete_target,
+    destination_inside_directory,
+    ensure_exists,
+    ensure_parent,
+    envelope,
+    error_envelope,
+    path_type,
+    refuse_overwrite,
+    remove_one,
+    require_inside_cwd,
+    resolve_path,
+    stat_entry,
+    utc_iso,
+    write_json,
+)
 
 HASH_ALGORITHMS: dict[str, str] = {
     "md5": "md5",
@@ -46,42 +54,6 @@ HASH_ALGORITHMS: dict[str, str] = {
 }
 
 
-# ── AgentError ──────────────────────────────────────────────────────────
-
-class AgentError(Exception):
-    """Semantic error with machine-readable code, optional path, and suggestion."""
-
-    def __init__(
-        self,
-        code: str,
-        message: str,
-        *,
-        path: str | None = None,
-        suggestion: str | None = None,
-        details: dict[str, Any] | None = None,
-    ) -> None:
-        super().__init__(message)
-        self.code = code
-        self.message = message
-        self.path = path
-        self.suggestion = suggestion
-        self.details = details or {}
-
-    @property
-    def exit_code(self) -> int:
-        return EXIT.get(self.code, EXIT["general_error"])
-
-    def to_dict(self) -> dict[str, Any]:
-        error: dict[str, Any] = {"code": self.code, "message": self.message}
-        if self.path is not None:
-            error["path"] = self.path
-        if self.suggestion is not None:
-            error["suggestion"] = self.suggestion
-        if self.details:
-            error["details"] = self.details
-        return error
-
-
 class AgentArgumentParser(argparse.ArgumentParser):
     """ArgumentParser that raises structured AgentError on usage errors."""
 
@@ -93,180 +65,6 @@ class AgentArgumentParser(argparse.ArgumentParser):
         )
         write_json(sys.stderr, error_envelope(None, error))
         raise SystemExit(EXIT["usage"])
-
-
-# ── JSON / envelope helpers ────────────────────────────────────────────
-
-def utc_iso(timestamp: float) -> str:
-    return dt.datetime.fromtimestamp(timestamp, tz=dt.UTC).isoformat().replace("+00:00", "Z")
-
-
-def write_json(stream: TextIO, payload: dict[str, Any], *, pretty: bool = False) -> None:
-    kwargs: dict[str, Any] = {"ensure_ascii": False, "sort_keys": True}
-    if pretty:
-        kwargs["indent"] = 2
-    else:
-        kwargs["separators"] = (",", ":")
-    stream.write(json.dumps(payload, **kwargs))
-    stream.write("\n")
-
-
-def envelope(command: str, result: Any, *, warnings: list[str] | None = None) -> dict[str, Any]:
-    return {
-        "ok": True,
-        "tool": "agentutils",
-        "version": __version__,
-        "command": command,
-        "result": result,
-        "warnings": warnings or [],
-    }
-
-
-def error_envelope(command: str | None, error: AgentError) -> dict[str, Any]:
-    return {
-        "ok": False,
-        "tool": "agentutils",
-        "version": __version__,
-        "command": command,
-        "error": error.to_dict(),
-    }
-
-
-# ── path utilities ─────────────────────────────────────────────────────
-
-def resolve_path(raw: str | Path, *, strict: bool = False) -> Path:
-    try:
-        return Path(raw).expanduser().resolve(strict=strict)
-    except FileNotFoundError as exc:
-        raise AgentError(
-            "not_found",
-            "Path does not exist.",
-            path=str(raw),
-            suggestion="Check the path or call realpath without --strict to inspect the normalized path.",
-        ) from exc
-    except PermissionError as exc:
-        raise AgentError("permission_denied", "Permission denied while resolving path.", path=str(raw)) from exc
-    except OSError as exc:
-        raise AgentError("io_error", str(exc), path=str(raw)) from exc
-
-
-def path_type(path: Path) -> str:
-    try:
-        mode = path.lstat().st_mode
-    except FileNotFoundError as exc:
-        raise AgentError("not_found", "Path does not exist.", path=str(path)) from exc
-    if statmod.S_ISLNK(mode):
-        return "symlink"
-    if statmod.S_ISDIR(mode):
-        return "directory"
-    if statmod.S_ISREG(mode):
-        return "file"
-    if statmod.S_ISFIFO(mode):
-        return "fifo"
-    if statmod.S_ISSOCK(mode):
-        return "socket"
-    if statmod.S_ISCHR(mode):
-        return "character_device"
-    if statmod.S_ISBLK(mode):
-        return "block_device"
-    return "unknown"
-
-
-def stat_entry(path: Path, *, base: Path | None = None, depth: int | None = None) -> dict[str, Any]:
-    try:
-        st = path.lstat()
-    except FileNotFoundError as exc:
-        raise AgentError("not_found", "Path does not exist.", path=str(path)) from exc
-    except PermissionError as exc:
-        raise AgentError("permission_denied", "Permission denied while reading metadata.", path=str(path)) from exc
-
-    entry: dict[str, Any] = {
-        "path": str(path),
-        "name": path.name,
-        "type": path_type(path),
-        "size_bytes": st.st_size,
-        "mode_octal": oct(statmod.S_IMODE(st.st_mode)),
-        "modified_at": utc_iso(st.st_mtime),
-        "created_at": utc_iso(st.st_ctime),
-        "is_symlink": path.is_symlink(),
-    }
-    if base is not None:
-        try:
-            entry["relative_path"] = str(path.relative_to(base))
-        except ValueError:
-            entry["relative_path"] = str(path)
-    if depth is not None:
-        entry["depth"] = depth
-    if path.is_symlink():
-        try:
-            entry["link_target"] = os.readlink(path)
-        except OSError:
-            entry["link_target"] = None
-    return entry
-
-
-def ensure_exists(path: Path) -> None:
-    if not path.exists() and not path.is_symlink():
-        raise AgentError("not_found", "Path does not exist.", path=str(path))
-
-
-def ensure_parent(path: Path, *, create: bool, dry_run: bool = False) -> None:
-    parent = path.parent
-    if parent.exists():
-        return
-    if not create:
-        raise AgentError(
-            "not_found",
-            "Parent directory does not exist.",
-            path=str(parent),
-            suggestion="Pass --parents to create missing parent directories.",
-        )
-    if not dry_run:
-        parent.mkdir(parents=True, exist_ok=True)
-
-
-def dangerous_delete_target(path: Path, cwd: Path) -> str | None:
-    resolved = resolve_path(path)
-    anchor = Path(resolved.anchor)
-    home = Path.home().resolve()
-    if resolved == anchor:
-        return "Refusing to delete a filesystem root."
-    if resolved == home:
-        return "Refusing to delete the home directory."
-    if resolved == cwd:
-        return "Refusing to delete the current working directory."
-    return None
-
-
-def require_inside_cwd(path: Path, cwd: Path, *, allow_outside_cwd: bool) -> None:
-    if allow_outside_cwd:
-        return
-    resolved = resolve_path(path)
-    try:
-        resolved.relative_to(cwd)
-    except ValueError as exc:
-        raise AgentError(
-            "unsafe_operation",
-            "Destructive recursive operation outside the current working directory is blocked.",
-            path=str(resolved),
-            suggestion="Pass --allow-outside-cwd only when the target is intentional.",
-        ) from exc
-
-
-def refuse_overwrite(destination: Path, allow_overwrite: bool) -> None:
-    if destination.exists() and not allow_overwrite:
-        raise AgentError(
-            "conflict",
-            "Destination exists.",
-            path=str(destination),
-            suggestion="Pass --allow-overwrite if replacing the destination is intentional.",
-        )
-
-
-def destination_inside_directory(source: Path, destination: Path) -> Path:
-    if destination.exists() and destination.is_dir() and not destination.is_symlink():
-        return destination / source.name
-    return destination
 
 
 # ── I/O helpers ────────────────────────────────────────────────────────

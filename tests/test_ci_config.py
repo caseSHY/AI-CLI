@@ -19,7 +19,7 @@ class CiConfigTests(unittest.TestCase):
     def test_pyproject_uses_src_layout(self) -> None:
         text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         self.assertIn('where = ["src"]', text)
-        self.assertIn('agentutils = "agentutils.cli:main"', text)
+        self.assertIn('agentutils = "agentutils.parser:main"', text)
         self.assertIn("pytest>=8.0", text)
 
 

@@ -1,9 +1,10 @@
-"""Priority catalog for GNU Coreutils commands in agent workflows."""
+"""Priority catalog for GNU Coreutils commands in agent workflows.
+
+This is the single authority for command priority classification.
+All registry/priority functions are derived from CATALOG below.
+"""
 
 from __future__ import annotations
-
-from .registry import implemented_catalog
-
 
 CATALOG = [
     {
@@ -151,6 +152,41 @@ CATALOG = [
         ],
     },
 ]
+
+
+# ═══════════════════════════════════════════════════════════════════════
+#  Priority derivation (single authority: CATALOG above)
+# ═══════════════════════════════════════════════════════════════════════
+
+_COMMAND_PRIORITY_MAP: dict[str, str] = {}
+for _entry in CATALOG:
+    for _tool in _entry["tools"]:
+        _COMMAND_PRIORITY_MAP[_tool] = _entry["priority"]
+
+
+def get_priority(command_name: str) -> str:
+    """Return the priority level for a command name, or 'unknown'."""
+    return _COMMAND_PRIORITY_MAP.get(command_name, "unknown")
+
+
+def get_all_commands() -> set[str]:
+    """Return the set of all known command names."""
+    return set(_COMMAND_PRIORITY_MAP)
+
+
+def get_commands_by_priority() -> dict[str, list[str]]:
+    """Return commands grouped by priority (P0, P1, P2, P3)."""
+    grouped: dict[str, list[str]] = {}
+    for cmd, pri in _COMMAND_PRIORITY_MAP.items():
+        grouped.setdefault(pri, []).append(cmd)
+    for pri in grouped:
+        grouped[pri].sort()
+    return grouped
+
+
+def implemented_catalog() -> dict[str, list[str]]:
+    """Return IMPLEMENTED dict compatible with priority_catalog()."""
+    return get_commands_by_priority()
 
 
 def priority_catalog() -> dict[str, object]:
