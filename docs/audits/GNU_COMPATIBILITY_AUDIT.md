@@ -6,7 +6,7 @@
 `vendor/gnu-coreutils/coreutils-9.10/src/cu-progs.mk` 以及对应的
 `vendor/gnu-coreutils/coreutils-9.10/src` 源码。
 
-审计日期：2026-04-30。
+审计日期：2026-04-30。最近本地验证：2026-05-02。
 
 ### 结论摘要
 
@@ -77,15 +77,21 @@
 - Agent-call test：观察、决策、dry-run、实际写入、校验的完整 Agent 流
 - Error / exit-code test：错误 JSON 和退出码
 - Filesystem side-effect test：dry-run 不改文件，写操作只产生预期副作用
-- CI test：GitHub Actions 配置存在且执行 unittest
+- CI test：GitHub Actions 拓扑、pytest 入口和 WSL 本地 CI 脚本存在性验证
 
 当前验证命令：
 
 ```powershell
-python -m unittest discover -s tests -v
+$env:PYTHONPATH = "src"
+python -m pytest tests/test_gnu_differential.py tests/test_agentutils.py tests/test_property_based_cli.py -q --tb=line
+.\scripts\run-ci-wsl.ps1 -Distro Ubuntu-24.04 -SkipInstall
 ```
 
-当前结果：54 个测试通过。
+当前结果：
+
+- Windows 目标验证：47 passed, 51 skipped。
+- WSL Ubuntu-24.04 本地 CI：190 passed, 1 skipped, 0 failed, 118 subtests passed。
+- 远程 GitHub Actions：仍需推送后重新触发；WSL 本地通过不等于远程 CI verified。
 
 ### 客观结论
 
@@ -104,7 +110,7 @@ Baseline: GNU Coreutils 9.10, using
 `vendor/gnu-coreutils/coreutils-9.10/src/cu-progs.mk` and the corresponding
 source files under `vendor/gnu-coreutils/coreutils-9.10/src`.
 
-Audit date: 2026-04-30.
+Audit date: 2026-04-30. Latest local verification: 2026-05-02.
 
 ### Summary
 
@@ -176,15 +182,21 @@ Automated tests cover:
 - Agent-call tests: observe, decide, dry-run, write, verify flow
 - Error / exit-code tests: JSON errors and semantic exit codes
 - Filesystem side-effect tests: dry-run does not mutate; writes mutate only expected targets
-- CI tests: GitHub Actions config exists and runs unittest
+- CI tests: GitHub Actions topology, pytest entry point, and WSL local CI script existence
 
 Current verification command:
 
 ```powershell
-python -m unittest discover -s tests -v
+$env:PYTHONPATH = "src"
+python -m pytest tests/test_gnu_differential.py tests/test_agentutils.py tests/test_property_based_cli.py -q --tb=line
+.\scripts\run-ci-wsl.ps1 -Distro Ubuntu-24.04 -SkipInstall
 ```
 
-Current result: 54 tests passing.
+Current result:
+
+- Windows targeted verification: 47 passed, 51 skipped.
+- WSL Ubuntu-24.04 local CI: 190 passed, 1 skipped, 0 failed, 118 subtests passed.
+- Remote GitHub Actions still needs a new run after push; passing in WSL is not CI verified.
 
 ### Objective Conclusion
 

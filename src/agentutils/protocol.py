@@ -8,24 +8,19 @@ from __future__ import annotations
 
 import argparse
 import base64
-import datetime as dt
 import hashlib
-import json
+import importlib
 import os
 import re
-import stat as statmod
 import subprocess
 import sys
-import textwrap
 from pathlib import Path
-from typing import Any, TextIO
-
-from . import __version__
+from typing import Any, NoReturn, cast
 
 # Re-export core primitives from agentutils.core
 from .core import (  # noqa: E402, F401
-    AgentError,
     EXIT,
+    AgentError,
     dangerous_delete_target,
     destination_inside_directory,
     ensure_exists,
@@ -34,7 +29,6 @@ from .core import (  # noqa: E402, F401
     error_envelope,
     path_type,
     refuse_overwrite,
-    remove_one,
     require_inside_cwd,
     resolve_path,
     stat_entry,
@@ -53,11 +47,76 @@ HASH_ALGORITHMS: dict[str, str] = {
     "blake2b": "blake2b",
 }
 
+__all__ = [
+    "AgentArgumentParser",
+    "AgentError",
+    "EXIT",
+    "HASH_ALGORITHMS",
+    "active_user_entries",
+    "alpha_suffix",
+    "bounded_lines",
+    "coerce_printf_value",
+    "combined_lines",
+    "dangerous_delete_target",
+    "decode_standard_escapes",
+    "destination_inside_directory",
+    "digest_bytes",
+    "digest_file",
+    "directory_size",
+    "disk_usage_entry",
+    "ensure_exists",
+    "ensure_parent",
+    "envelope",
+    "error_envelope",
+    "evaluate_test_predicates",
+    "expression_truthy",
+    "format_numfmt_value",
+    "format_printf",
+    "iter_directory",
+    "lines_to_raw",
+    "normalize_command_args",
+    "numeric_suffix",
+    "parse_numfmt_value",
+    "parse_octal_mode",
+    "parse_ranges",
+    "parse_signal",
+    "path_issues",
+    "path_type",
+    "prime_factors",
+    "printf_conversions",
+    "read_bytes",
+    "read_input_bytes",
+    "read_input_texts",
+    "read_stdin_bytes",
+    "read_text_lines",
+    "refuse_overwrite",
+    "remove_one",
+    "require_inside_cwd",
+    "resolve_group_id",
+    "resolve_path",
+    "resolve_user_id",
+    "run_subprocess_capture",
+    "selected_environment",
+    "selected_indexes",
+    "simple_sum16",
+    "split_fields",
+    "split_owner_spec",
+    "stat_entry",
+    "stdin_tty_name",
+    "subprocess_result",
+    "system_uptime_seconds",
+    "transform_text",
+    "unexpand_line",
+    "utc_iso",
+    "wc_for_bytes",
+    "write_json",
+]
+
 
 class AgentArgumentParser(argparse.ArgumentParser):
     """ArgumentParser that raises structured AgentError on usage errors."""
 
-    def error(self, message: str) -> None:
+    def error(self, message: str) -> NoReturn:
         error = AgentError(
             "usage",
             message,
@@ -68,6 +127,7 @@ class AgentArgumentParser(argparse.ArgumentParser):
 
 
 # ── I/O helpers ────────────────────────────────────────────────────────
+
 
 def read_stdin_bytes() -> bytes:
     return sys.stdin.buffer.read()
@@ -144,6 +204,7 @@ def read_bytes(path: Path, *, max_bytes: int, offset: int = 0) -> tuple[bytes, b
 
 # ── text / escaping utilities ──────────────────────────────────────────
 
+
 def decode_standard_escapes(value: str) -> str:
     escapes = {
         "\\": "\\",
@@ -192,6 +253,7 @@ def parse_octal_mode(raw: str) -> int:
 
 # ── hash / checksum utilities ──────────────────────────────────────────
 
+
 def digest_file(path: Path, algorithm: str, *, chunk_size: int = 1024 * 1024) -> str:
     if algorithm not in HASH_ALGORITHMS:
         raise AgentError(
@@ -230,6 +292,7 @@ def simple_sum16(data: bytes) -> int:
 
 # ── split / suffix helpers ─────────────────────────────────────────────
 
+
 def alpha_suffix(index: int, width: int) -> str:
     if width < 1:
         raise AgentError("invalid_input", "--suffix-length must be >= 1.")
@@ -263,6 +326,7 @@ def numeric_suffix(index: int, width: int) -> str:
 
 # ── text transformation helpers ────────────────────────────────────────
 
+
 def count_words(text: str) -> int:
     return len(text.split())
 
@@ -287,7 +351,7 @@ def unexpand_line(line: str, *, tab_size: int, all_blanks: bool) -> str:
     leading = re.match(r" +", line)
     if not leading:
         return line
-    return compress_spaces(leading) + line[leading.end():]
+    return compress_spaces(leading) + line[leading.end() :]
 
 
 def split_fields(line: str, delimiter: str | None) -> list[str]:
@@ -305,21 +369,43 @@ def squeeze_repeats(text: str, squeeze_set: set[str]) -> str:
     return "".join(output)
 
 
+def expand_tr_set(spec: str) -> str:
+    output: list[str] = []
+    index = 0
+    while index < len(spec):
+        if index + 2 < len(spec) and spec[index + 1] == "-":
+            start = ord(spec[index])
+            end = ord(spec[index + 2])
+            if start <= end:
+                output.extend(chr(value) for value in range(start, end + 1))
+                index += 3
+                continue
+        output.append(spec[index])
+        index += 1
+    return "".join(output)
+
+
 def transform_text(args: Any, text: str) -> str:
+    set1 = expand_tr_set(args.set1)
+    set2 = expand_tr_set(args.set2) if args.set2 is not None else None
     if args.delete:
-        output = text.translate({ord(char): None for char in args.set1})
-        squeeze_source = args.set1
+        output = text.translate({ord(char): None for char in set1})
+        squeeze_source = set1
     else:
-        if args.set2 is None:
+        if set2 is None and args.squeeze_repeats:
+            output = text
+            squeeze_source = set1
+        elif set2 is None:
             raise AgentError("invalid_input", "Translation requires SET2 unless --delete is used.")
-        if not args.set2:
+        elif not set2:
             raise AgentError("invalid_input", "SET2 cannot be empty for translation.")
-        translation = {}
-        for index, char in enumerate(args.set1):
-            replacement = args.set2[index] if index < len(args.set2) else args.set2[-1]
-            translation[ord(char)] = replacement
-        output = text.translate(translation)
-        squeeze_source = args.set2
+        else:
+            translation = {}
+            for index, char in enumerate(set1):
+                replacement = set2[index] if index < len(set2) else set2[-1]
+                translation[ord(char)] = replacement
+            output = text.translate(translation)
+            squeeze_source = set2
     if args.squeeze_repeats:
         output = squeeze_repeats(output, set(squeeze_source))
     return output
@@ -370,6 +456,7 @@ def selected_indexes(length: int, ranges: list[tuple[int | None, int | None]]) -
 
 
 # ── printf helpers ─────────────────────────────────────────────────────
+
 
 def printf_conversions(format_string: str) -> list[str]:
     conversions: list[str] = []
@@ -427,7 +514,9 @@ def format_printf(format_string: str, values: list[str]) -> str:
     output: list[str] = []
     for start in range(0, len(values), len(conversions)):
         chunk = values[start : start + len(conversions)]
-        converted = tuple(coerce_printf_value(value, conversion) for value, conversion in zip(chunk, conversions))
+        converted = tuple(
+            coerce_printf_value(value, conversion) for value, conversion in zip(chunk, conversions, strict=True)
+        )
         try:
             output.append(fmt % converted)
         except (TypeError, ValueError) as exc:
@@ -437,19 +526,39 @@ def format_printf(format_string: str, values: list[str]) -> str:
 
 # ── numfmt helpers ─────────────────────────────────────────────────────
 
-SI_UNITS: dict[str, float] = {"": 1.0, "K": 1000.0, "M": 1000.0**2, "G": 1000.0**3, "T": 1000.0**4, "P": 1000.0**5, "E": 1000.0**6}
-IEC_UNITS: dict[str, float] = {"": 1.0, "K": 1024.0, "M": 1024.0**2, "G": 1024.0**3, "T": 1024.0**4, "P": 1024.0**5, "E": 1024.0**6}
+SI_UNITS: dict[str, float] = {
+    "": 1.0,
+    "K": 1000.0,
+    "M": 1000.0**2,
+    "G": 1000.0**3,
+    "T": 1000.0**4,
+    "P": 1000.0**5,
+    "E": 1000.0**6,
+}
+IEC_UNITS: dict[str, float] = {
+    "": 1.0,
+    "K": 1024.0,
+    "M": 1024.0**2,
+    "G": 1024.0**3,
+    "T": 1024.0**4,
+    "P": 1024.0**5,
+    "E": 1024.0**6,
+}
 
 
 def parse_numfmt_value(raw: str, unit_system: str) -> float:
     match = re.fullmatch(r"([+-]?(?:\d+(?:\.\d*)?|\.\d+))([A-Za-z]*)", raw.strip())
     if not match:
-        raise AgentError("invalid_input", "numfmt input must be a number with an optional unit suffix.", details={"value": raw})
+        raise AgentError(
+            "invalid_input", "numfmt input must be a number with an optional unit suffix.", details={"value": raw}
+        )
     value = float(match.group(1))
     suffix = match.group(2)
     if unit_system == "none":
         if suffix:
-            raise AgentError("invalid_input", "Unit suffix was provided but --from-unit is none.", details={"value": raw})
+            raise AgentError(
+                "invalid_input", "Unit suffix was provided but --from-unit is none.", details={"value": raw}
+            )
         return value
     normalized = suffix.upper().removesuffix("B")
     if unit_system == "iec":
@@ -487,14 +596,18 @@ def format_numfmt_value(value: float, unit_system: str, precision: int) -> str:
 
 # ── system / subprocess helpers ────────────────────────────────────────
 
+
 def resolve_user_id(raw: str | None) -> int | None:
     if raw is None or raw == "":
         return None
     if raw.isdigit():
         return int(raw)
     try:
-        import pwd  # type: ignore[import-not-found]
-        return pwd.getpwnam(raw).pw_uid
+        pwd_module = importlib.import_module("pwd")
+        getpwnam = getattr(pwd_module, "getpwnam", None)
+        if not callable(getpwnam):
+            raise ImportError("pwd.getpwnam is unavailable")
+        return int(cast(Any, getpwnam(raw)).pw_uid)
     except ImportError as exc:
         raise AgentError(
             "invalid_input",
@@ -511,8 +624,11 @@ def resolve_group_id(raw: str | None) -> int | None:
     if raw.isdigit():
         return int(raw)
     try:
-        import grp  # type: ignore[import-not-found]
-        return grp.getgrnam(raw).gr_gid
+        grp_module = importlib.import_module("grp")
+        getgrnam = getattr(grp_module, "getgrnam", None)
+        if not callable(getgrnam):
+            raise ImportError("grp.getgrnam is unavailable")
+        return int(cast(Any, getgrnam(raw)).gr_gid)
     except ImportError as exc:
         raise AgentError(
             "invalid_input",
@@ -542,6 +658,7 @@ def parse_signal(raw: str) -> int:
     if not value.startswith("SIG"):
         value = f"SIG{value}"
     import signal
+
     signum = getattr(signal, value, None)
     if signum is None:
         raise AgentError("invalid_input", "Unknown signal.", details={"signal": raw})
@@ -613,7 +730,8 @@ def system_uptime_seconds() -> float | None:
             pass
     try:
         import ctypes
-        get_tick_count = ctypes.windll.kernel32.GetTickCount64  # type: ignore[attr-defined]
+
+        get_tick_count = cast(Any, ctypes).windll.kernel32.GetTickCount64
         get_tick_count.restype = ctypes.c_ulonglong
         return float(get_tick_count()) / 1000.0
     except Exception:
@@ -627,13 +745,14 @@ def stdin_tty_name() -> str | None:
     if not callable(ttyname):
         return None
     try:
-        return ttyname(sys.stdin.fileno())
+        return str(ttyname(sys.stdin.fileno()))
     except OSError:
         return None
 
 
 def active_user_entries() -> list[dict[str, Any]]:
     import getpass
+
     user = getpass.getuser()
     terminal = stdin_tty_name()
     return [{"user": user, "terminal": terminal, "source": "current_process"}]
@@ -641,6 +760,7 @@ def active_user_entries() -> list[dict[str, Any]]:
 
 def disk_usage_entry(path: Path) -> dict[str, Any]:
     import shutil
+
     try:
         usage = shutil.disk_usage(path)
     except FileNotFoundError as exc:
@@ -685,6 +805,7 @@ def directory_size(path: Path, *, max_depth: int, follow_symlinks: bool) -> tupl
 
 
 # ── predicate / evaluation helpers ─────────────────────────────────────
+
 
 def evaluate_test_predicates(path: Path, predicates: list[str]) -> list[dict[str, Any]]:
     checks: list[dict[str, Any]] = []
@@ -756,6 +877,7 @@ def expression_truthy(value: object) -> bool:
 
 # ── directory iteration (ls/dir/vdir) ──────────────────────────────────
 
+
 def iter_directory(
     root: Path,
     *,
@@ -803,11 +925,7 @@ def iter_directory(
                         add(nested, depth)
                         if truncated:
                             break
-                        if (
-                            nested.is_dir()
-                            and (follow_symlinks or not nested.is_symlink())
-                            and depth < max_depth
-                        ):
+                        if nested.is_dir() and (follow_symlinks or not nested.is_symlink()) and depth < max_depth:
                             stack.append((nested, depth + 1))
     else:
         add(root, 0)
@@ -816,8 +934,10 @@ def iter_directory(
 
 # ── file removal helper ────────────────────────────────────────────────
 
+
 def remove_one(path: Path, *, recursive: bool, force: bool) -> str:
     import shutil
+
     try:
         if path.is_dir() and not path.is_symlink():
             if not recursive:
@@ -838,6 +958,7 @@ def remove_one(path: Path, *, recursive: bool, force: bool) -> str:
         raise AgentError("permission_denied", "Permission denied while removing path.", path=str(path)) from exc
     except OSError as exc:
         raise AgentError("io_error", str(exc), path=str(path)) from exc
+
 
 def selected_environment(names: list[str] | None) -> dict[str, str]:
     if not names:

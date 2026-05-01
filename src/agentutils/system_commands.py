@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import ast
 import datetime as dt
+import importlib
 import operator
 import os
 import platform
@@ -14,14 +15,13 @@ import subprocess
 import sys
 import time as timemod
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from .protocol import (
-    AgentError,
     EXIT,
+    AgentError,
     active_user_entries,
     ensure_parent,
-    evaluate_test_predicates,
     expression_truthy,
     lines_to_raw,
     normalize_command_args,
@@ -34,7 +34,6 @@ from .protocol import (
     stdin_tty_name,
     subprocess_result,
     system_uptime_seconds,
-    utc_iso,
 )
 
 
@@ -53,6 +52,7 @@ def command_coreutils(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 # ── date ───────────────────────────────────────────────────────────────
+
 
 def command_date(args: argparse.Namespace) -> dict[str, Any] | bytes:
     timestamp = args.timestamp if args.timestamp is not None else timemod.time()
@@ -78,6 +78,7 @@ def command_date(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── env / printenv ─────────────────────────────────────────────────────
 
+
 def command_env(args: argparse.Namespace) -> dict[str, Any] | bytes:
     env = selected_environment(args.names)
     if args.raw:
@@ -101,55 +102,67 @@ def command_printenv(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── whoami / groups / id ───────────────────────────────────────────────
 
+
 def command_whoami(args: argparse.Namespace) -> dict[str, Any]:
     import getpass
+
     return {"user": getpass.getuser()}
 
 
 def command_groups(args: argparse.Namespace) -> dict[str, Any] | bytes:
     import getpass
+
     user = args.user or getpass.getuser()
     getgroups = getattr(os, "getgroups", None)
-    group_ids = getgroups() if callable(getgroups) else []
-    group_names = []
+    group_ids = [int(gid) for gid in getgroups()] if callable(getgroups) else []
+    group_names: list[str] = []
     try:
-        import grp  # type: ignore[import-not-found]
+        grp_module = importlib.import_module("grp")
+        getgrgid = getattr(grp_module, "getgrgid", None)
+        if not callable(getgrgid):
+            raise ImportError("grp.getgrgid is unavailable")
+
         for gid in group_ids:
             try:
-                group_names.append(grp.getgrgid(gid).gr_name)
+                group_names.append(str(cast(Any, getgrgid(gid)).gr_name))
             except KeyError:
                 group_names.append(str(gid))
     except ImportError:
         group_names = [str(gid) for gid in group_ids]
     if args.raw:
         return (" ".join(group_names) + "\n").encode("utf-8")
-    return {"user": user, "groups": [{"id": gid, "name": name} for gid, name in zip(group_ids, group_names)]}
+    return {
+        "user": user,
+        "groups": [{"id": gid, "name": name} for gid, name in zip(group_ids, group_names, strict=True)],
+    }
 
 
 def command_id(args: argparse.Namespace) -> dict[str, Any]:
     import getpass
+
     username = getpass.getuser()
-    uid_val = None
-    gid_val = None
-    group_ids = []
-    group_names = []
+    uid_val: int | None = None
+    gid_val: int | None = None
+    group_ids: list[int] = []
+    group_names: list[str] = []
+    getuid = getattr(os, "getuid", None)
+    getgid = getattr(os, "getgid", None)
+    getgroups = getattr(os, "getgroups", None)
+    if callable(getuid):
+        uid_val = int(getuid())
+    if callable(getgid):
+        gid_val = int(getgid())
+    if callable(getgroups):
+        group_ids = [int(gid) for gid in getgroups()]
     try:
-        uid_val = os.getuid()
-    except Exception:
-        pass
-    try:
-        gid_val = os.getgid()
-    except Exception:
-        pass
-    try:
-        group_ids = os.getgroups()
-    except Exception:
-        pass
-    try:
-        import grp  # type: ignore[import-not-found]
+        grp_module = importlib.import_module("grp")
+        getgrgid = getattr(grp_module, "getgrgid", None)
+        if not callable(getgrgid):
+            raise ImportError("grp.getgrgid is unavailable")
+
         for gid in group_ids:
             try:
-                group_names.append(grp.getgrgid(gid).gr_name)
+                group_names.append(str(cast(Any, getgrgid(gid)).gr_name))
             except KeyError:
                 group_names.append(str(gid))
     except ImportError:
@@ -165,6 +178,7 @@ def command_id(args: argparse.Namespace) -> dict[str, Any]:
 
 # ── uname / arch / hostname / hostid / logname ─────────────────────────
 
+
 def command_uname(args: argparse.Namespace) -> dict[str, Any] | bytes:
     info = platform.uname()
     result = {
@@ -176,9 +190,9 @@ def command_uname(args: argparse.Namespace) -> dict[str, Any] | bytes:
         "processor": info.processor,
     }
     if args.raw:
-        return (" ".join(str(result[key]) for key in ("system", "node", "release", "version", "machine")) + "\n").encode(
-            "utf-8"
-        )
+        return (
+            " ".join(str(result[key]) for key in ("system", "node", "release", "version", "machine")) + "\n"
+        ).encode("utf-8")
     return result
 
 
@@ -199,6 +213,7 @@ def command_hostid(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 def command_logname(args: argparse.Namespace) -> dict[str, Any]:
     import getpass
+
     return {"login": os.environ.get("LOGNAME") or getpass.getuser()}
 
 
@@ -242,6 +257,7 @@ def command_pinky(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── uptime / tty / users / who ─────────────────────────────────────────
 
+
 def command_uptime(args: argparse.Namespace) -> dict[str, Any]:
     return {"uptime_seconds": system_uptime_seconds()}
 
@@ -280,15 +296,20 @@ def command_who(args: argparse.Namespace) -> dict[str, Any]:
 
 # ── nproc ──────────────────────────────────────────────────────────────
 
+
 def command_nproc(args: argparse.Namespace) -> dict[str, Any]:
     try:
-        count = len(os.sched_getaffinity(0))
+        sched_getaffinity = getattr(os, "sched_getaffinity", None)
+        if not callable(sched_getaffinity):
+            raise AttributeError("os.sched_getaffinity is unavailable")
+        count = len(sched_getaffinity(0))
     except (AttributeError, NotImplementedError):
         count = os.cpu_count() or 1
     return {"count": count}
 
 
 # ── timeout ────────────────────────────────────────────────────────────
+
 
 def command_timeout(args: argparse.Namespace) -> dict[str, Any]:
     if args.seconds <= 0:
@@ -309,6 +330,7 @@ def command_timeout(args: argparse.Namespace) -> dict[str, Any]:
 
 
 # ── nice ───────────────────────────────────────────────────────────────
+
 
 def command_nice(args: argparse.Namespace) -> dict[str, Any]:
     command = normalize_command_args(args.command_args)
@@ -429,8 +451,23 @@ def command_stty(args: argparse.Namespace) -> dict[str, Any] | bytes:
         raise AgentError("invalid_input", "stty changes are not supported on this platform.")
 
     try:
-        import termios  # type: ignore[import-not-found]
-        import tty  # type: ignore[import-not-found]
+        termios = importlib.import_module("termios")
+        tty = importlib.import_module("tty")
+        tcgetattr = getattr(termios, "tcgetattr", None)
+        tcsetattr = getattr(termios, "tcsetattr", None)
+        tcsadrain = getattr(termios, "TCSADRAIN", None)
+        echo = getattr(termios, "ECHO", None)
+        icanon = getattr(termios, "ICANON", None)
+        isig = getattr(termios, "ISIG", None)
+        setraw = getattr(tty, "setraw", None)
+        if not callable(tcgetattr) or not callable(tcsetattr) or not callable(setraw):
+            raise ImportError("termios control functions are unavailable")
+        if not all(isinstance(value, int) for value in (tcsadrain, echo, icanon, isig)):
+            raise ImportError("termios constants are unavailable")
+        tcsadrain_value = cast(int, tcsadrain)
+        echo_value = cast(int, echo)
+        icanon_value = cast(int, icanon)
+        isig_value = cast(int, isig)
     except ImportError as exc:
         raise AgentError("invalid_input", "termios is not available on this platform.") from exc
 
@@ -445,17 +482,17 @@ def command_stty(args: argparse.Namespace) -> dict[str, Any] | bytes:
                 raise AgentError("invalid_input", "stdin is not a TTY; use --file to target a terminal device.")
             fd = sys.stdin.fileno()
 
-        attrs = termios.tcgetattr(fd)
+        attrs = tcgetattr(fd)
         for setting in settings:
             if setting == "raw":
-                tty.setraw(fd, when=termios.TCSADRAIN)
-                attrs = termios.tcgetattr(fd)
+                setraw(fd, when=tcsadrain_value)
+                attrs = tcgetattr(fd)
             elif setting == "sane":
-                attrs[3] |= termios.ECHO | termios.ICANON | termios.ISIG
+                attrs[3] |= echo_value | icanon_value | isig_value
             elif setting == "echo":
-                attrs[3] |= termios.ECHO
+                attrs[3] |= echo_value
             elif setting == "-echo":
-                attrs[3] &= ~termios.ECHO
+                attrs[3] &= ~echo_value
             else:
                 raise AgentError(
                     "invalid_input",
@@ -463,7 +500,7 @@ def command_stty(args: argparse.Namespace) -> dict[str, Any] | bytes:
                     details={"setting": setting},
                     suggestion="Supported settings are: raw, sane, echo, -echo.",
                 )
-        termios.tcsetattr(fd, termios.TCSADRAIN, attrs)
+        tcsetattr(fd, tcsadrain_value, attrs)
     except OSError as exc:
         raise AgentError("io_error", str(exc), path=args.device) from exc
     finally:
@@ -475,6 +512,7 @@ def command_stty(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 # ── nohup ──────────────────────────────────────────────────────────────
+
 
 def command_nohup(args: argparse.Namespace) -> dict[str, Any]:
     command = normalize_command_args(args.command_args)
@@ -574,11 +612,12 @@ def command_chroot(args: argparse.Namespace) -> dict[str, Any]:
             path=str(root),
             suggestion="Run with --dry-run first, then pass --allow-chroot if intentional.",
         )
-    if os.name == "nt" or not hasattr(os, "chroot"):
+    chroot = getattr(os, "chroot", None)
+    if os.name == "nt" or not callable(chroot):
         raise AgentError("invalid_input", "chroot is not supported on this platform.", path=str(root))
 
     def enter_chroot() -> None:
-        os.chroot(root)
+        chroot(root)
         os.chdir("/")
 
     if args.max_output_bytes < 0:
@@ -595,7 +634,9 @@ def command_chroot(args: argparse.Namespace) -> dict[str, Any]:
     except FileNotFoundError as exc:
         raise AgentError("not_found", "Command executable was not found inside the chroot.", path=command[0]) from exc
     except PermissionError as exc:
-        raise AgentError("permission_denied", "Permission denied while executing chroot command.", path=command[0]) from exc
+        raise AgentError(
+            "permission_denied", "Permission denied while executing chroot command.", path=command[0]
+        ) from exc
     except subprocess.TimeoutExpired as exc:
         completed = subprocess.CompletedProcess(command, EXIT["unsafe_operation"], exc.stdout or b"", exc.stderr or b"")
         timed_out = True
@@ -647,11 +688,13 @@ def command_chcon(args: argparse.Namespace) -> dict[str, Any] | bytes:
     for path in targets:
         try:
             try:
-                os.setxattr(path, "security.selinux", encoded, follow_symlinks=not args.no_follow)  # type: ignore[call-arg]
+                os.setxattr(path, "security.selinux", encoded, follow_symlinks=not args.no_follow)
             except TypeError:
-                os.setxattr(path, "security.selinux", encoded)  # type: ignore[arg-type]
+                os.setxattr(path, "security.selinux", encoded)
         except PermissionError as exc:
-            raise AgentError("permission_denied", "Permission denied while changing security context.", path=str(path)) from exc
+            raise AgentError(
+                "permission_denied", "Permission denied while changing security context.", path=str(path)
+            ) from exc
         except OSError as exc:
             raise AgentError("io_error", str(exc), path=str(path)) from exc
     return {"count": len(operations), "operations": operations}
@@ -686,6 +729,7 @@ def command_runcon(args: argparse.Namespace) -> dict[str, Any]:
 
 # ── kill ───────────────────────────────────────────────────────────────
 
+
 def command_kill(args: argparse.Namespace) -> dict[str, Any]:
     signum = parse_signal(args.signal)
     operations = []
@@ -708,13 +752,16 @@ def command_kill(args: argparse.Namespace) -> dict[str, Any]:
             except ProcessLookupError as exc:
                 raise AgentError("not_found", "Process does not exist.", details={"pid": pid}) from exc
             except PermissionError as exc:
-                raise AgentError("permission_denied", "Permission denied while signaling process.", details={"pid": pid}) from exc
+                raise AgentError(
+                    "permission_denied", "Permission denied while signaling process.", details={"pid": pid}
+                ) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), details={"pid": pid}) from exc
     return {"count": len(operations), "operations": operations}
 
 
 # ── sleep ──────────────────────────────────────────────────────────────
+
 
 def command_sleep(args: argparse.Namespace) -> dict[str, Any]:
     if args.seconds < 0:
@@ -732,6 +779,7 @@ def command_sleep(args: argparse.Namespace) -> dict[str, Any]:
 
 # ── true / false ───────────────────────────────────────────────────────
 
+
 def command_true(args: argparse.Namespace) -> dict[str, Any]:
     return {"value": True}
 
@@ -741,6 +789,7 @@ def command_false(args: argparse.Namespace) -> dict[str, Any]:
 
 
 # ── pathchk ────────────────────────────────────────────────────────────
+
 
 def command_pathchk(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.max_path_length < 1:
@@ -771,6 +820,7 @@ def command_pathchk(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── factor ─────────────────────────────────────────────────────────────
 
+
 def command_factor(args: argparse.Namespace) -> dict[str, Any] | bytes:
     raw_values = args.numbers or sys.stdin.read().split()
     entries = []
@@ -797,6 +847,7 @@ def command_factor(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── expr ───────────────────────────────────────────────────────────────
 
+
 def command_expr(args: argparse.Namespace) -> dict[str, Any] | bytes:
     expression = " ".join("==" if token == "=" else token for token in args.tokens)
     try:
@@ -813,10 +864,7 @@ def command_expr(args: argparse.Namespace) -> dict[str, Any] | bytes:
         ) from exc
     truthy = expression_truthy(value)
     if args.raw:
-        if isinstance(value, bool):
-            rendered = "1" if value else "0"
-        else:
-            rendered = str(value)
+        rendered = ("1" if value else "0") if isinstance(value, bool) else str(value)
         return (rendered + "\n").encode("utf-8")
     result = {"expression": expression, "value": value, "truthy": truthy, "type": type(value).__name__}
     if args.exit_code and not truthy:
@@ -841,18 +889,18 @@ def safe_eval_expr_node(tree: ast.AST) -> Any:
         if isinstance(tree.op, ast.Div):
             try:
                 return operator.truediv(left, right)
-            except ZeroDivisionError:
-                raise AgentError("invalid_input", "Division by zero.")
+            except ZeroDivisionError as exc:
+                raise AgentError("invalid_input", "Division by zero.") from exc
         if isinstance(tree.op, ast.Mod):
             try:
                 return operator.mod(left, right)
-            except ZeroDivisionError:
-                raise AgentError("invalid_input", "Modulo by zero.")
+            except ZeroDivisionError as exc:
+                raise AgentError("invalid_input", "Modulo by zero.") from exc
         if isinstance(tree.op, ast.Pow):
             return operator.pow(left, right)
     if isinstance(tree, ast.Compare):
         left = safe_eval_expr_node(tree.left)
-        for op, comp in zip(tree.ops, tree.comparators):
+        for op, comp in zip(tree.ops, tree.comparators, strict=True):
             right = safe_eval_expr_node(comp)
             if isinstance(op, ast.Eq):
                 result = left == right

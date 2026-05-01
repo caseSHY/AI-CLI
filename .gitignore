@@ -13,6 +13,7 @@ dist/
 
 # Local environments
 .venv/
+.venv-wsl/
 venv/
 env/
 .env

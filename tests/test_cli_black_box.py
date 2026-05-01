@@ -4,8 +4,8 @@ import base64
 import json
 import sys
 import unittest
-from tempfile import TemporaryDirectory
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from support import parse_stdout, run_cli
 

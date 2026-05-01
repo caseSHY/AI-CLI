@@ -127,6 +127,29 @@ GitHub Actions 工作流：`.github/workflows/ci.yml`
 - **Ubuntu job**：已安装 GNU coreutils（`apt-get install coreutils`），GNU 对照测试可运行
 - **Windows job**：覆盖路径/编码/sandbox 测试，GNU 对照测试因缺少 GNU 工具跳过
 
+### WSL 本地 CI / WSL Local CI
+
+Windows 开发机应使用 WSL/Ubuntu 复现 GitHub Actions 的 Ubuntu job，尤其用于验证 GNU differential 测试：
+
+```powershell
+# 首次运行，安装 WSL 内的 coreutils 和 Python venv 支持
+.\scripts\run-ci-wsl.ps1 -InstallSystemDeps
+
+# 后续复用 .venv-wsl
+.\scripts\run-ci-wsl.ps1 -SkipInstall
+```
+
+WSL 内实际执行：
+
+```bash
+ruff check src/ tests/
+ruff format --check src/ tests/
+mypy src/agentutils/ --strict
+PYTHONPATH=src python -m pytest tests/ -v --tb=short --cov=src/agentutils --cov-report=term-missing
+```
+
+详细说明见 `docs/development/WSL_CI.md`。WSL 本地通过不等于远程 CI 已通过；远程 GitHub Actions 仍是最终发布门禁。
+
 ### 覆盖率 / Coverage
 
 ```powershell
@@ -248,6 +271,29 @@ GitHub Actions workflow: `.github/workflows/ci.yml`
 - **Test command**: `python -m pytest tests/ -v`
 - **Ubuntu job**: GNU coreutils installed (`apt-get install coreutils`), GNU differential tests runnable
 - **Windows job**: path/encoding/sandbox coverage; GNU differential tests skipped (no GNU tools)
+
+### WSL Local CI
+
+Windows developers should use WSL/Ubuntu to reproduce the GitHub Actions Ubuntu job, especially for GNU differential tests:
+
+```powershell
+# First run: install coreutils and Python venv support inside WSL
+.\scripts\run-ci-wsl.ps1 -InstallSystemDeps
+
+# Later runs can reuse .venv-wsl
+.\scripts\run-ci-wsl.ps1 -SkipInstall
+```
+
+The WSL script runs:
+
+```bash
+ruff check src/ tests/
+ruff format --check src/ tests/
+mypy src/agentutils/ --strict
+PYTHONPATH=src python -m pytest tests/ -v --tb=short --cov=src/agentutils --cov-report=term-missing
+```
+
+See `docs/development/WSL_CI.md` for details. Passing locally in WSL is not the same as passing remote CI; GitHub Actions remains the release gate.
 
 ### Coverage
 

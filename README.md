@@ -45,6 +45,7 @@ python -m unittest discover -s tests -v
 .
 |-- src/agentutils/        # Python 包源码
 |-- tests/                 # 子进程级行为测试
+|-- scripts/               # 本地开发和 WSL CI 辅助脚本
 |-- .github/               # CI 与 Copilot 仓库级指令
 |-- docs/                  # 文档入口和分类文档目录
 |   |-- reference/         # 协议、命令面和安全生产契约
@@ -70,6 +71,7 @@ python -m unittest discover -s tests -v
 - [中英文使用说明](docs/guides/USAGE.zh-CN.en.md)
 - [GNU Coreutils 兼容性审计](docs/audits/GNU_COMPATIBILITY_AUDIT.md)
 - [测试说明](docs/development/TESTING.md)
+- [WSL 本地 CI](docs/development/WSL_CI.md)
 - [文档治理规则](docs/agent-guides/DOC_GOVERNANCE_RULES.md)
 - [事实传播矩阵](docs/agent-guides/FACT_PROPAGATION_MATRIX.md)
 
@@ -128,6 +130,7 @@ python -m unittest discover -s tests -v
 .
 |-- src/agentutils/        # Python package
 |-- tests/                 # subprocess-level behavior tests
+|-- scripts/               # local development and WSL CI helper scripts
 |-- .github/               # CI and repository-level Copilot instructions
 |-- docs/                  # documentation index and categorized docs
 |   |-- reference/         # protocol, command-surface and security contracts
@@ -153,6 +156,7 @@ python -m unittest discover -s tests -v
 - [Chinese/English user guide](docs/guides/USAGE.zh-CN.en.md)
 - [GNU Coreutils compatibility audit](docs/audits/GNU_COMPATIBILITY_AUDIT.md)
 - [Testing guide](docs/development/TESTING.md)
+- [WSL local CI](docs/development/WSL_CI.md)
 - [Documentation governance rules](docs/agent-guides/DOC_GOVERNANCE_RULES.md)
 - [Fact propagation matrix](docs/agent-guides/FACT_PROPAGATION_MATRIX.md)
 

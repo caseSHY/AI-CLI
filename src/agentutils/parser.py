@@ -8,16 +8,6 @@ from typing import Any
 
 from . import __version__
 from .catalog import priority_catalog
-from .registry import get_commands_by_priority, get_priority
-from .protocol import (
-    AgentArgumentParser,
-    AgentError,
-    EXIT,
-    HASH_ALGORITHMS,
-    envelope,
-    error_envelope,
-    write_json,
-)
 from .fs_commands import (
     command_basename,
     command_bracket,
@@ -61,36 +51,16 @@ from .fs_commands import (
     command_vdir,
     command_wc,
 )
-from .text_commands import (
-    command_basenc,
-    command_codec,
-    command_comm,
-    command_csplit,
-    command_cut,
-    command_dircolors,
-    command_echo,
-    command_expand,
-    command_fmt,
-    command_fold,
-    command_join,
-    command_nl,
-    command_numfmt,
-    command_od,
-    command_paste,
-    command_pr,
-    command_printf,
-    command_ptx,
-    command_seq,
-    command_shuf,
-    command_sort,
-    command_split,
-    command_tac,
-    command_tr,
-    command_tsort,
-    command_unexpand,
-    command_uniq,
-    command_yes,
+from .protocol import (
+    EXIT,
+    HASH_ALGORITHMS,
+    AgentArgumentParser,
+    AgentError,
+    envelope,
+    error_envelope,
+    write_json,
 )
+from .registry import get_commands_by_priority, get_priority
 from .system_commands import (
     command_arch,
     command_chcon,
@@ -126,6 +96,36 @@ from .system_commands import (
     command_who,
     command_whoami,
 )
+from .text_commands import (
+    command_basenc,
+    command_codec,
+    command_comm,
+    command_csplit,
+    command_cut,
+    command_dircolors,
+    command_echo,
+    command_expand,
+    command_fmt,
+    command_fold,
+    command_join,
+    command_nl,
+    command_numfmt,
+    command_od,
+    command_paste,
+    command_pr,
+    command_printf,
+    command_ptx,
+    command_seq,
+    command_shuf,
+    command_sort,
+    command_split,
+    command_tac,
+    command_tr,
+    command_tsort,
+    command_unexpand,
+    command_uniq,
+    command_yes,
+)
 
 
 def parser_command_names(parser: argparse.ArgumentParser) -> list[str]:
@@ -145,6 +145,7 @@ def schema_command_names(args: argparse.Namespace) -> list[str]:
 # ═══════════════════════════════════════════════════════════════════════
 #  schema / catalog helpers
 # ═══════════════════════════════════════════════════════════════════════
+
 
 def command_catalog(args: argparse.Namespace) -> dict[str, Any]:
     return priority_catalog()
@@ -192,18 +193,21 @@ def command_schema(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
-def command_tool_list(args: argparse.Namespace) -> dict[str, Any]:
+def command_tool_list(args: argparse.Namespace) -> dict[str, Any] | bytes:
     """Return a compact tool list suitable for LLM function-calling context."""
     implemented = schema_command_names(args)
     prioritized = get_commands_by_priority()
     tools: list[dict[str, Any]] = []
     for name in sorted(implemented):
-        tools.append({
-            "name": name,
-            "priority": get_priority(name),
-        })
+        tools.append(
+            {
+                "name": name,
+                "priority": get_priority(name),
+            }
+        )
     if args.raw:
         import json as _json
+
         return _json.dumps(
             {"tools": tools, "count": len(tools)},
             ensure_ascii=False,
@@ -218,6 +222,7 @@ def command_tool_list(args: argparse.Namespace) -> dict[str, Any]:
 # ═══════════════════════════════════════════════════════════════════════
 #  parser
 # ═══════════════════════════════════════════════════════════════════════
+
 
 def build_parser() -> AgentArgumentParser:
     parser = AgentArgumentParser(
@@ -327,7 +332,7 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--limit", type=int, default=1000, help="Maximum entries to emit.")
     p.set_defaults(func=command_ls)
 
-    for command_name, func in (("dir", command_dir), ("vdir", command_vdir)):
+    for command_name, dir_func in (("dir", command_dir), ("vdir", command_vdir)):
         p = add_subparser(command_name, help=f"{command_name} alias for structured directory listing.")
         p.add_argument("path", nargs="?", default=".", help="File or directory to list.")
         p.add_argument("--recursive", action="store_true", help="Recurse into directories.")
@@ -335,7 +340,7 @@ def build_parser() -> AgentArgumentParser:
         p.add_argument("--include-hidden", action="store_true", help="Include names starting with '.'.")
         p.add_argument("--follow-symlinks", action="store_true", help="Follow symlinked directories.")
         p.add_argument("--limit", type=int, default=1000, help="Maximum entries to emit.")
-        p.set_defaults(func=func)
+        p.set_defaults(func=dir_func)
 
     p = add_subparser("stat", help="Return metadata for paths as JSON.")
     p.add_argument("paths", nargs="+", help="Paths to inspect.")
@@ -349,16 +354,18 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--raw", action="store_true", help="Write raw bytes to stdout without a JSON envelope.")
     p.set_defaults(func=command_cat)
 
-    for name, func in (("head", command_head), ("tail", command_tail)):
+    for name, line_func in (("head", command_head), ("tail", command_tail)):
         p = add_subparser(name, help=f"Return {name} lines as JSON.")
         p.add_argument("path", help="File to read.")
         p.add_argument("--lines", "-n", type=int, default=10, help="Number of lines.")
         p.add_argument("--encoding", default="utf-8", help="Text encoding.")
-        p.set_defaults(func=func)
+        p.add_argument("--raw", action="store_true", help="Write raw selected lines without a JSON envelope.")
+        p.set_defaults(func=line_func)
 
     p = add_subparser("wc", help="Count bytes, chars, lines, and words as JSON.")
     p.add_argument("paths", nargs="+", help="Files to count, or '-' for stdin.")
     p.add_argument("--encoding", default="utf-8", help="Text encoding for char/word counts.")
+    p.add_argument("--raw", action="store_true", help="Write GNU-style count lines without a JSON envelope.")
     p.set_defaults(func=command_wc)
 
     hash_commands = {
@@ -503,7 +510,9 @@ def build_parser() -> AgentArgumentParser:
 
     p = add_subparser("od", help="Dump input bytes as structured rows.")
     p.add_argument("paths", nargs="*", help="Files to dump, or '-' for stdin. Defaults to stdin.")
-    p.add_argument("--format", choices=["hex", "octal", "decimal", "char"], default="hex", help="Byte rendering format.")
+    p.add_argument(
+        "--format", choices=["hex", "octal", "decimal", "char"], default="hex", help="Byte rendering format."
+    )
     p.add_argument("--offset", "-j", type=int, default=0, help="Start offset in bytes.")
     p.add_argument("--max-bytes", "-N", type=int, default=1024, help="Maximum bytes to dump.")
     p.add_argument("--bytes-per-line", type=int, default=16, help="Bytes per output row.")
@@ -610,7 +619,9 @@ def build_parser() -> AgentArgumentParser:
 
     p = add_subparser("basenc", help="Encode or decode base16/base32/base64/base64url data.")
     p.add_argument("paths", nargs="*", help="Files to read, or '-' for stdin. Defaults to stdin.")
-    p.add_argument("--base", choices=["base16", "base32", "base64", "base64url"], default="base64", help="Base encoding.")
+    p.add_argument(
+        "--base", choices=["base16", "base32", "base64", "base64url"], default="base64", help="Base encoding."
+    )
     p.add_argument("--decode", "-d", action="store_true", help="Decode instead of encode.")
     p.add_argument("--encoding", default="utf-8", help="Text encoding for decoded JSON preview.")
     p.add_argument("--max-output-bytes", type=int, default=1024 * 1024, help="Maximum JSON bytes to emit.")
@@ -730,7 +741,9 @@ def build_parser() -> AgentArgumentParser:
 
     p = add_subparser("seq", help="Generate a bounded numeric sequence.")
     p.add_argument("numbers", type=float, nargs="+", help="[FIRST [INCREMENT]] LAST.")
-    p.add_argument("--increment", "-i", type=float, default=1.0, help="Increment used with one or two positional numbers.")
+    p.add_argument(
+        "--increment", "-i", type=float, default=1.0, help="Increment used with one or two positional numbers."
+    )
     p.add_argument("--separator", "-s", default="\n", help="Raw output separator.")
     p.add_argument("--format", "-f", help="printf-style numeric format, for example %%.2f.")
     p.add_argument("--max-items", type=int, default=10000, help="Maximum items to generate.")
@@ -971,7 +984,9 @@ def build_parser() -> AgentArgumentParser:
     for command_name in ("install", "ginstall"):
         p = add_subparser(command_name, help=f"{command_name} files or create directories with explicit overwrite.")
         p.add_argument("paths", nargs="*", help="SOURCE DESTINATION, or directories with --directory.")
-        p.add_argument("--directory", "-d", action="store_true", help="Create directories instead of installing a file.")
+        p.add_argument(
+            "--directory", "-d", action="store_true", help="Create directories instead of installing a file."
+        )
         p.add_argument("--mode", "-m", default="755", help="Octal mode applied to installed paths.")
         p.add_argument("--parents", action="store_true", help="Create missing parent directories.")
         p.add_argument("--allow-overwrite", action="store_true", help="Allow replacing an existing destination.")
@@ -1026,6 +1041,7 @@ def build_parser() -> AgentArgumentParser:
 #  dispatch & main
 # ═══════════════════════════════════════════════════════════════════════
 
+
 def dispatch(args: argparse.Namespace) -> tuple[int, dict[str, Any] | bytes]:
     result = args.func(args)
     if isinstance(result, bytes):
@@ -1056,9 +1072,9 @@ def main(argv: list[str] | None = None) -> int:
     except BrokenPipeError:
         return EXIT["ok"]
     except KeyboardInterrupt:
-        exc = AgentError("general_error", "Interrupted.")
-        write_json(sys.stderr, error_envelope(command_name, exc))
-        return exc.exit_code
+        interrupt_error = AgentError("general_error", "Interrupted.")
+        write_json(sys.stderr, error_envelope(command_name, interrupt_error))
+        return interrupt_error.exit_code
     except Exception as exc:
         error = AgentError(
             "general_error",

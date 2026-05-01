@@ -8,8 +8,16 @@ from __future__ import annotations
 # Re-export priority functions from the single authority (catalog.py)
 from .catalog import (
     _COMMAND_PRIORITY_MAP,
-    get_priority,
     get_all_commands,
     get_commands_by_priority,
+    get_priority,
     implemented_catalog,
 )
+
+__all__ = [
+    "_COMMAND_PRIORITY_MAP",
+    "get_all_commands",
+    "get_commands_by_priority",
+    "get_priority",
+    "implemented_catalog",
+]

@@ -10,11 +10,34 @@ class CiConfigTests(unittest.TestCase):
         workflow = ROOT / ".github" / "workflows" / "ci.yml"
         self.assertTrue(workflow.exists(), "missing .github/workflows/ci.yml")
         text = workflow.read_text(encoding="utf-8")
-        self.assertTrue(
-            "python -m unittest discover -s tests" in text
-            or "python -m pytest tests/" in text
-        )
+        self.assertTrue("python -m unittest discover -s tests" in text or "python -m pytest tests/" in text)
         self.assertIn("PYTHONPATH", text)
+
+    def test_wsl_local_ci_scripts_mirror_ubuntu_job(self) -> None:
+        powershell_wrapper = ROOT / "scripts" / "run-ci-wsl.ps1"
+        wsl_script = ROOT / "scripts" / "wsl-ci.sh"
+        testing_doc = ROOT / "docs" / "development" / "TESTING.md"
+        wsl_doc = ROOT / "docs" / "development" / "WSL_CI.md"
+
+        for path in [powershell_wrapper, wsl_script, testing_doc, wsl_doc]:
+            with self.subTest(path=path):
+                self.assertTrue(path.exists(), f"missing {path}")
+
+        script_text = wsl_script.read_text(encoding="utf-8")
+        for required in [
+            "apt-get install -y coreutils python3-venv python3-pip",
+            'python -m pip install -e ".[test,dev]"',
+            "ruff check src/ tests/",
+            "ruff format --check src/ tests/",
+            "mypy src/agentutils/ --strict",
+            "python -m pytest tests/ -v --tb=short --cov=src/agentutils --cov-report=term-missing",
+        ]:
+            with self.subTest(required=required):
+                self.assertIn(required, script_text)
+
+        docs_text = testing_doc.read_text(encoding="utf-8") + wsl_doc.read_text(encoding="utf-8")
+        self.assertIn(r".\scripts\run-ci-wsl.ps1 -InstallSystemDeps", docs_text)
+        self.assertIn(".venv-wsl", docs_text)
 
     def test_pyproject_uses_src_layout(self) -> None:
         text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")

@@ -4,7 +4,7 @@ import io
 import json
 import unittest
 
-from agentutils.protocol import AgentError, EXIT, envelope, error_envelope, write_json
+from agentutils.protocol import EXIT, AgentError, envelope, error_envelope, write_json
 
 
 class UnitProtocolTests(unittest.TestCase):

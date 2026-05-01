@@ -12,16 +12,14 @@ from pathlib import Path
 from typing import Any
 
 from .protocol import (
-    AgentError,
     EXIT,
-    HASH_ALGORITHMS,
-    bounded_lines,
+    AgentError,
     dangerous_delete_target,
     destination_inside_directory,
     digest_bytes,
     digest_file,
-    disk_usage_entry,
     directory_size,
+    disk_usage_entry,
     ensure_exists,
     ensure_parent,
     iter_directory,
@@ -42,8 +40,8 @@ from .protocol import (
     wc_for_bytes,
 )
 
-
 # ── pwd / realpath / readlink ──────────────────────────────────────────
+
 
 def command_pwd(args: argparse.Namespace) -> dict[str, Any]:
     cwd = Path.cwd().resolve()
@@ -103,6 +101,7 @@ def command_readlink(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── basename / dirname ─────────────────────────────────────────────────
 
+
 def command_basename(args: argparse.Namespace) -> dict[str, Any] | bytes:
     entries = []
     raw_lines = []
@@ -132,6 +131,7 @@ def command_dirname(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 # ── ls / dir / vdir ────────────────────────────────────────────────────
+
 
 def command_ls(args: argparse.Namespace) -> dict[str, Any]:
     root = resolve_path(args.path, strict=True)
@@ -172,12 +172,14 @@ def command_vdir(args: argparse.Namespace) -> dict[str, Any]:
 
 # ── stat ───────────────────────────────────────────────────────────────
 
+
 def command_stat(args: argparse.Namespace) -> dict[str, Any]:
     entries = [stat_entry(resolve_path(raw, strict=True)) for raw in args.paths]
     return {"count": len(entries), "entries": entries}
 
 
 # ── cat / head / tail ──────────────────────────────────────────────────
+
 
 def command_cat(args: argparse.Namespace) -> dict[str, Any] | bytes:
     path = resolve_path(args.path, strict=True)
@@ -196,10 +198,15 @@ def command_cat(args: argparse.Namespace) -> dict[str, Any] | bytes:
     }
 
 
-def command_head(args: argparse.Namespace) -> dict[str, Any]:
+def command_head(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.lines < 0:
         raise AgentError("invalid_input", "--lines must be >= 0.")
     path = resolve_path(args.path, strict=True)
+    if args.raw:
+        ensure_exists(path)
+        if path.is_dir():
+            raise AgentError("invalid_input", "Path is a directory, not a file.", path=str(path))
+        return b"".join(path.read_bytes().splitlines(keepends=True)[: args.lines])
     lines = read_text_lines(path, encoding=args.encoding)
     selected = lines[: args.lines]
     return {
@@ -213,10 +220,16 @@ def command_head(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
-def command_tail(args: argparse.Namespace) -> dict[str, Any]:
+def command_tail(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.lines < 0:
         raise AgentError("invalid_input", "--lines must be >= 0.")
     path = resolve_path(args.path, strict=True)
+    if args.raw:
+        ensure_exists(path)
+        if path.is_dir():
+            raise AgentError("invalid_input", "Path is a directory, not a file.", path=str(path))
+        lines_with_endings = path.read_bytes().splitlines(keepends=True)
+        return b"".join(lines_with_endings[-args.lines :] if args.lines else [])
     lines = read_text_lines(path, encoding=args.encoding)
     selected = lines[-args.lines :] if args.lines else []
     return {
@@ -232,7 +245,8 @@ def command_tail(args: argparse.Namespace) -> dict[str, Any]:
 
 # ── wc ─────────────────────────────────────────────────────────────────
 
-def command_wc(args: argparse.Namespace) -> dict[str, Any]:
+
+def command_wc(args: argparse.Namespace) -> dict[str, Any] | bytes:
     entries = []
     totals = {"bytes": 0, "chars": 0, "lines": 0, "words": 0}
     for raw in args.paths:
@@ -250,10 +264,19 @@ def command_wc(args: argparse.Namespace) -> dict[str, Any]:
         for key in totals:
             totals[key] += counts[key]
         entries.append({"path": path_label, **counts})
+    if args.raw:
+        lines = [
+            f"{entry['lines']} {entry['words']} {entry['bytes']}{'' if entry['path'] == '-' else ' ' + Path(entry['path']).name}"
+            for entry in entries
+        ]
+        if len(entries) > 1:
+            lines.append(f"{totals['lines']} {totals['words']} {totals['bytes']} total")
+        return lines_to_raw(lines, encoding=args.encoding)
     return {"count": len(entries), "entries": entries, "totals": totals}
 
 
 # ── hash commands ──────────────────────────────────────────────────────
+
 
 def command_hash(args: argparse.Namespace) -> dict[str, Any]:
     entries = []
@@ -283,6 +306,7 @@ def command_hash(args: argparse.Namespace) -> dict[str, Any]:
 
 def command_cksum(args: argparse.Namespace) -> dict[str, Any] | bytes:
     import zlib
+
     entries = []
     raw_lines = []
     for raw in args.paths or ["-"]:
@@ -303,6 +327,7 @@ def command_cksum(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 def command_sum(args: argparse.Namespace) -> dict[str, Any] | bytes:
     from .protocol import simple_sum16
+
     if args.block_size < 1:
         raise AgentError("invalid_input", "--block-size must be >= 1.")
     entries = []
@@ -327,6 +352,7 @@ def command_sum(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 # ── mkdir / touch ──────────────────────────────────────────────────────
+
 
 def command_mkdir(args: argparse.Namespace) -> dict[str, Any]:
     operations = []
@@ -363,6 +389,7 @@ def command_touch(args: argparse.Namespace) -> dict[str, Any]:
 
 
 # ── cp / mv ────────────────────────────────────────────────────────────
+
 
 def command_cp(args: argparse.Namespace) -> dict[str, Any]:
     source = resolve_path(args.source, strict=True)
@@ -422,6 +449,7 @@ def command_mv(args: argparse.Namespace) -> dict[str, Any]:
 
 # ── ln / link ──────────────────────────────────────────────────────────
 
+
 def command_ln(args: argparse.Namespace) -> dict[str, Any]:
     source = Path(args.source).expanduser()
     requested_destination = resolve_path(args.destination)
@@ -458,7 +486,9 @@ def command_ln(args: argparse.Namespace) -> dict[str, Any]:
             else:
                 os.link(source, destination)
         except PermissionError as exc:
-            raise AgentError("permission_denied", "Permission denied while creating link.", path=str(destination)) from exc
+            raise AgentError(
+                "permission_denied", "Permission denied while creating link.", path=str(destination)
+            ) from exc
         except OSError as exc:
             raise AgentError("io_error", str(exc), path=str(destination)) from exc
     return {"operations": [operation]}
@@ -492,7 +522,9 @@ def command_link(args: argparse.Namespace) -> dict[str, Any]:
         try:
             os.link(source, destination)
         except PermissionError as exc:
-            raise AgentError("permission_denied", "Permission denied while creating hard link.", path=str(destination)) from exc
+            raise AgentError(
+                "permission_denied", "Permission denied while creating hard link.", path=str(destination)
+            ) from exc
         except OSError as exc:
             raise AgentError("io_error", str(exc), path=str(destination)) from exc
     return {"operations": [operation]}
@@ -500,8 +532,10 @@ def command_link(args: argparse.Namespace) -> dict[str, Any]:
 
 # ── chmod / chown / chgrp ──────────────────────────────────────────────
 
+
 def command_chmod(args: argparse.Namespace) -> dict[str, Any]:
     import stat as statmod
+
     new_mode = parse_octal_mode(args.mode)
     operations = []
     for raw in args.paths:
@@ -533,7 +567,8 @@ def command_chown(args: argparse.Namespace) -> dict[str, Any]:
     if uid is None and gid is None:
         raise AgentError("invalid_input", "chown requires an owner, group, or both.")
     operations = []
-    supported = hasattr(os, "chown")
+    chown = getattr(os, "chown", None)
+    supported = callable(chown)
     for raw in args.paths:
         path = resolve_path(raw, strict=True)
         st = path.lstat()
@@ -553,10 +588,13 @@ def command_chown(args: argparse.Namespace) -> dict[str, Any]:
         if not args.dry_run:
             if not supported:
                 raise AgentError("invalid_input", "chown is not supported on this platform.", path=str(path))
+            assert callable(chown)
             try:
-                os.chown(path, -1 if uid is None else uid, -1 if gid is None else gid, follow_symlinks=not args.no_follow)
+                chown(path, -1 if uid is None else uid, -1 if gid is None else gid, follow_symlinks=not args.no_follow)
             except PermissionError as exc:
-                raise AgentError("permission_denied", "Permission denied while changing owner.", path=str(path)) from exc
+                raise AgentError(
+                    "permission_denied", "Permission denied while changing owner.", path=str(path)
+                ) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), path=str(path)) from exc
     return {"count": len(operations), "operations": operations}
@@ -564,8 +602,11 @@ def command_chown(args: argparse.Namespace) -> dict[str, Any]:
 
 def command_chgrp(args: argparse.Namespace) -> dict[str, Any]:
     gid = resolve_group_id(args.group)
+    if gid is None:
+        raise AgentError("invalid_input", "A group is required.")
     operations = []
-    supported = hasattr(os, "chown")
+    chown = getattr(os, "chown", None)
+    supported = callable(chown)
     for raw in args.paths:
         path = resolve_path(raw, strict=True)
         st = path.lstat()
@@ -582,16 +623,20 @@ def command_chgrp(args: argparse.Namespace) -> dict[str, Any]:
         if not args.dry_run:
             if not supported:
                 raise AgentError("invalid_input", "chgrp is not supported on this platform.", path=str(path))
+            assert callable(chown)
             try:
-                os.chown(path, -1, gid, follow_symlinks=not args.no_follow)
+                chown(path, -1, gid, follow_symlinks=not args.no_follow)
             except PermissionError as exc:
-                raise AgentError("permission_denied", "Permission denied while changing group.", path=str(path)) from exc
+                raise AgentError(
+                    "permission_denied", "Permission denied while changing group.", path=str(path)
+                ) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), path=str(path)) from exc
     return {"count": len(operations), "operations": operations}
 
 
 # ── truncate / mktemp / mkfifo / mknod ─────────────────────────────────
+
 
 def command_truncate(args: argparse.Namespace) -> dict[str, Any]:
     if args.size < 0:
@@ -621,7 +666,9 @@ def command_truncate(args: argparse.Namespace) -> dict[str, Any]:
                 with path.open("ab") as handle:
                     handle.truncate(args.size)
             except PermissionError as exc:
-                raise AgentError("permission_denied", "Permission denied while truncating file.", path=str(path)) from exc
+                raise AgentError(
+                    "permission_denied", "Permission denied while truncating file.", path=str(path)
+                ) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), path=str(path)) from exc
     return {"count": len(operations), "operations": operations}
@@ -647,7 +694,9 @@ def command_mktemp(args: argparse.Namespace) -> dict[str, Any]:
             fd, path = tempfile.mkstemp(prefix=args.prefix, suffix=args.suffix, dir=tmpdir)
             os.close(fd)
     except PermissionError as exc:
-        raise AgentError("permission_denied", "Permission denied while creating temporary path.", path=str(tmpdir)) from exc
+        raise AgentError(
+            "permission_denied", "Permission denied while creating temporary path.", path=str(tmpdir)
+        ) from exc
     except OSError as exc:
         raise AgentError("io_error", str(exc), path=str(tmpdir)) from exc
     return {
@@ -662,7 +711,8 @@ def command_mktemp(args: argparse.Namespace) -> dict[str, Any]:
 def command_mkfifo(args: argparse.Namespace) -> dict[str, Any]:
     mode = parse_octal_mode(args.mode)
     operations = []
-    supported = hasattr(os, "mkfifo")
+    mkfifo = getattr(os, "mkfifo", None)
+    supported = callable(mkfifo)
     for raw in args.paths:
         path = resolve_path(raw)
         if path.exists() or path.is_symlink():
@@ -684,8 +734,9 @@ def command_mkfifo(args: argparse.Namespace) -> dict[str, Any]:
                     path=str(path),
                     suggestion="Use --dry-run for planning or run on a platform with os.mkfifo support.",
                 )
+            assert callable(mkfifo)
             try:
-                os.mkfifo(path, mode)  # type: ignore[attr-defined]
+                mkfifo(path, mode)
             except PermissionError as exc:
                 raise AgentError("permission_denied", "Permission denied while creating FIFO.", path=str(path)) from exc
             except OSError as exc:
@@ -701,7 +752,8 @@ def command_mknod(args: argparse.Namespace) -> dict[str, Any]:
         if path.exists() or path.is_symlink():
             raise AgentError("conflict", "Destination exists.", path=str(path))
         ensure_parent(path, create=args.parents, dry_run=args.dry_run)
-        supported = args.node_type == "regular" or hasattr(os, "mkfifo")
+        mkfifo = getattr(os, "mkfifo", None)
+        supported = args.node_type == "regular" or callable(mkfifo)
         operation = {
             "operation": "mknod",
             "path": str(path),
@@ -717,10 +769,12 @@ def command_mknod(args: argparse.Namespace) -> dict[str, Any]:
                     with path.open("xb"):
                         pass
                     os.chmod(path, mode)
-                elif args.node_type == "fifo" and hasattr(os, "mkfifo"):
-                    os.mkfifo(path, mode)  # type: ignore[attr-defined]
+                elif args.node_type == "fifo" and callable(mkfifo):
+                    mkfifo(path, mode)
                 else:
-                    raise AgentError("invalid_input", "Requested node type is not supported on this platform.", path=str(path))
+                    raise AgentError(
+                        "invalid_input", "Requested node type is not supported on this platform.", path=str(path)
+                    )
             except PermissionError as exc:
                 raise AgentError("permission_denied", "Permission denied while creating node.", path=str(path)) from exc
             except OSError as exc:
@@ -729,6 +783,7 @@ def command_mknod(args: argparse.Namespace) -> dict[str, Any]:
 
 
 # ── install ────────────────────────────────────────────────────────────
+
 
 def command_install(args: argparse.Namespace) -> dict[str, Any]:
     mode = parse_octal_mode(args.mode)
@@ -788,13 +843,16 @@ def command_install(args: argparse.Namespace) -> dict[str, Any]:
             shutil.copy2(source, destination)
             os.chmod(destination, mode)
         except PermissionError as exc:
-            raise AgentError("permission_denied", "Permission denied while installing file.", path=str(destination)) from exc
+            raise AgentError(
+                "permission_denied", "Permission denied while installing file.", path=str(destination)
+            ) from exc
         except OSError as exc:
             raise AgentError("io_error", str(exc), path=str(destination)) from exc
     return {"count": len(operations), "operations": operations}
 
 
 # ── tee / rmdir / unlink ───────────────────────────────────────────────
+
 
 def command_tee(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.max_preview_bytes < 0:
@@ -874,13 +932,16 @@ def command_unlink(args: argparse.Namespace) -> dict[str, Any]:
             try:
                 path.unlink()
             except PermissionError as exc:
-                raise AgentError("permission_denied", "Permission denied while unlinking path.", path=str(path)) from exc
+                raise AgentError(
+                    "permission_denied", "Permission denied while unlinking path.", path=str(path)
+                ) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), path=str(path)) from exc
     return {"count": len(operations), "operations": operations}
 
 
 # ── rm / shred ─────────────────────────────────────────────────────────
+
 
 def command_rm(args: argparse.Namespace) -> dict[str, Any]:
     cwd = Path.cwd().resolve()
@@ -948,7 +1009,9 @@ def command_shred(args: argparse.Namespace) -> dict[str, Any]:
                 if args.remove:
                     path.unlink()
             except PermissionError as exc:
-                raise AgentError("permission_denied", "Permission denied while shredding file.", path=str(path)) from exc
+                raise AgentError(
+                    "permission_denied", "Permission denied while shredding file.", path=str(path)
+                ) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), path=str(path)) from exc
     return {"count": len(operations), "operations": operations}
@@ -956,8 +1019,10 @@ def command_shred(args: argparse.Namespace) -> dict[str, Any]:
 
 # ── test / [ ────────────────────────────────────────────────────────────
 
+
 def command_test(args: argparse.Namespace) -> dict[str, Any]:
     from .protocol import evaluate_test_predicates
+
     path = Path(args.path).expanduser()
     predicates = []
     if args.exists:
@@ -1064,6 +1129,7 @@ def command_bracket(args: argparse.Namespace) -> dict[str, Any]:
 
 # ── df / du / dd / sync ────────────────────────────────────────────────
 
+
 def command_df(args: argparse.Namespace) -> dict[str, Any]:
     paths = args.paths or ["."]
     entries = [disk_usage_entry(resolve_path(raw, strict=True)) for raw in paths]
@@ -1123,7 +1189,9 @@ def command_dd(args: argparse.Namespace) -> dict[str, Any] | bytes:
                     handle.seek(args.seek * args.bs)
                     handle.write(selected)
             except PermissionError as exc:
-                raise AgentError("permission_denied", "Permission denied while writing output.", path=str(output_path)) from exc
+                raise AgentError(
+                    "permission_denied", "Permission denied while writing output.", path=str(output_path)
+                ) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), path=str(output_path)) from exc
 
@@ -1147,10 +1215,17 @@ def command_dd(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 def command_sync(args: argparse.Namespace) -> dict[str, Any]:
-    supported = hasattr(os, "sync")
+    sync = getattr(os, "sync", None)
+    supported = callable(sync)
     if not args.dry_run and supported:
+        assert callable(sync)
         try:
-            os.sync()  # type: ignore[attr-defined]
+            sync()
         except OSError as exc:
             raise AgentError("io_error", str(exc)) from exc
-    return {"operation": "sync", "supported": supported, "synced": bool(supported and not args.dry_run), "dry_run": args.dry_run}
+    return {
+        "operation": "sync",
+        "supported": supported,
+        "synced": bool(supported and not args.dry_run),
+        "dry_run": args.dry_run,
+    }

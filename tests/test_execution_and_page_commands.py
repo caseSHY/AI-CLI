@@ -30,7 +30,9 @@ class ExecutionAndPageCommandsTests(unittest.TestCase):
 
         with TemporaryDirectory() as raw:
             cwd = Path(raw)
-            nohup = parse_stdout(run_cli("nohup", "--output", "out.log", "--dry-run", "--", sys.executable, "-c", "print('ok')", cwd=cwd))
+            nohup = parse_stdout(
+                run_cli("nohup", "--output", "out.log", "--dry-run", "--", sys.executable, "-c", "print('ok')", cwd=cwd)
+            )
             self.assertEqual(nohup["result"]["operation"]["output"], str((cwd / "out.log").resolve()))
             self.assertFalse((cwd / "out.log").exists())
 
@@ -59,7 +61,9 @@ class ExecutionAndPageCommandsTests(unittest.TestCase):
         self.assertIn("Report  Page 1", paged.stdout)
         self.assertIn("Report  Page 2", paged.stdout)
 
-        index = parse_stdout(run_cli("ptx", "--ignore-case", "--only", "beta", input_text="alpha beta gamma\nbeta delta\n"))
+        index = parse_stdout(
+            run_cli("ptx", "--ignore-case", "--only", "beta", input_text="alpha beta gamma\nbeta delta\n")
+        )
         self.assertEqual(index["result"]["total_records"], 2)
         self.assertEqual(index["result"]["records"][0]["keyword"].lower(), "beta")
 

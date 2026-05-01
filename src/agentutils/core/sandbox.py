@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
+from typing import Any
 
 from .exceptions import AgentError
 from .path_utils import resolve_path
@@ -83,14 +84,14 @@ def remove_one(path: Path, *, dry_run: bool) -> str:
             raise AgentError("io_error", str(exc), path=str(path)) from exc
 
 
-def remove_recursive(path: Path, *, dry_run: bool, allow_outside_cwd: bool) -> list[dict]:
+def remove_recursive(path: Path, *, dry_run: bool, allow_outside_cwd: bool) -> list[dict[str, Any]]:
     """Recursively remove a directory. Returns list of operation records."""
     cwd = Path.cwd().resolve()
     reason = dangerous_delete_target(path, cwd)
     if reason:
         raise AgentError("unsafe_operation", reason, path=str(path))
     require_inside_cwd(path, cwd, allow_outside_cwd=allow_outside_cwd)
-    operations: list[dict] = []
+    operations: list[dict[str, Any]] = []
     if dry_run:
         operations.append({"operation": "rm", "path": str(path), "dry_run": True})
         return operations

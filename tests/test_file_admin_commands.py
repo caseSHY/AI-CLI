@@ -42,7 +42,9 @@ class FileAdminCommandsTests(unittest.TestCase):
             self.assertEqual(conflict.returncode, 6)
             self.assertEqual(json.loads(conflict.stderr)["error"]["code"], "conflict")
 
-            installed = parse_stdout(run_cli("install", "source.txt", "bin/tool.txt", "--parents", "--mode", "600", cwd=cwd))
+            installed = parse_stdout(
+                run_cli("install", "source.txt", "bin/tool.txt", "--parents", "--mode", "600", cwd=cwd)
+            )
             self.assertEqual(installed["result"]["operations"][0]["mode_octal"], "0o600")
             self.assertEqual((cwd / "bin" / "tool.txt").read_text(encoding="utf-8"), "abcdef")
 

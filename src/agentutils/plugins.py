@@ -17,10 +17,10 @@ from __future__ import annotations
 
 import importlib
 import pkgutil
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
-from .catalog import CATALOG as _BUILTIN_CATALOG, get_priority
-
+from .catalog import CATALOG as _BUILTIN_CATALOG
 
 # Type alias for a command function
 CommandFunc = Callable[..., Any]
@@ -38,7 +38,7 @@ def discover_plugins() -> dict[str, CommandFunc]:
     global _PLUGIN_COMMANDS
     discovered: dict[str, CommandFunc] = {}
 
-    for finder, name, ispkg in pkgutil.iter_modules():
+    for _finder, name, ispkg in pkgutil.iter_modules():
         if not name.startswith("agentutils_") or not ispkg:
             continue
         try:
@@ -70,13 +70,15 @@ def register_plugin_command(name: str, func: CommandFunc, priority: str = "P3") 
                 entry["tools"].append(name)
             return
     # If priority not found, create a new entry
-    _BUILTIN_CATALOG.append({
-        "priority": priority,
-        "urgency": "normal",
-        "category": "plugin",
-        "why": "User-installed plugin command.",
-        "tools": [name],
-    })
+    _BUILTIN_CATALOG.append(
+        {
+            "priority": priority,
+            "urgency": "normal",
+            "category": "plugin",
+            "why": "User-installed plugin command.",
+            "tools": [name],
+        }
+    )
 
 
 def has_plugins() -> bool:

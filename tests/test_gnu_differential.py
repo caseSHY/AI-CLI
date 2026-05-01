@@ -39,8 +39,12 @@ def run_gnu(
     exe = find_gnu(args[0])
     assert exe is not None, f"GNU {args[0]} not found"
     return subprocess.run(
-        [exe, *args[1:]], cwd=cwd, input=input_text,
-        text=True, capture_output=True, check=False,
+        [exe, *args[1:]],
+        cwd=cwd,
+        input=input_text,
+        text=True,
+        capture_output=True,
+        check=False,
     )
 
 

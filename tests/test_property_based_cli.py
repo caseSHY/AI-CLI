@@ -13,18 +13,16 @@ Strategy:
 
 from __future__ import annotations
 
-import base64 as b64
-import hashlib
 import json
 import re
 import unittest
+from contextlib import suppress
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from hypothesis import given, settings, strategies as st
-
+from hypothesis import given, settings
+from hypothesis import strategies as st
 from support import run_cli
-
 
 PROPERTY_EXAMPLES = 25
 ENVELOPE_EXAMPLES = 15
@@ -64,6 +62,7 @@ argument_text = st.text(
 
 # ── helper ───────────────────────────────────────────────────────────
 
+
 def _lines(result):
     text = result.stdout
     if text == "":
@@ -78,6 +77,7 @@ def _line_values(lines: list[str]) -> list[str]:
 
 
 # ── Cat properties (file-based) ──────────────────────────────────────
+
 
 class CatPropertyTests(unittest.TestCase):
     @given(flat_text)
@@ -106,6 +106,7 @@ class CatPropertyTests(unittest.TestCase):
 
 
 # ── Sort properties (stdin-based) ────────────────────────────────────
+
 
 class SortPropertyTests(unittest.TestCase):
     @given(lines_list)
@@ -144,15 +145,14 @@ class SortPropertyTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         nums = []
         for o in _lines(result):
-            try:
+            with suppress(ValueError):
                 nums.append(float(o))
-            except ValueError:
-                pass
         for i in range(len(nums) - 1):
             self.assertLessEqual(nums[i], nums[i + 1])
 
 
 # ── Uniq properties (stdin-based) ────────────────────────────────────
+
 
 class UniqPropertyTests(unittest.TestCase):
     @given(lines_list)
@@ -163,8 +163,7 @@ class UniqPropertyTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         out = _lines(result)
         for i in range(len(out) - 1):
-            self.assertNotEqual(out[i], out[i + 1],
-                                f"adjacent duplicate at {i}: {out[i]!r}")
+            self.assertNotEqual(out[i], out[i + 1], f"adjacent duplicate at {i}: {out[i]!r}")
 
     @given(lines_list)
     @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
@@ -182,11 +181,11 @@ class UniqPropertyTests(unittest.TestCase):
             seen.add(line)
             prev = line
         for line in non_adj:
-            self.assertIn(line, out_set,
-                          f"non-adjacent duplicate {line!r} missing")
+            self.assertIn(line, out_set, f"non-adjacent duplicate {line!r} missing")
 
 
 # ── WC properties (file-based) ───────────────────────────────────────
+
 
 class WcPropertyTests(unittest.TestCase):
     @given(flat_text)
@@ -214,6 +213,7 @@ class WcPropertyTests(unittest.TestCase):
 
 # ── Base64 properties (stdin-based) ──────────────────────────────────
 
+
 class Base64PropertyTests(unittest.TestCase):
     @given(flat_text)
     @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
@@ -237,6 +237,7 @@ class Base64PropertyTests(unittest.TestCase):
 
 
 # ── Head / Tail properties (file-based) ──────────────────────────────
+
 
 class HeadTailPropertyTests(unittest.TestCase):
     @given(lines_list, _n_small)
@@ -287,6 +288,7 @@ class HeadTailPropertyTests(unittest.TestCase):
 
 # ── Cut properties (stdin-based) ─────────────────────────────────────
 
+
 class CutPropertyTests(unittest.TestCase):
     @given(lines_list)
     @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
@@ -295,7 +297,7 @@ class CutPropertyTests(unittest.TestCase):
         result = run_cli("cut", "--chars", "1", "--raw", input_text=text)
         self.assertEqual(result.returncode, 0, result.stderr)
         out = _lines(result)
-        for i, (inp, outp) in enumerate(zip(_line_values(lines), out)):
+        for i, (inp, outp) in enumerate(zip(_line_values(lines), out, strict=False)):
             if inp:
                 self.assertEqual(outp, inp[0], f"line {i}: expected {inp[0]!r} got {outp!r}")
 
@@ -308,6 +310,7 @@ class CutPropertyTests(unittest.TestCase):
 
 
 # ── Tr properties (stdin-based) ──────────────────────────────────────
+
 
 class TrPropertyTests(unittest.TestCase):
     @given(ascii_text)
@@ -334,6 +337,7 @@ class TrPropertyTests(unittest.TestCase):
 
 # ── Echo properties (no-input) ───────────────────────────────────────
 
+
 class EchoPropertyTests(unittest.TestCase):
     @given(st.lists(argument_text, min_size=1, max_size=8))
     @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
@@ -345,6 +349,7 @@ class EchoPropertyTests(unittest.TestCase):
 
 
 # ── JSON envelope properties ─────────────────────────────────────────
+
 
 class JsonEnvelopePropertyTests(unittest.TestCase):
     @given(flat_text)

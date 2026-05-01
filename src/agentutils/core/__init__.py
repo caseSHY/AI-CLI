@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from .exit_codes import EXIT
-from .exceptions import AgentError
 from .envelope import envelope, error_envelope, utc_iso, write_json
+from .exceptions import AgentError
+from .exit_codes import EXIT
 from .path_utils import (
     directory_size,
     disk_usage_entry,
@@ -22,7 +22,7 @@ from .sandbox import (
     remove_one,
     require_inside_cwd,
 )
-from .stream import StreamWriter, NullStream, is_stream_mode
+from .stream import NullStream, StreamWriter, is_stream_mode
 
 __all__ = [
     "AgentError",

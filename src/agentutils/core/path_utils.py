@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import datetime as dt
 import os
 import stat as statmod
+from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
-from .exceptions import AgentError
 from .envelope import utc_iso
+from .exceptions import AgentError
 
 
 def resolve_path(raw: str | Path, *, strict: bool = False) -> Path:
@@ -156,10 +156,8 @@ def disk_usage_entry(path: Path) -> dict[str, Any]:
     try:
         for item in path.rglob("*"):
             if item.is_file() and not item.is_symlink():
-                try:
+                with suppress(OSError):
                     total += item.stat().st_size
-                except OSError:
-                    pass
     except PermissionError:
         pass
     return {"path": str(path), "size_bytes": total}
@@ -170,10 +168,8 @@ def directory_size(path: Path) -> int:
     try:
         for item in path.rglob("*"):
             if item.is_file() and not item.is_symlink():
-                try:
+                with suppress(OSError):
                     total += item.stat().st_size
-                except OSError:
-                    pass
     except PermissionError:
         pass
     return total

@@ -9,7 +9,6 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 
@@ -161,22 +160,19 @@ class AgentutilsTests(unittest.TestCase):
             digest = hash_payload["result"]["entries"][0]["digest"]
             self.assertEqual(len(digest), 64)
             expected_sha256 = hashlib.sha256(target.read_bytes()).hexdigest()
-            self.assertEqual(digest, expected_sha256,
-                             "sha256sum must match hashlib.sha256 of the file bytes")
+            self.assertEqual(digest, expected_sha256, "sha256sum must match hashlib.sha256 of the file bytes")
 
             md5_payload = self.parse_stdout(run_cli("md5sum", "note.txt", cwd=cwd))
             md5_digest = md5_payload["result"]["entries"][0]["digest"]
             self.assertEqual(len(md5_digest), 32)
             expected_md5 = hashlib.md5(target.read_bytes()).hexdigest()
-            self.assertEqual(md5_digest, expected_md5,
-                             "md5sum must match hashlib.md5 of the file bytes")
+            self.assertEqual(md5_digest, expected_md5, "md5sum must match hashlib.md5 of the file bytes")
 
             b2_payload = self.parse_stdout(run_cli("b2sum", "note.txt", cwd=cwd))
             b2_digest = b2_payload["result"]["entries"][0]["digest"]
             self.assertEqual(len(b2_digest), 128)
             expected_b2 = hashlib.blake2b(target.read_bytes()).hexdigest()
-            self.assertEqual(b2_digest, expected_b2,
-                             "b2sum must match hashlib.blake2b of the file bytes")
+            self.assertEqual(b2_digest, expected_b2, "b2sum must match hashlib.blake2b of the file bytes")
 
     def test_sort_uniq_cut_and_tr(self) -> None:
         with TemporaryDirectory() as raw:

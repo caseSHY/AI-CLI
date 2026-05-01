@@ -166,16 +166,15 @@ class SymlinkEscapeTests(unittest.TestCase):
         link = self._create_symlink("link.txt")
         if link is None:
             raise unittest.SkipTest("Symlink creation not supported")
-        result = run_cli("rm", "link.txt", cwd=self.sandbox)
+        run_cli("rm", "link.txt", cwd=self.sandbox)
         # Regardless of exit code, outside file must still exist
-        self.assertTrue(self.outside.exists(),
-                        "Outside file must not be deleted when removing symlink")
+        self.assertTrue(self.outside.exists(), "Outside file must not be deleted when removing symlink")
 
     def test_truncate_to_symlink_preserves_outside_content(self) -> None:
         link = self._create_symlink("link.txt")
         if link is None:
             raise unittest.SkipTest("Symlink creation not supported")
-        result = run_cli("truncate", "link.txt", "--size", "0", cwd=self.sandbox)
+        run_cli("truncate", "link.txt", "--size", "0", cwd=self.sandbox)
         self.assertEqual(self.outside.read_text(encoding="utf-8"), "outside-content")
 
 
@@ -263,8 +262,7 @@ class DryRunZeroSideEffectTests(unittest.TestCase):
             self.assertFalse(path.exists(), f"{label} should not exist")
         else:
             self.assertTrue(path.exists(), f"{label} should still exist")
-            self.assertEqual(path.read_text(encoding="utf-8"), expected,
-                             f"{label} content changed")
+            self.assertEqual(path.read_text(encoding="utf-8"), expected, f"{label} content changed")
 
     def test_mkdir_dry_run_does_not_create(self) -> None:
         target = self.cwd / "newdir"
@@ -384,8 +382,9 @@ class DangerousCommandDefaultDenyTests(unittest.TestCase):
 
     def test_nohup_dry_run_does_not_execute(self) -> None:
         f = self.cwd / "out.log"
-        result = run_cli("nohup", "--output", "out.log", "--dry-run", "--",
-                         sys.executable, "-c", "print('not run')", cwd=self.cwd)
+        result = run_cli(
+            "nohup", "--output", "out.log", "--dry-run", "--", sys.executable, "-c", "print('not run')", cwd=self.cwd
+        )
         payload = json.loads(result.stdout)
         self.assertTrue(payload["ok"])
         self.assertFalse(f.exists())

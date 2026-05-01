@@ -8,12 +8,10 @@ import binascii
 import random
 import re
 import textwrap
-from typing import Any
+from typing import Any, TypedDict
 
 from .protocol import (
     AgentError,
-    EXIT,
-    HASH_ALGORITHMS,
     alpha_suffix,
     bounded_lines,
     combined_lines,
@@ -26,20 +24,46 @@ from .protocol import (
     parse_ranges,
     read_input_bytes,
     read_input_texts,
+    resolve_path,
     selected_indexes,
     split_fields,
     transform_text,
     unexpand_line,
-    digest_bytes,
-    digest_file,
-    read_stdin_bytes,
-    resolve_path,
-    simple_sum16,
 )
-from .fs_commands import command_hash
+
+
+class CommRecord(TypedDict):
+    column: int
+    line: str
+
+
+class LineCountRecord(TypedDict):
+    line: str
+    count: int
+
+
+class JoinRecord(TypedDict):
+    key: str
+    fields: list[str]
+    line: str
+
+
+class NlRecord(TypedDict):
+    number: int | None
+    line: str
+    output: str
+
+
+class PtxRecord(TypedDict):
+    keyword: str
+    line_number: int
+    left: str
+    right: str
+    line: str
 
 
 # ── sort ───────────────────────────────────────────────────────────────
+
 
 def command_sort(args: argparse.Namespace) -> dict[str, Any] | bytes:
     lines, source_paths = combined_lines(args.paths, encoding=args.encoding)
@@ -83,30 +107,51 @@ def command_sort(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── comm ───────────────────────────────────────────────────────────────
 
+
 def command_comm(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if len(args.paths) != 2:
         raise AgentError("invalid_input", "comm requires exactly two input files.")
     left_lines, left_sources = combined_lines([args.paths[0]], encoding=args.encoding)
     right_lines, right_sources = combined_lines([args.paths[1]], encoding=args.encoding)
-    left_set = set(left_lines)
-    right_set = set(right_lines)
-    only_left = [line for line in left_lines if line not in right_set]
-    only_right = [line for line in right_lines if line not in left_set]
-    common = [line for line in left_lines if line in right_set]
-    records = []
-    if not args.suppress_1:
-        records.extend({"column": 1, "line": line} for line in only_left)
-    if not args.suppress_2:
-        records.extend({"column": 2, "line": line} for line in only_right)
-    if not args.suppress_3:
-        records.extend({"column": 3, "line": line} for line in common)
+    records: list[CommRecord] = []
+    counts = {"only_first": 0, "only_second": 0, "common": 0}
+    left_index = 0
+    right_index = 0
+    while left_index < len(left_lines) and right_index < len(right_lines):
+        left = left_lines[left_index]
+        right = right_lines[right_index]
+        if left < right:
+            counts["only_first"] += 1
+            if not args.suppress_1:
+                records.append({"column": 1, "line": left})
+            left_index += 1
+        elif left > right:
+            counts["only_second"] += 1
+            if not args.suppress_2:
+                records.append({"column": 2, "line": right})
+            right_index += 1
+        else:
+            counts["common"] += 1
+            if not args.suppress_3:
+                records.append({"column": 3, "line": left})
+            left_index += 1
+            right_index += 1
+    for line in left_lines[left_index:]:
+        counts["only_first"] += 1
+        if not args.suppress_1:
+            records.append({"column": 1, "line": line})
+    for line in right_lines[right_index:]:
+        counts["only_second"] += 1
+        if not args.suppress_2:
+            records.append({"column": 2, "line": line})
     if args.raw:
-        raw_lines = [f"{record['column']}\t{record['line']}" for record in records]
+        prefixes = {1: "", 2: "\t", 3: "\t\t"}
+        raw_lines = [f"{prefixes[record['column']]}{record['line']}" for record in records]
         return lines_to_raw(raw_lines, encoding=args.encoding)
     emitted, truncated = bounded_lines(records, args.max_lines)
     return {
         "source_paths": left_sources + right_sources,
-        "counts": {"only_first": len(only_left), "only_second": len(only_right), "common": len(common)},
+        "counts": counts,
         "returned_records": len(emitted),
         "total_records": len(records),
         "truncated": truncated,
@@ -115,6 +160,7 @@ def command_comm(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 # ── join ───────────────────────────────────────────────────────────────
+
 
 def command_join(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if len(args.paths) != 2:
@@ -128,8 +174,8 @@ def command_join(args: argparse.Namespace) -> dict[str, Any] | bytes:
         fields = split_fields(line, args.delimiter)
         if len(fields) >= args.field2:
             right_index.setdefault(fields[args.field2 - 1], []).append(fields)
-    records = []
-    output_lines = []
+    records: list[JoinRecord] = []
+    output_lines: list[str] = []
     for line in left_lines:
         left_fields = split_fields(line, args.delimiter)
         if len(left_fields) < args.field1:
@@ -155,6 +201,7 @@ def command_join(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── paste ──────────────────────────────────────────────────────────────
 
+
 def command_paste(args: argparse.Namespace) -> dict[str, Any] | bytes:
     sources = read_input_texts(args.paths, encoding=args.encoding)
     line_groups = [source["text"].splitlines() for source in sources]
@@ -176,6 +223,7 @@ def command_paste(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 # ── shuf ───────────────────────────────────────────────────────────────
+
 
 def command_shuf(args: argparse.Namespace) -> dict[str, Any] | bytes:
     lines, source_paths = combined_lines(args.paths, encoding=args.encoding)
@@ -202,6 +250,7 @@ def command_shuf(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── tac ────────────────────────────────────────────────────────────────
 
+
 def command_tac(args: argparse.Namespace) -> dict[str, Any] | bytes:
     lines, source_paths = combined_lines(args.paths, encoding=args.encoding)
     output_lines = list(reversed(lines))
@@ -219,6 +268,7 @@ def command_tac(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── nl ─────────────────────────────────────────────────────────────────
 
+
 def command_nl(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.start < 0:
         raise AgentError("invalid_input", "--start must be >= 0.")
@@ -227,8 +277,8 @@ def command_nl(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.width < 1:
         raise AgentError("invalid_input", "--width must be >= 1.")
     lines, source_paths = combined_lines(args.paths, encoding=args.encoding)
-    records = []
-    output_lines = []
+    records: list[NlRecord] = []
+    output_lines: list[str] = []
     number = args.start
     for line in lines:
         should_number = args.number_blank or bool(line)
@@ -256,6 +306,7 @@ def command_nl(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 # ── fold ───────────────────────────────────────────────────────────────
+
 
 def command_fold(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.width < 1:
@@ -291,6 +342,7 @@ def command_fold(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 # ── fmt ────────────────────────────────────────────────────────────────
+
 
 def command_fmt(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.width < 1:
@@ -331,6 +383,7 @@ def command_fmt(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── csplit ─────────────────────────────────────────────────────────────
 
+
 def command_csplit(args: argparse.Namespace) -> dict[str, Any]:
     if args.pattern == "":
         raise AgentError("invalid_input", "--pattern cannot be empty.")
@@ -339,7 +392,9 @@ def command_csplit(args: argparse.Namespace) -> dict[str, Any]:
     try:
         regex = re.compile(args.pattern, re.MULTILINE)
     except re.error as exc:
-        raise AgentError("invalid_input", "Invalid csplit regular expression.", details={"pattern": args.pattern}) from exc
+        raise AgentError(
+            "invalid_input", "Invalid csplit regular expression.", details={"pattern": args.pattern}
+        ) from exc
     matches = list(regex.finditer(text))
     if args.max_splits < 0:
         raise AgentError("invalid_input", "--max-splits must be >= 0.")
@@ -377,7 +432,9 @@ def command_csplit(args: argparse.Namespace) -> dict[str, Any]:
             try:
                 destination.write_bytes(encoded)
             except PermissionError as exc:
-                raise AgentError("permission_denied", "Permission denied while writing csplit output.", path=str(destination)) from exc
+                raise AgentError(
+                    "permission_denied", "Permission denied while writing csplit output.", path=str(destination)
+                ) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), path=str(destination)) from exc
     return {
@@ -392,11 +449,15 @@ def command_csplit(args: argparse.Namespace) -> dict[str, Any]:
 
 # ── split ──────────────────────────────────────────────────────────────
 
+
 def split_chunks_by_lines(data: bytes, lines_per_file: int) -> list[tuple[bytes, int]]:
     if lines_per_file < 1:
         raise AgentError("invalid_input", "--lines must be >= 1.")
     lines = data.splitlines(keepends=True)
-    return [(b"".join(lines[index : index + lines_per_file]), len(lines[index : index + lines_per_file])) for index in range(0, len(lines), lines_per_file)]
+    return [
+        (b"".join(lines[index : index + lines_per_file]), len(lines[index : index + lines_per_file]))
+        for index in range(0, len(lines), lines_per_file)
+    ]
 
 
 def split_chunks_by_bytes(data: bytes, bytes_per_file: int) -> list[tuple[bytes, int]]:
@@ -420,7 +481,11 @@ def command_split(args: argparse.Namespace) -> dict[str, Any]:
         mode = "bytes"
     operations = []
     for index, (chunk, line_count) in enumerate(chunks):
-        suffix = numeric_suffix(index, args.suffix_length) if args.numeric_suffixes else alpha_suffix(index, args.suffix_length)
+        suffix = (
+            numeric_suffix(index, args.suffix_length)
+            if args.numeric_suffixes
+            else alpha_suffix(index, args.suffix_length)
+        )
         destination = output_dir / f"{args.prefix}{suffix}"
         if destination.exists() and not args.allow_overwrite:
             raise AgentError(
@@ -445,7 +510,9 @@ def command_split(args: argparse.Namespace) -> dict[str, Any]:
             try:
                 destination.write_bytes(chunk)
             except PermissionError as exc:
-                raise AgentError("permission_denied", "Permission denied while writing split file.", path=str(destination)) from exc
+                raise AgentError(
+                    "permission_denied", "Permission denied while writing split file.", path=str(destination)
+                ) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), path=str(destination)) from exc
     return {
@@ -459,6 +526,7 @@ def command_split(args: argparse.Namespace) -> dict[str, Any]:
 
 
 # ── od ─────────────────────────────────────────────────────────────────
+
 
 def command_od(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.offset < 0:
@@ -510,6 +578,7 @@ def command_od(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── pr ─────────────────────────────────────────────────────────────────
 
+
 def command_pr(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.width < 1:
         raise AgentError("invalid_input", "--width must be >= 1.")
@@ -543,11 +612,12 @@ def command_pr(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── ptx ────────────────────────────────────────────────────────────────
 
+
 def command_ptx(args: argparse.Namespace) -> dict[str, Any] | bytes:
     lines, source_paths = combined_lines(args.paths, encoding=args.encoding)
     ignore = {item.lower() if args.ignore_case else item for item in args.ignore}
     only = {item.lower() if args.ignore_case else item for item in args.only}
-    records = []
+    records: list[PtxRecord] = []
     for line_number, line in enumerate(lines, start=1):
         words = re.findall(r"[\w'-]+", line)
         for index, word in enumerate(words):
@@ -558,7 +628,13 @@ def command_ptx(args: argparse.Namespace) -> dict[str, Any] | bytes:
                 continue
             left = " ".join(words[max(0, index - args.context) : index])
             right = " ".join(words[index + 1 : index + 1 + args.context])
-            record = {"keyword": word, "line_number": line_number, "left": left, "right": right, "line": line}
+            record: PtxRecord = {
+                "keyword": word,
+                "line_number": line_number,
+                "left": left,
+                "right": right,
+                "line": line,
+            }
             records.append(record)
     records.sort(key=lambda record: (record["keyword"].lower(), record["line_number"]))
     raw_lines = [f"{record['left']}\t{record['keyword']}\t{record['right']}".strip() for record in records]
@@ -576,6 +652,7 @@ def command_ptx(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── tsort ──────────────────────────────────────────────────────────────
 
+
 def command_tsort(args: argparse.Namespace) -> dict[str, Any] | bytes:
     sources = read_input_texts(args.paths, encoding=args.encoding)
     tokens: list[str] = []
@@ -586,9 +663,9 @@ def command_tsort(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
     nodes = set(tokens)
     adjacency: dict[str, set[str]] = {node: set() for node in nodes}
-    indegree = {node: 0 for node in nodes}
+    indegree = dict.fromkeys(nodes, 0)
     edges = []
-    for left, right in zip(tokens[0::2], tokens[1::2]):
+    for left, right in zip(tokens[0::2], tokens[1::2], strict=True):
         edges.append({"before": left, "after": right})
         if right not in adjacency[left]:
             adjacency[left].add(right)
@@ -629,11 +706,12 @@ def command_tsort(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── uniq ───────────────────────────────────────────────────────────────
 
+
 def command_uniq(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.repeated and args.unique_only:
         raise AgentError("invalid_input", "--repeated and --unique-only cannot be used together.")
     lines, source_paths = combined_lines(args.paths, encoding=args.encoding)
-    records = []
+    records: list[LineCountRecord] = []
     current: str | None = None
     current_key: str | None = None
     count = 0
@@ -680,18 +758,19 @@ def command_uniq(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── cut ────────────────────────────────────────────────────────────────
 
+
 def cut_line(args: argparse.Namespace, line: str, ranges: list[tuple[int | None, int | None]]) -> str:
     if args.fields:
         fields = line.split(args.delimiter)
-        selected = [fields[index] for index in selected_indexes(len(fields), ranges)]
-        return args.output_delimiter.join(selected)
+        selected_fields = [fields[index] for index in selected_indexes(len(fields), ranges)]
+        return str(args.output_delimiter).join(selected_fields)
     if args.chars:
         chars = list(line)
-        selected = [chars[index] for index in selected_indexes(len(chars), ranges)]
-        return "".join(selected)
+        selected_chars = [chars[index] for index in selected_indexes(len(chars), ranges)]
+        return "".join(selected_chars)
     data = line.encode(args.encoding)
-    selected = bytes(data[index] for index in selected_indexes(len(data), ranges))
-    return selected.decode(args.encoding, errors="replace")
+    selected_bytes = bytes(data[index] for index in selected_indexes(len(data), ranges))
+    return selected_bytes.decode(args.encoding, errors="replace")
 
 
 def command_cut(args: argparse.Namespace) -> dict[str, Any] | bytes:
@@ -715,6 +794,7 @@ def command_cut(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── tr ─────────────────────────────────────────────────────────────────
 
+
 def command_tr(args: argparse.Namespace) -> dict[str, Any] | bytes:
     sources = read_input_texts(args.paths, encoding=args.encoding)
     output = "".join(transform_text(args, source["text"]) for source in sources)
@@ -735,6 +815,7 @@ def command_tr(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 # ── expand / unexpand ──────────────────────────────────────────────────
+
 
 def command_expand(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.tabs < 1:
@@ -760,7 +841,7 @@ def command_unexpand(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.tabs < 1:
         raise AgentError("invalid_input", "--tabs must be >= 1.")
     sources = read_input_texts(args.paths, encoding=args.encoding)
-    output_parts = []
+    output_parts: list[str] = []
     for source in sources:
         lines = source["text"].splitlines(keepends=True)
         output_parts.extend(unexpand_line(line, tab_size=args.tabs, all_blanks=args.all) for line in lines)
@@ -783,6 +864,7 @@ def command_unexpand(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── codec commands (base64, base32, basenc) ────────────────────────────
 
+
 def command_codec(args: argparse.Namespace) -> dict[str, Any] | bytes:
     inputs = args.paths or ["-"]
     chunks = []
@@ -803,7 +885,7 @@ def command_codec(args: argparse.Namespace) -> dict[str, Any] | bytes:
         raise AgentError("invalid_input", f"Invalid {args.codec} input for decoding.") from exc
 
     if args.raw:
-        return output
+        return output if args.decode or not output else output + b"\n"
 
     if args.max_output_bytes < 0:
         raise AgentError("invalid_input", "--max-output-bytes must be >= 0.")
@@ -885,8 +967,10 @@ def command_basenc(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── numfmt ─────────────────────────────────────────────────────────────
 
+
 def command_numfmt(args: argparse.Namespace) -> dict[str, Any] | bytes:
     import sys as _sys
+
     raw_values = args.numbers or _sys.stdin.read().split()
     records = []
     raw_lines = []
@@ -911,6 +995,7 @@ def command_numfmt(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 # ── seq / printf / echo / yes ──────────────────────────────────────────
 
+
 def command_seq(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if len(args.numbers) == 1:
         first = 1.0
@@ -928,7 +1013,7 @@ def command_seq(args: argparse.Namespace) -> dict[str, Any] | bytes:
         raise AgentError("invalid_input", "--increment cannot be 0.")
     if args.max_items < 0:
         raise AgentError("invalid_input", "--max-items must be >= 0.")
-    values = []
+    values: list[float] = []
     current = first
     forward = increment > 0
     while (current <= last if forward else current >= last) and len(values) < args.max_items:
@@ -939,14 +1024,14 @@ def command_seq(args: argparse.Namespace) -> dict[str, Any] | bytes:
     def format_value(value: float) -> str:
         if args.format:
             try:
-                return args.format % value
+                return str(args.format % value)
             except (TypeError, ValueError) as exc:
                 raise AgentError("invalid_input", "Invalid printf-style --format for seq.") from exc
         return str(int(value)) if value == int(value) else str(value)
 
     lines = [format_value(value) for value in values]
     if args.raw:
-        return (args.separator.join(lines) + ("\n" if lines else "")).encode("utf-8")
+        return (str(args.separator).join(lines) + ("\n" if lines else "")).encode("utf-8")
     return {
         "first": first,
         "increment": increment,
@@ -1001,6 +1086,7 @@ def command_yes(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 # ── dircolors ──────────────────────────────────────────────────────────
+
 
 def command_dircolors(args: argparse.Namespace) -> dict[str, Any] | bytes:
     result = {

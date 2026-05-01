@@ -6,7 +6,18 @@ All registry/priority functions are derived from CATALOG below.
 
 from __future__ import annotations
 
-CATALOG = [
+from typing import TypedDict
+
+
+class CatalogEntry(TypedDict):
+    priority: str
+    urgency: str
+    category: str
+    why: str
+    tools: list[str]
+
+
+CATALOG: list[CatalogEntry] = [
     {
         "priority": "P0",
         "urgency": "critical",

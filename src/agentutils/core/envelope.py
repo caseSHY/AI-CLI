@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
-from typing import Any, TextIO, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, TextIO
 
 if TYPE_CHECKING:
     from .exceptions import AgentError
@@ -37,7 +37,7 @@ def envelope(command: str, result: Any, *, warnings: list[str] | None = None) ->
     }
 
 
-def error_envelope(command: str | None, error: "AgentError") -> dict[str, Any]:
+def error_envelope(command: str | None, error: AgentError) -> dict[str, Any]:
     return {
         "ok": False,
         "tool": "agentutils",

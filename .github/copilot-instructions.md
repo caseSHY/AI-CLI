@@ -9,6 +9,7 @@ Project-specific documentation governance rules live in:
 - `docs/agent-guides/FACT_PROPAGATION_MATRIX.md`
 
 Main test entry: `python -m pytest tests/ -v --tb=short`.
+For Ubuntu/GNU CI parity on Windows, use `.\scripts\run-ci-wsl.ps1 -InstallSystemDeps` after WSL is installed.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 

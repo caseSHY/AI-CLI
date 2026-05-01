@@ -7,7 +7,6 @@ from asyncio event loops, enabling concurrent Agent operations.
 from __future__ import annotations
 
 import asyncio
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -48,10 +47,10 @@ async def run_async(
             proc.communicate(),
             timeout=timeout,
         )
-    except asyncio.TimeoutError:
+    except TimeoutError as exc:
         proc.kill()
         await proc.wait()
-        raise asyncio.TimeoutError(f"Command timed out after {timeout}s: {' '.join(cmd)}")
+        raise TimeoutError(f"Command timed out after {timeout}s: {' '.join(cmd)}") from exc
 
     import json
 
@@ -63,7 +62,10 @@ async def run_async(
             error_data = {"error": error_text}
         raise RuntimeError(f"Command failed with exit code {proc.returncode}: {error_data}")
 
-    return json.loads(stdout.decode("utf-8", errors="replace"))
+    data: object = json.loads(stdout.decode("utf-8", errors="replace"))
+    if not isinstance(data, dict):
+        raise RuntimeError("Command returned non-object JSON.")
+    return {str(key): value for key, value in data.items()}
 
 
 async def run_async_many(

@@ -17,7 +17,10 @@ def _agentutils_output(*args: str) -> dict:
     env = {**dict(subprocess.os.environ), "PYTHONPATH": str(ROOT / "src")}
     cp = subprocess.run(
         [sys.executable, "-m", "agentutils", *args],
-        capture_output=True, text=True, cwd=str(ROOT), env=env,
+        capture_output=True,
+        text=True,
+        cwd=str(ROOT),
+        env=env,
         timeout=30,
     )
     return json.loads(cp.stdout)
@@ -60,8 +63,10 @@ class DocsGovernanceTests(unittest.TestCase):
 
     def test_current_status_has_no_ci_coreutils_contradiction(self) -> None:
         status = read_text("docs/status/CURRENT_STATUS.md")
-        self.assertIn("待验证 — coreutils 已安装，需 CI 触发", status)
-        self.assertIn("Pending — coreutils installed, needs CI trigger", status)
+        self.assertIn("本地 WSL 已验证 — 55/56 GNU 对照测试通过", status)
+        self.assertIn("Locally verified in WSL — 55/56 GNU differential tests passed", status)
+        self.assertIn("远程待验证 — 本地 WSL 已通过，但 GitHub Actions 仍需重新触发", status)
+        self.assertIn("Remote pending — local WSL passed, but GitHub Actions still needs a new run", status)
         self.assertIn("Windows runner", status)
         self.assertIn("Ubuntu runner", status)
 
@@ -72,6 +77,9 @@ class DocsGovernanceTests(unittest.TestCase):
             "GNU coreutils not installed",
             "无 Windows CI runner",
             "No Windows runner",
+            "WSL 尚未安装",
+            "WSL 未安装",
+            "WSL is not installed",
         ]
         for phrase in forbidden:
             with self.subTest(phrase=phrase):
@@ -108,13 +116,9 @@ class DocsGovernanceTests(unittest.TestCase):
                 self.assertNotIn(forbidden, testing)
 
     def test_governance_report_keeps_untriggered_ci_as_pending(self) -> None:
-        report = read_text(
-            "docs/reports/project-governance/"
-            "2026-04-30-project-structure-and-docs-governance-report.md"
-        )
+        report = read_text("docs/reports/project-governance/2026-04-30-project-structure-and-docs-governance-report.md")
         self.assertIn(
-            "| K-004 | CI 中 GNU differential tests 未实际运行过 | "
-            "⏳ 待验证 — coreutils 已安装但 CI 尚未触发 |",
+            "| K-004 | CI 中 GNU differential tests 未实际运行过 | ⏳ 待验证 — coreutils 已安装但 CI 尚未触发 |",
             report,
         )
         self.assertNotIn(
@@ -137,6 +141,8 @@ class DocsGovernanceTests(unittest.TestCase):
             "现有 99 个测试全部通过",
             "99 passed",
             "120 passed",
+            "54 个测试通过",
+            "54 tests passing",
             "CI 未安装 GNU coreutils",
             "GNU coreutils not installed",
             "无 Windows CI runner",
@@ -150,8 +156,22 @@ class DocsGovernanceTests(unittest.TestCase):
 
     def test_current_status_records_correct_test_count(self) -> None:
         status = read_text("docs/status/CURRENT_STATUS.md")
-        self.assertIn("133", status)
+        self.assertIn("| **Windows 推荐入口结果** | 137 passed, 54 skipped, 0 failed, 118 subtests passed |", status)
+        self.assertIn("| **WSL 本地 CI 结果** | 190 passed, 1 skipped, 0 failed, 118 subtests passed |", status)
+        self.assertIn(
+            "| **Windows recommended-entry result** | 137 passed, 54 skipped, 0 failed, 118 subtests passed |",
+            status,
+        )
+        self.assertIn("| **WSL local CI result** | 190 passed, 1 skipped, 0 failed, 118 subtests passed |", status)
+        self.assertIn("(9 测试, 全部通过)", status)
+        self.assertIn("(9 tests, all pass)", status)
+        self.assertIn("| **项目版本** | 0.2.0 |", status)
+        self.assertIn("| **Project version** | 0.2.0 |", status)
         self.assertNotIn("132 passed", status)
+        self.assertNotIn("| **Passed** | 132 |", status)
+        self.assertNotIn("| **Passed** | 137 |", status)
+        self.assertNotIn("| **项目版本** | 0.1.0 |", status)
+        self.assertNotIn("| **Project version** | 0.1.0 |", status)
 
     def test_command_count_consistency_across_docs(self) -> None:
         output = _agentutils_output("schema")
