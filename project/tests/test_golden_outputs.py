@@ -20,7 +20,7 @@ _UNIX_PATH_PREFIX_RE = re.compile(
 
 
 # Platform-dependent fields that should be normalized in golden comparisons
-_NORMALIZE_FIELDS = frozenset({"size_bytes", "mode_octal"})
+_NORMALIZE_FIELDS = frozenset({"size_bytes", "mode_octal", "version"})
 
 
 def _normalize_output(obj: Any) -> Any:
