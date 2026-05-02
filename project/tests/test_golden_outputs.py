@@ -19,14 +19,20 @@ _UNIX_PATH_PREFIX_RE = re.compile(
 )
 
 
+# Platform-dependent fields that should be normalized in golden comparisons
+_NORMALIZE_FIELDS = frozenset({"size_bytes", "mode_octal"})
+
+
 def _normalize_output(obj: Any) -> Any:
-    """Normalize platform-dependent values (paths, timestamps) in JSON output."""
+    """Normalize platform-dependent values (paths, timestamps, file metadata) in JSON output."""
 
     if isinstance(obj, dict):
         result: dict[str, Any] = {}
         for key, value in obj.items():
             if key.endswith("_at"):
                 result[key] = "{{TIMESTAMP}}"
+            elif key in _NORMALIZE_FIELDS:
+                result[key] = "{{VARIES}}"
             elif isinstance(value, str):
                 result[key] = _normalize_path(value)
             else:
