@@ -1,39 +1,48 @@
 from __future__ import annotations
 
 import json
+import re
 import unittest
 from typing import Any
 
 from support import ROOT, run_cli
 
+# Pattern to detect any absolute path prefix up to and including the project root
+# Matches both Windows (C:\...\) and Unix (/home/.../) styles
+_PATH_UP_TO_PROJECT = re.compile(
+    r"^([A-Za-z]:[/\\]|/)?"  # Optional drive letter or leading /
+    r".*?"  # Match all intermediate directories lazily
+    r"AIBaseCLI-ABC[/\\]"  # Project root directory name
+)
+
 
 def _normalize_output(obj: Any) -> Any:
     """Normalize platform-dependent values (paths, timestamps) in JSON output."""
-    root_str = str(ROOT).replace("\\", "/")
+
     if isinstance(obj, dict):
         result: dict[str, Any] = {}
         for key, value in obj.items():
-            # Skip timestamp fields (platform-dependent)
             if key.endswith("_at"):
                 result[key] = "{{TIMESTAMP}}"
             elif isinstance(value, str):
-                # Normalize absolute paths to {{ROOT}}/relative
-                normalized = value.replace("\\", "/")
-                if normalized.startswith(root_str):
-                    result[key] = "{{ROOT}}" + normalized[len(root_str) :]
-                else:
-                    result[key] = value
+                result[key] = _normalize_path(value)
             else:
                 result[key] = _normalize_output(value)
         return result
     elif isinstance(obj, list):
         return [_normalize_output(item) for item in obj]
     elif isinstance(obj, str):
-        normalized = obj.replace("\\", "/")
-        if normalized.startswith(root_str):
-            return "{{ROOT}}" + normalized[len(root_str) :]
-        return obj
+        return _normalize_path(obj)
     return obj
+
+
+def _normalize_path(text: str) -> str:
+    """Replace absolute path prefix up to project root with {{ROOT}}."""
+    normalized = text.replace("\\", "/")
+    m = _PATH_UP_TO_PROJECT.search(normalized)
+    if m:
+        return "{{ROOT}}/" + normalized[m.end() :]
+    return text
 
 
 class GoldenOutputTests(unittest.TestCase):
