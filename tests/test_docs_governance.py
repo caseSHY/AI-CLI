@@ -63,10 +63,10 @@ class DocsGovernanceTests(unittest.TestCase):
 
     def test_current_status_has_no_ci_coreutils_contradiction(self) -> None:
         status = read_text("docs/status/CURRENT_STATUS.md")
-        self.assertIn("本地 WSL 已验证 — 55/56 GNU 对照测试通过", status)
-        self.assertIn("Locally verified in WSL — 55/56 GNU differential tests passed", status)
-        self.assertIn("远程待验证 — 本地 WSL 已通过，但 GitHub Actions 仍需重新触发", status)
-        self.assertIn("Remote pending — local WSL passed, but GitHub Actions still needs a new run", status)
+        self.assertIn("本地 WSL 已验证 — 54/56 GNU 对照测试通过", status)
+        self.assertIn("Locally verified in WSL — 54/56 GNU differential tests passed", status)
+        self.assertIn("✅ CI verified", status)
+        self.assertIn("CI verified", status)
         self.assertIn("Windows runner", status)
         self.assertIn("Ubuntu runner", status)
 
@@ -156,10 +156,10 @@ class DocsGovernanceTests(unittest.TestCase):
 
     def test_current_status_records_correct_test_count(self) -> None:
         status = read_text("docs/status/CURRENT_STATUS.md")
-        self.assertIn("| **Windows 推荐入口结果** | 137 passed, 54 skipped, 0 failed, 118 subtests passed |", status)
+        self.assertIn("| **Windows 推荐入口结果** | 132 passed, 59 skipped, 0 failed, 118 subtests passed |", status)
         self.assertIn("| **WSL 本地 CI 结果** | 190 passed, 1 skipped, 0 failed, 118 subtests passed |", status)
         self.assertIn(
-            "| **Windows recommended-entry result** | 137 passed, 54 skipped, 0 failed, 118 subtests passed |",
+            "| **Windows recommended-entry result** | 132 passed, 59 skipped, 0 failed, 118 subtests passed |",
             status,
         )
         self.assertIn("| **WSL local CI result** | 190 passed, 1 skipped, 0 failed, 118 subtests passed |", status)
@@ -167,9 +167,7 @@ class DocsGovernanceTests(unittest.TestCase):
         self.assertIn("(9 tests, all pass)", status)
         self.assertIn("| **项目版本** | 0.2.0 |", status)
         self.assertIn("| **Project version** | 0.2.0 |", status)
-        self.assertNotIn("132 passed", status)
-        self.assertNotIn("| **Passed** | 132 |", status)
-        self.assertNotIn("| **Passed** | 137 |", status)
+        self.assertNotIn("137 passed", status)
         self.assertNotIn("| **项目版本** | 0.1.0 |", status)
         self.assertNotIn("| **Project version** | 0.1.0 |", status)
 

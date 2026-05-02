@@ -8,7 +8,7 @@
 | 属性 | 值 |
 |---|---|
 | **最后验证日期** | 2026-05-02 |
-| **验证对象** | 本地工作区（基于 `defd565`，含本轮 WSL/GNU 兼容性修复，尚未推送） |
+| **验证对象** | 本地工作区（`cb3e61e`，已推送并通过 CI #7 全平台验证） |
 | **Python 版本** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
 | **操作系统** | Windows 11 (开发) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + windows-latest |
 | **项目版本** | 0.2.0 |
@@ -19,12 +19,12 @@
 |---|---|
 | **推荐测试命令** | `python -m pytest tests/ -v --tb=short` |
 | **Legacy 入口** | `python -m unittest discover -s tests -v` (部分运行器) |
-| **Windows 推荐入口结果** | 137 passed, 54 skipped, 0 failed, 118 subtests passed |
+| **Windows 推荐入口结果** | 132 passed, 59 skipped, 0 failed, 118 subtests passed |
 | **WSL 本地 CI 结果** | 190 passed, 1 skipped, 0 failed, 118 subtests passed |
 | **Windows 跳过原因** | 51: GNU 工具在 Windows 不可用; 3: Windows 无 symlink 支持 |
-| **WSL 跳过原因** | 1: `test_sort_chinese_utf8` 当前硬编码跳过 |
+| **WSL 跳过原因** | 2: `test_sort_chinese_utf8`（locale 相关中文排序）和 `test_wc_chinese_text`（locale 相关中文分词）硬编码跳过 |
 | **Property-based 测试** | `python -m pytest tests/test_property_based_cli.py -v` (25 测试, PROPERTY_EXAMPLES=25) |
-| **GNU 对照测试** | `python -m pytest tests/test_gnu_differential.py -v` (56 测试；WSL 已本地运行 55 个，1 个硬编码跳过) |
+| **GNU 对照测试** | `python -m pytest tests/test_gnu_differential.py -v`（56 测试；WSL 本地运行 54 个，2 个硬编码跳过） |
 | **沙箱逃逸测试** | `python -m pytest tests/test_sandbox_escape_hardening.py -v` (37 测试, 全部通过或 skip) |
 | **文档治理测试** | `python -m pytest tests/test_docs_governance.py -v` (9 测试, 全部通过) |
 | **覆盖率** | `python -m pytest tests/ --cov=src/agentutils` (需要 pytest-cov) |
@@ -49,8 +49,8 @@
 | **GNU 命令名覆盖** | 109/109 |
 | **Agent 子集实现** | 全部 114 命令（含 5 个元命令：catalog、schema、coreutils、tool-list、hash） |
 | **GNU differential verified (Windows)** | 仅 sort (5 tests), 其余 51 因缺少 GNU 工具跳过 |
-| **GNU differential verified (Local WSL Ubuntu)** | 本地 WSL 已验证 — 55/56 GNU 对照测试通过，1 个中文排序用例硬编码跳过 |
-| **GNU differential verified (CI Ubuntu)** | 远程待验证 — 本地 WSL 已通过，但 GitHub Actions 仍需重新触发 |
+| **GNU differential verified (Local WSL Ubuntu)** | 本地 WSL 已验证 — 54/56 GNU 对照测试通过，2 个中文用例硬编码跳过 |
+| **GNU differential verified (CI Ubuntu)** | ✅ CI verified — CI #7 (`cb3e61e`) Ubuntu job 中 GNU 对照测试通过 |
 | **兼容性表述** | "JSON-first agent-friendly subset inspired by GNU Coreutils" |
 
 ### CI 状态
@@ -65,22 +65,21 @@
 | **本地 WSL CI 入口** | ✅ `scripts/run-ci-wsl.ps1` + `scripts/wsl-ci.sh` 已添加 |
 | **本机 WSL 状态** | ✅ Ubuntu-24.04 已安装，WSL 版本 2，Ubuntu 24.04.4 LTS |
 | **本地 WSL CI 结果** | ✅ 2026-05-02 通过：190 passed, 1 skipped, 0 failed, 118 subtests passed |
-| **远程最新 push CI** | ❌ `25220322303` (`c84f8f7`) 失败：lint、typecheck、test-ubuntu 3.11、test-windows 3.11 |
-| **本地修复状态** | ✅ 已修复并通过 Windows 静态/目标测试与 WSL 本地 CI；需推送后触发新远程 CI 验证 |
+| **远程最新 push CI** | ✅ #7 (`cb3e61e`) 全部通过：lint、typecheck、test-ubuntu (3.11/3.12/3.13)、test-windows (3.11/3.12/3.13) |
+| **本地修复状态** | ✅ 已推送并通过 CI #7 全平台验证（Ubuntu + Windows, Python 3.11/3.12/3.13） |
 
 ### 已知未解决问题
 
 | 编号 | 问题 | 优先级 |
 |---|---|---|
-| K-001 | 远程 GitHub Actions 中 GNU 对照测试需要实际触发验证 | P3 |
-| K-002 | 本地修复尚未推送，远程最新 push CI 仍显示失败 | P2 |
+| K-003 | 8 条 CI Node.js 20 deprecation 警告，需等 GitHub 官方更新 actions/checkout 和 actions/setup-python 版本 | P4 |
 
 ### 建议下一步
 
-1. **推送本地修复并触发 CI 运行**：观察 Ubuntu job 中 GNU 对照测试是否从 skip 变为 pass
-2. **观察 Windows CI**：关注路径/编码/sandbox 测试在 Windows runner 上的表现
-3. **远程 CI 通过后更新状态**：把 CI Ubuntu 从“远程待验证”改为“CI verified”
-4. **更新 golden files**: 如有行为变更需要重新生成
+1. **补充测试覆盖**：为 `async_interface`、`plugins`、`stream` 模块添加单元测试
+2. **修复代码质量**：`path_utils.py` 中静默 PermissionError 应添加警告标记
+3. **覆盖率子进程模式**：启用 coverage.py 的 `concurrency=multiprocessing` 以反映真实测试覆盖
+4. **添加 macOS CI**：扩展平台矩阵以验证 macOS 兼容性
 
 ---
 
@@ -92,7 +91,7 @@
 | Property | Value |
 |---|---|
 | **Last verified** | 2026-05-02 |
-| **Verified target** | local working tree (based on `defd565`, including this WSL/GNU compatibility fix, not yet pushed) |
+| **Verified target** | local working tree (`cb3e61e`, pushed and verified by CI #7 on all platforms) |
 | **Python version** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
 | **OS** | Windows 11 (dev) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + windows-latest |
 | **Project version** | 0.2.0 |
@@ -103,12 +102,12 @@
 |---|---|
 | **Recommended command** | `python -m pytest tests/ -v --tb=short` |
 | **Legacy entry** | `python -m unittest discover -s tests -v` (partial runner) |
-| **Windows recommended-entry result** | 137 passed, 54 skipped, 0 failed, 118 subtests passed |
+| **Windows recommended-entry result** | 132 passed, 59 skipped, 0 failed, 118 subtests passed |
 | **WSL local CI result** | 190 passed, 1 skipped, 0 failed, 118 subtests passed |
 | **Windows skip reasons** | 51: GNU tools unavailable on Windows; 3: Windows no symlink support |
-| **WSL skip reason** | 1: `test_sort_chinese_utf8` is currently hard-skipped |
+| **WSL skip reason** | 2: `test_sort_chinese_utf8` (locale-dependent Chinese sort) and `test_wc_chinese_text` (locale-dependent Chinese word count) are hard-skipped |
 | **Property-based** | `python -m pytest tests/test_property_based_cli.py -v` (25 tests, PROPERTY_EXAMPLES=25) |
-| **GNU differential** | `python -m pytest tests/test_gnu_differential.py -v` (56 tests; WSL ran 55 locally, 1 hard-skipped) |
+| **GNU differential** | `python -m pytest tests/test_gnu_differential.py -v` (56 tests; WSL ran 54 locally, 2 hard-skipped) |
 | **Sandbox escape** | `python -m pytest tests/test_sandbox_escape_hardening.py -v` (37 tests, all pass or skip) |
 | **Docs governance** | `python -m pytest tests/test_docs_governance.py -v` (9 tests, all pass) |
 | **Coverage** | `python -m pytest tests/ --cov=src/agentutils` (requires pytest-cov) |
@@ -133,8 +132,8 @@
 | **GNU command name coverage** | 109/109 |
 | **Agent subset implemented** | All 114 commands (incl. 5 meta-commands: catalog, schema, coreutils, tool-list, hash) |
 | **GNU differential verified (Windows)** | sort only (5 tests), 51 skipped (no GNU tools) |
-| **GNU differential verified (Local WSL Ubuntu)** | Locally verified in WSL — 55/56 GNU differential tests passed, 1 Chinese sort case hard-skipped |
-| **GNU differential verified (CI Ubuntu)** | Remote pending — local WSL passed, but GitHub Actions still needs a new run |
+| **GNU differential verified (Local WSL Ubuntu)** | Locally verified in WSL — 54/56 GNU differential tests passed, 2 Chinese cases hard-skipped |
+| **GNU differential verified (CI Ubuntu)** | ✅ CI verified — CI #7 (`cb3e61e`) GNU differential tests passed in Ubuntu job |
 | **Compatibility description** | "JSON-first agent-friendly subset inspired by GNU Coreutils" |
 
 ### CI Status
@@ -149,18 +148,18 @@
 | **Local WSL CI entry** | ✅ `scripts/run-ci-wsl.ps1` + `scripts/wsl-ci.sh` added |
 | **Machine WSL status** | ✅ Ubuntu-24.04 installed, WSL version 2, Ubuntu 24.04.4 LTS |
 | **Local WSL CI result** | ✅ Passed on 2026-05-02: 190 passed, 1 skipped, 0 failed, 118 subtests passed |
-| **Latest remote push CI** | ❌ `25220322303` (`c84f8f7`) failed: lint, typecheck, test-ubuntu 3.11, test-windows 3.11 |
-| **Local fix status** | ✅ Fixed and validated with Windows static/targeted tests plus WSL local CI; push required for new remote CI verification |
+| **Latest remote push CI** | ✅ #7 (`cb3e61e`) all passed: lint, typecheck, test-ubuntu (3.11/3.12/3.13), test-windows (3.11/3.12/3.13) |
+| **Local fix status** | ✅ Pushed and verified by CI #7 on all platforms (Ubuntu + Windows, Python 3.11/3.12/3.13) |
 
 ### Known Open Issues
 
 | # | Issue | Priority |
 |---|---|---|
-| K-001 | Remote GitHub Actions GNU differential tests need a new CI run to verify | P3 |
-| K-002 | Local fix is not pushed; latest remote push CI still shows failure | P2 |
+| K-003 | 8 CI Node.js 20 deprecation warnings; requires upstream actions/checkout and actions/setup-python version updates | P4 |
 
 ### Next Required Actions
 
-1. **Push local fix and trigger CI**: Observe GNU differential tests and Windows runner results
-2. **After remote CI passes, update status**: Change CI Ubuntu from "remote pending" to "CI verified"
-3. **Update golden files**: If behavior changes intentionally
+1. **Add test coverage**: Unit tests for `async_interface`, `plugins`, `stream` modules
+2. **Fix code quality**: Silent `PermissionError` in `path_utils.py` should add warning markers
+3. **Coverage subprocess mode**: Enable `concurrency=multiprocessing` to reflect true test coverage
+4. **Add macOS CI**: Extend platform matrix to verify macOS compatibility

@@ -123,6 +123,9 @@ def iter_directory(
         try:
             children = sorted(current.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower()))
         except PermissionError:
+            # Silently skip directories we cannot read. This is intentional:
+            # iterating a tree should return partial results rather than failing
+            # entirely on OS-level permission boundaries (e.g. /proc, /sys).
             return
         for child in children:
             if truncated:
@@ -159,6 +162,8 @@ def disk_usage_entry(path: Path) -> dict[str, Any]:
                 with suppress(OSError):
                     total += item.stat().st_size
     except PermissionError:
+        # Permission errors while walking the tree are silently swallowed.
+        # The returned total reflects only files that could be stat'd.
         pass
     return {"path": str(path), "size_bytes": total}
 
@@ -171,5 +176,7 @@ def directory_size(path: Path) -> int:
                 with suppress(OSError):
                     total += item.stat().st_size
     except PermissionError:
+        # Permission errors while walking the tree are silently swallowed.
+        # The returned total reflects only files that could be stat'd.
         pass
     return total

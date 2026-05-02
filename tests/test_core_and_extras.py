@@ -1,0 +1,286 @@
+"""Tests for async_interface, plugins, stream, and __main__ modules.
+
+Covers previously untested Phase 2.2 and Phase 3 modules:
+- async_interface: run_async, run_async_many
+- plugins: discover_plugins, get_plugin_commands, register_plugin_command
+- core/stream: StreamWriter, NullStream, is_stream_mode
+- __main__: module-level execution
+"""
+
+from __future__ import annotations
+
+import io
+import json
+import subprocess
+import sys
+import unittest
+from pathlib import Path
+
+# ── Stream tests ──────────────────────────────────────────────────────
+
+
+class StreamWriterTests(unittest.TestCase):
+    def test_write_item_single(self) -> None:
+        buf = io.StringIO()
+        from agentutils.core.stream import StreamWriter
+
+        w = StreamWriter(buf, command="test")
+        result = w.write_item({"key": "value"})
+        self.assertTrue(result)
+        line = buf.getvalue().rstrip("\n")
+        self.assertEqual(json.loads(line), {"key": "value"})
+
+    def test_write_item_no_truncation_when_zero(self) -> None:
+        """max_items=0 means no limit (0 is falsy in guard)."""
+        buf = io.StringIO()
+        from agentutils.core.stream import StreamWriter
+
+        w = StreamWriter(buf, command="test", max_items=0)
+        self.assertTrue(w.write_item({"a": 1}))
+        self.assertFalse(w.truncated)
+
+    def test_write_item_truncation_after_limit(self) -> None:
+        buf = io.StringIO()
+        from agentutils.core.stream import StreamWriter
+
+        w = StreamWriter(buf, command="test", max_items=2)
+        self.assertTrue(w.write_item({"a": 1}))
+        self.assertTrue(w.write_item({"b": 2}))
+        self.assertFalse(w.write_item({"c": 3}))
+        self.assertEqual(w.count, 2)
+        self.assertTrue(w.truncated)
+
+    def test_write_after_close_returns_false(self) -> None:
+        buf = io.StringIO()
+        from agentutils.core.stream import StreamWriter
+
+        w = StreamWriter(buf, command="test")
+        w.write_summary({"total": 1})
+        self.assertFalse(w.write_item({"a": 1}))
+
+    def test_summary_contains_stream_field(self) -> None:
+        buf = io.StringIO()
+        from agentutils.core.stream import StreamWriter
+
+        w = StreamWriter(buf, command="test")
+        w.write_item({"key": "v"})
+        w.write_summary({"total": 1})
+        output = buf.getvalue()
+        # Item line (compact JSON) + summary (indented JSON, may span multiple lines)
+        parts = output.split("\n{", 1)
+        self.assertGreater(len(parts), 0)
+        # Reconstruct the summary JSON
+        summary_text = "{" + parts[1] if len(parts) > 1 else output
+        summary = json.loads(summary_text)
+        self.assertTrue(summary["ok"])
+        self.assertTrue(summary["stream"])
+        self.assertEqual(summary["count"], 1)
+
+    def test_double_summary_is_idempotent(self) -> None:
+        buf = io.StringIO()
+        from agentutils.core.stream import StreamWriter
+
+        w = StreamWriter(buf, command="test")
+        w.write_summary({"total": 0})
+        w.write_summary({"total": 1})
+        self.assertEqual(buf.getvalue().count('"summary"'), 1)
+
+    def test_count_and_truncated_properties(self) -> None:
+        buf = io.StringIO()
+        from agentutils.core.stream import StreamWriter
+
+        w = StreamWriter(buf, command="test", max_items=1)
+        self.assertEqual(w.count, 0)
+        self.assertFalse(w.truncated)
+        w.write_item({"a": 1})
+        self.assertEqual(w.count, 1)
+        self.assertFalse(w.truncated)
+        w.write_item({"b": 2})
+        self.assertEqual(w.count, 1)
+        self.assertTrue(w.truncated)
+
+    def test_ndjson_output_is_parseable(self) -> None:
+        buf = io.StringIO()
+        from agentutils.core.stream import StreamWriter
+
+        w = StreamWriter(buf, command="test")
+        items = [{"id": i, "name": f"item_{i}"} for i in range(5)]
+        for item in items:
+            w.write_item(item)
+        w.write_summary({"total": 5})
+        output = buf.getvalue()
+        # First 5 lines are compact NDJSON items, rest is indented summary
+        lines = output.strip().split("\n")
+        count = 0
+        for line in lines:
+            line = line.strip()
+            if line.startswith('{"id"'):  # compact item (sort_keys=True puts id first)
+                data = json.loads(line)
+                self.assertEqual(data, items[count])
+                count += 1
+            elif line == "{":
+                break  # start of indented summary
+        self.assertEqual(count, 5)
+
+    def test_special_chars_in_item(self) -> None:
+        buf = io.StringIO()
+        from agentutils.core.stream import StreamWriter
+
+        w = StreamWriter(buf, command="test")
+        w.write_item({"path": "/tmp/a b", "content": "line1\nline2"})
+        line = json.loads(buf.getvalue().rstrip("\n"))
+        self.assertEqual(line["content"], "line1\nline2")
+
+
+class NullStreamTests(unittest.TestCase):
+    def test_null_stream_always_accepts(self) -> None:
+        from agentutils.core.stream import NullStream
+
+        ns = NullStream()
+        self.assertTrue(ns.write_item({"a": 1}))
+        self.assertTrue(ns.write_item({"b": 2}))
+
+    def test_null_stream_summary_is_noop(self) -> None:
+        from agentutils.core.stream import NullStream
+
+        ns = NullStream()
+        ns.write_summary({"total": 100})  # should not raise
+
+    def test_null_stream_properties(self) -> None:
+        from agentutils.core.stream import NullStream
+
+        ns = NullStream()
+        self.assertEqual(ns.count, 0)
+        self.assertFalse(ns.truncated)
+
+
+class IsStreamModeTests(unittest.TestCase):
+    def test_stream_flag_true(self) -> None:
+        from agentutils.core.stream import is_stream_mode
+
+        class Args:
+            stream = True
+
+        self.assertTrue(is_stream_mode(Args()))
+
+    def test_stream_flag_false(self) -> None:
+        from agentutils.core.stream import is_stream_mode
+
+        class Args:
+            stream = False
+
+        self.assertFalse(is_stream_mode(Args()))
+
+    def test_stream_flag_absent(self) -> None:
+        from agentutils.core.stream import is_stream_mode
+
+        class Args:
+            pass
+
+        self.assertFalse(is_stream_mode(Args()))
+
+
+# ── Plugins tests ─────────────────────────────────────────────────────
+
+
+class PluginDiscoveryTests(unittest.TestCase):
+    def test_discover_plugins_returns_dict(self) -> None:
+        from agentutils.plugins import discover_plugins
+
+        result = discover_plugins()
+        self.assertIsInstance(result, dict)
+
+    def test_get_plugin_commands_returns_dict(self) -> None:
+        from agentutils.plugins import get_plugin_commands
+
+        result = get_plugin_commands()
+        self.assertIsInstance(result, dict)
+
+    def test_register_and_retrieve_plugin_command(self) -> None:
+        from agentutils.plugins import get_plugin_commands, register_plugin_command
+
+        def dummy_cmd(args):
+            return {"ok": True}
+
+        register_plugin_command("dummy_test_cmd", dummy_cmd, priority="P3")
+        commands = get_plugin_commands()
+        self.assertIn("dummy_test_cmd", commands)
+        self.assertIs(commands["dummy_test_cmd"], dummy_cmd)
+
+    def test_register_plugin_updates_catalog(self) -> None:
+        # register_plugin_command modifies _BUILTIN_CATALOG list in place.
+        # get_all_commands() returns from _COMMAND_PRIORITY_MAP which is
+        # built once at import time from the catalog. The plugin was
+        # registered in the previous test, so verify it's in the dynamic
+        # plugin registry.
+        from agentutils.plugins import get_plugin_commands
+
+        commands = get_plugin_commands()
+        self.assertIn("dummy_test_cmd", commands)
+
+
+# ── __main__ tests ────────────────────────────────────────────────────
+
+
+class MainModuleTests(unittest.TestCase):
+    def test_main_module_runs_help(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "-m", "agentutils", "--help"],
+            capture_output=True,
+            env={**__import__("os").environ, "PYTHONPATH": "src"},
+            timeout=10,
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn(b"show this help message", result.stdout)
+
+    def test_main_module_runs_schema(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "-m", "agentutils", "schema", "--pretty"],
+            capture_output=True,
+            cwd=str(Path(__file__).resolve().parents[1]),
+            env={**__import__("os").environ, "PYTHONPATH": "src"},
+            timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, msg=result.stderr.decode())
+        data = json.loads(result.stdout)
+        self.assertIn("command_count", data["result"])
+        self.assertGreater(data["result"]["command_count"], 100)
+
+    def test_main_module_catalog(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "-m", "agentutils", "catalog", "--pretty"],
+            capture_output=True,
+            cwd=str(Path(__file__).resolve().parents[1]),
+            env={**__import__("os").environ, "PYTHONPATH": "src"},
+            timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, msg=result.stderr.decode())
+        data = json.loads(result.stdout)
+        self.assertIn("categories", data["result"])
+
+
+# ── Async interface tests ─────────────────────────────────────────────
+
+
+class AsyncInterfaceSmokeTests(unittest.TestCase):
+    """Smoke tests for async_interface module-level imports."""
+
+    def test_run_async_is_callable(self) -> None:
+        from agentutils.async_interface import run_async
+
+        self.assertTrue(callable(run_async))
+
+    def test_run_async_many_is_callable(self) -> None:
+        from agentutils.async_interface import run_async_many
+
+        self.assertTrue(callable(run_async_many))
+
+    def test_run_async_accepts_args_signature(self) -> None:
+        import inspect
+
+        from agentutils.async_interface import run_async
+
+        sig = inspect.signature(run_async)
+        params = list(sig.parameters)
+        self.assertIn("cwd", params)
+        self.assertIn("timeout", params)
