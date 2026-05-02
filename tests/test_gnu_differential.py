@@ -38,13 +38,20 @@ def run_gnu(
 ) -> subprocess.CompletedProcess[str]:
     exe = find_gnu(args[0])
     assert exe is not None, f"GNU {args[0]} not found"
-    return subprocess.run(
+    # Use binary I/O to avoid Windows text-mode newline translation
+    # (\n → \r\n) and encoding mismatches.
+    result = subprocess.run(
         [exe, *args[1:]],
         cwd=cwd,
-        input=input_text,
-        text=True,
+        input=input_text.encode("utf-8") if input_text is not None else None,
         capture_output=True,
         check=False,
+    )
+    return subprocess.CompletedProcess(
+        result.args,
+        result.returncode,
+        result.stdout.decode("utf-8", errors="replace"),
+        result.stderr.decode("utf-8", errors="replace"),
     )
 
 
@@ -65,7 +72,9 @@ def _nl(s: str | None) -> str:
 
 def _write(cwd: Path, name: str, text: str) -> Path:
     p = cwd / name
-    p.write_text(text, encoding="utf-8")
+    # newline='\n' prevents os.linesep translation on Windows (CRLF),
+    # keeping test data portable across platforms.
+    p.write_text(text, encoding="utf-8", newline="\n")
     return p
 
 
