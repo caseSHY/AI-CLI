@@ -11,14 +11,16 @@ Phase 2 will extract command specs into declarative COMMAND_SPECS.
 
 from __future__ import annotations
 
+# These are re-exported from _parser but sourced from protocol/core;
+# import them directly so mypy can trace the types.
+from ..commands.system import command_coreutils
+from ..core import EXIT
+from ..protocol import AgentArgumentParser, AgentError
+
 # Re-export everything from the bulk module (_parser.py)
 from ._parser import (
-    EXIT,
-    AgentArgumentParser,
-    AgentError,
     build_parser,
     command_catalog,
-    command_coreutils,
     command_schema,
     command_tool_list,
     dispatch,

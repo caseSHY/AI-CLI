@@ -47,9 +47,9 @@ def write_json(stream: TextIO, payload: dict[str, Any], *, pretty: bool = False)
     """
     kwargs: dict[str, Any] = {"ensure_ascii": False, "sort_keys": True}
     if pretty:
-        kwargs["indent"] = 2                         # 人类可读模式：2 空格缩进
+        kwargs["indent"] = 2  # 人类可读模式：2 空格缩进
     else:
-        kwargs["separators"] = (",", ":")           # 紧凑模式：最小空白
+        kwargs["separators"] = (",", ":")  # 紧凑模式：最小空白
     stream.write(json.dumps(payload, **kwargs))
     stream.write("\n")
 

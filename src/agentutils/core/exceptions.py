@@ -42,11 +42,11 @@ class AgentError(Exception):
         details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message)
-        self.code = code                             # 语义错误码
-        self.message = message                       # 人类可读消息
-        self.path = path                             # 可选：出错路径
-        self.suggestion = suggestion                 # 可选：修复建议
-        self.details = details or {}                 # 可选：附加上下文
+        self.code = code  # 语义错误码
+        self.message = message  # 人类可读消息
+        self.path = path  # 可选：出错路径
+        self.suggestion = suggestion  # 可选：修复建议
+        self.details = details or {}  # 可选：附加上下文
 
     @property
     def exit_code(self) -> int:

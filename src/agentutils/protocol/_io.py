@@ -21,7 +21,7 @@ def read_input_bytes(raw: str) -> tuple[str, bytes]:
         (来源标签, 字节数据)。标签为文件路径或 "-"。
     """
     if raw == "-":
-        return "-", read_stdin_bytes()               # stdin 模式
+        return "-", read_stdin_bytes()  # stdin 模式
     path = resolve_path(raw, strict=True)
     ensure_exists(path)
     if path.is_dir():
@@ -41,7 +41,7 @@ def read_input_texts(paths: list[str], *, encoding: str) -> list[dict[str, str]]
         [{"path": 来源, "text": 文本内容}, ...]
     """
     if not paths:
-        paths = ["-"]                                 # 无参数时默认读取 stdin
+        paths = ["-"]  # 无参数时默认读取 stdin
     sources: list[dict[str, str]] = []
     for raw in paths:
         label, data = read_input_bytes(raw)

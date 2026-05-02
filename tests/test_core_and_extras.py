@@ -390,4 +390,3 @@ class PluginEndToEndTests(unittest.TestCase):
 
         reg = get_registry()
         self.assertIsInstance(reg, PluginRegistry)
-

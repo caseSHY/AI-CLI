@@ -67,7 +67,7 @@ def path_type(path: Path) -> str:
         character_device / block_device / unknown。
     """
     try:
-        mode = path.lstat().st_mode                     # lstat 不跟随符号链接
+        mode = path.lstat().st_mode  # lstat 不跟随符号链接
     except FileNotFoundError as exc:
         raise AgentError("not_found", "Path does not exist.", path=str(path)) from exc
     # 按优先级检测：symlink 最先，目录优先于普通文件
@@ -101,7 +101,7 @@ def stat_entry(path: Path, *, base: Path | None = None, depth: int | None = None
         is_symlink 等字段的字典。符号链接额外包含 link_target。
     """
     try:
-        st = path.lstat()                               # lstat：不跟随符号链接
+        st = path.lstat()  # lstat：不跟随符号链接
     except FileNotFoundError as exc:
         raise AgentError("not_found", "Path does not exist.", path=str(path)) from exc
     except PermissionError as exc:
@@ -200,7 +200,7 @@ def iter_directory(
     """
     entries: list[dict[str, Any]] = []
     truncated = False
-    root_depth = len(root.parts)                        # 用于计算相对深度
+    root_depth = len(root.parts)  # 用于计算相对深度
 
     def _collect(current: Path, _depth: int) -> None:
         """递归收集目录条目。闭包捕获 entries/truncated。"""
@@ -224,7 +224,7 @@ def iter_directory(
                 continue
             entry = stat_entry(child, base=root, depth=_depth - root_depth)
             if not follow_symlinks and entry["is_symlink"]:
-                pass                                    # 仅记录元数据，不解析
+                pass  # 仅记录元数据，不解析
             entries.append(entry)
             if len(entries) >= limit:
                 truncated = True

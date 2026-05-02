@@ -42,8 +42,8 @@ class PluginRegistry:
     def get(self, name: str, default: CommandFunc | None = None) -> CommandFunc | None:
         return self._commands.get(name, default)
 
-    def items(self):
-        return self._commands.items()
+    def items(self) -> list[tuple[str, CommandFunc]]:
+        return list(self._commands.items())
 
     @property
     def names(self) -> set[str]:

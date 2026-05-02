@@ -736,7 +736,9 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--seek", type=int, default=0, help="Output blocks to seek before writing.")
     p.add_argument("--parents", action="store_true", help="Create missing output parent directories.")
     p.add_argument("--allow-overwrite", action="store_true", help="Allow replacing an existing output file.")
-    p.add_argument("--max-preview-bytes", type=int, default=DEFAULT_MAX_PREVIEW_BYTES, help="Maximum JSON preview bytes.")
+    p.add_argument(
+        "--max-preview-bytes", type=int, default=DEFAULT_MAX_PREVIEW_BYTES, help="Maximum JSON preview bytes."
+    )
     p.add_argument("--dry-run", action="store_true", help="Report without writing output.")
     p.add_argument("--raw", action="store_true", help="Write selected input bytes without a JSON envelope.")
     p.set_defaults(func=command_dd)
@@ -811,7 +813,12 @@ def build_parser() -> AgentArgumentParser:
 
     p = add_subparser("timeout", help="Run a command with a bounded timeout and captured output.")
     p.add_argument("seconds", type=float, help="Timeout in seconds.")
-    p.add_argument("--max-output-bytes", type=int, default=DEFAULT_MAX_OUTPUT_BYTES, help="Maximum captured stdout/stderr bytes each.")
+    p.add_argument(
+        "--max-output-bytes",
+        type=int,
+        default=DEFAULT_MAX_OUTPUT_BYTES,
+        help="Maximum captured stdout/stderr bytes each.",
+    )
     p.add_argument("--dry-run", action="store_true", help="Report without running the command.")
     p.add_argument("command_args", nargs=argparse.REMAINDER, help="Command and arguments to run.")
     p.set_defaults(func=command_timeout)
@@ -821,7 +828,12 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--output", "-o", help="Requested stdout buffering mode: 0, L, or a byte size.")
     p.add_argument("--error", "-e", help="Requested stderr buffering mode: 0, L, or a byte size.")
     p.add_argument("--timeout", type=float, default=60.0, help="Safety timeout for the command.")
-    p.add_argument("--max-output-bytes", type=int, default=DEFAULT_MAX_OUTPUT_BYTES, help="Maximum captured stdout/stderr bytes each.")
+    p.add_argument(
+        "--max-output-bytes",
+        type=int,
+        default=DEFAULT_MAX_OUTPUT_BYTES,
+        help="Maximum captured stdout/stderr bytes each.",
+    )
     p.add_argument("--dry-run", action="store_true", help="Report without running the command.")
     p.add_argument("command_args", nargs=argparse.REMAINDER, help="Command and arguments to run.")
     p.set_defaults(func=command_stdbuf)
@@ -829,7 +841,12 @@ def build_parser() -> AgentArgumentParser:
     p = add_subparser("chroot", help="Plan or run a command inside a changed root with explicit confirmation.")
     p.add_argument("root", help="Directory to use as the new root.")
     p.add_argument("--timeout", type=float, default=60.0, help="Safety timeout for the command.")
-    p.add_argument("--max-output-bytes", type=int, default=DEFAULT_MAX_OUTPUT_BYTES, help="Maximum captured stdout/stderr bytes each.")
+    p.add_argument(
+        "--max-output-bytes",
+        type=int,
+        default=DEFAULT_MAX_OUTPUT_BYTES,
+        help="Maximum captured stdout/stderr bytes each.",
+    )
     p.add_argument("--allow-chroot", action="store_true", help="Allow a real chroot execution where supported.")
     p.add_argument("--dry-run", action="store_true", help="Report without running the command.")
     p.add_argument("command_args", nargs=argparse.REMAINDER, help="Command and arguments to run inside the root.")
@@ -846,7 +863,12 @@ def build_parser() -> AgentArgumentParser:
     p = add_subparser("nice", help="Run a command with a niceness adjustment where supported.")
     p.add_argument("--adjustment", "-n", type=int, default=10, help="Niceness adjustment.")
     p.add_argument("--timeout", type=float, default=60.0, help="Safety timeout for the command.")
-    p.add_argument("--max-output-bytes", type=int, default=DEFAULT_MAX_OUTPUT_BYTES, help="Maximum captured stdout/stderr bytes each.")
+    p.add_argument(
+        "--max-output-bytes",
+        type=int,
+        default=DEFAULT_MAX_OUTPUT_BYTES,
+        help="Maximum captured stdout/stderr bytes each.",
+    )
     p.add_argument("--dry-run", action="store_true", help="Report without running the command.")
     p.add_argument("command_args", nargs=argparse.REMAINDER, help="Command and arguments to run.")
     p.set_defaults(func=command_nice)
@@ -881,7 +903,12 @@ def build_parser() -> AgentArgumentParser:
     p = add_subparser("runcon", help="Plan or run a command under an SELinux context where available.")
     p.add_argument("context", help="Security context for the command.")
     p.add_argument("--timeout", type=float, default=60.0, help="Safety timeout for the command.")
-    p.add_argument("--max-output-bytes", type=int, default=DEFAULT_MAX_OUTPUT_BYTES, help="Maximum captured stdout/stderr bytes each.")
+    p.add_argument(
+        "--max-output-bytes",
+        type=int,
+        default=DEFAULT_MAX_OUTPUT_BYTES,
+        help="Maximum captured stdout/stderr bytes each.",
+    )
     p.add_argument("--allow-context", action="store_true", help="Allow invoking the platform runcon command.")
     p.add_argument("--dry-run", action="store_true", help="Report without running the command.")
     p.add_argument("command_args", nargs=argparse.REMAINDER, help="Command and arguments to run.")
@@ -1008,7 +1035,9 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("paths", nargs="*", help="Files to write.")
     p.add_argument("--append", "-a", action="store_true", help="Append instead of replacing.")
     p.add_argument("--parents", action="store_true", help="Create missing parent directories.")
-    p.add_argument("--max-preview-bytes", type=int, default=DEFAULT_MAX_PREVIEW_BYTES, help="Maximum JSON preview bytes.")
+    p.add_argument(
+        "--max-preview-bytes", type=int, default=DEFAULT_MAX_PREVIEW_BYTES, help="Maximum JSON preview bytes."
+    )
     p.add_argument("--dry-run", action="store_true", help="Report operations without writing files.")
     p.add_argument("--raw", action="store_true", help="Echo stdin to stdout without a JSON envelope.")
     p.set_defaults(func=command_tee)

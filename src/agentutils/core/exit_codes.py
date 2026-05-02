@@ -17,15 +17,15 @@ from __future__ import annotations
 # 语义码 → POSIX 退出码映射
 # 调用方通过 AgentError.exit_code 属性间接使用此表
 EXIT: dict[str, int] = {
-    "ok": 0,                  # 成功完成
-    "predicate_false": 1,     # 谓词为假（如 test 命令判断文件不存在）
-    "general_error": 1,       # 一般错误（兜底）
-    "usage": 2,               # 参数错误或用法错误
-    "not_found": 3,            # 路径不存在
-    "permission_denied": 4,   # 权限不足
-    "invalid_input": 5,       # 输入数据无效（如 base64 解码失败）
-    "conflict": 6,            # 目标冲突（如覆盖已存在文件但未授权）
-    "partial_failure": 7,     # 部分成功、部分失败
-    "unsafe_operation": 8,    # 被安全策略阻止（沙箱拒绝）
-    "io_error": 10,           # I/O 错误（磁盘满、读取中断等）
+    "ok": 0,  # 成功完成
+    "predicate_false": 1,  # 谓词为假（如 test 命令判断文件不存在）
+    "general_error": 1,  # 一般错误（兜底）
+    "usage": 2,  # 参数错误或用法错误
+    "not_found": 3,  # 路径不存在
+    "permission_denied": 4,  # 权限不足
+    "invalid_input": 5,  # 输入数据无效（如 base64 解码失败）
+    "conflict": 6,  # 目标冲突（如覆盖已存在文件但未授权）
+    "partial_failure": 7,  # 部分成功、部分失败
+    "unsafe_operation": 8,  # 被安全策略阻止（沙箱拒绝）
+    "io_error": 10,  # I/O 错误（磁盘满、读取中断等）
 }

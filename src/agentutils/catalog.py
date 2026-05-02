@@ -25,11 +25,12 @@ from typing import TypedDict
 
 class CatalogEntry(TypedDict):
     """目录条目类型：一个优先级组包含多个命令。"""
-    priority: str         # "P0" | "P1" | "P2" | "P3"
-    urgency: str          # "critical" | "high" | "medium" | "normal"
-    category: str         # 分类标识符（如 "read_observe_and_decide"）
-    why: str              # 为什么这些命令属于此优先级（人类可读）
-    tools: list[str]      # 命令名列表
+
+    priority: str  # "P0" | "P1" | "P2" | "P3"
+    urgency: str  # "critical" | "high" | "medium" | "normal"
+    category: str  # 分类标识符（如 "read_observe_and_decide"）
+    why: str  # 为什么这些命令属于此优先级（人类可读）
+    tools: list[str]  # 命令名列表
 
 
 # 唯一权威的命令优先级数据源
@@ -213,7 +214,7 @@ def get_commands_by_priority() -> dict[str, list[str]]:
     for cmd, pri in _COMMAND_PRIORITY_MAP.items():
         grouped.setdefault(pri, []).append(cmd)
     for pri in grouped:
-        grouped[pri].sort()                            # 字母序保证确定性
+        grouped[pri].sort()  # 字母序保证确定性
     return grouped
 
 
@@ -237,14 +238,14 @@ def priority_catalog() -> dict[str, object]:
     return {
         "source": "GNU Coreutils 9.10",
         "principles": [
-            "json_by_default",              # 默认输出 JSON
-            "no_color_or_progress_noise",   # 无颜色/进度条噪音
-            "stderr_for_errors",            # 错误写入 stderr
-            "semantic_exit_codes",          # 语义化退出码
-            "dry_run_for_mutation",         # 修改命令支持 dry-run
-            "stdin_stdout_composable",      # stdin/stdout 可组合
-            "bounded_outputs",              # 输出有界
-            "self_describing_help_and_schema", # 自描述帮助和 schema
+            "json_by_default",  # 默认输出 JSON
+            "no_color_or_progress_noise",  # 无颜色/进度条噪音
+            "stderr_for_errors",  # 错误写入 stderr
+            "semantic_exit_codes",  # 语义化退出码
+            "dry_run_for_mutation",  # 修改命令支持 dry-run
+            "stdin_stdout_composable",  # stdin/stdout 可组合
+            "bounded_outputs",  # 输出有界
+            "self_describing_help_and_schema",  # 自描述帮助和 schema
         ],
         "categories": CATALOG,
         "implemented": implemented_catalog(),
@@ -280,11 +281,13 @@ def catalog_with_plugins(plugin_names: set[str], priority: str = "P3") -> list[C
     if not plugin_names:
         return list(CATALOG)
     result = list(CATALOG)
-    result.append({
-        "priority": priority,
-        "urgency": "normal",
-        "category": "plugin",
-        "why": "User-installed plugin command.",
-        "tools": sorted(plugin_names),
-    })
+    result.append(
+        {
+            "priority": priority,
+            "urgency": "normal",
+            "category": "plugin",
+            "why": "User-installed plugin command.",
+            "tools": sorted(plugin_names),
+        }
+    )
     return result

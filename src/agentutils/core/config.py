@@ -21,8 +21,8 @@ class AgentConfig:
 
     # ── 输出限制 ──
     max_lines: int = 10_000
-    max_bytes: int = 1_048_576       # 1 MiB
-    max_output_bytes: int = 65_536   # 64 KiB
+    max_bytes: int = 1_048_576  # 1 MiB
+    max_output_bytes: int = 65_536  # 64 KiB
     max_path_length: int = 4_096
     max_preview_bytes: int = 4_096
     max_depth: int = 8
@@ -45,7 +45,9 @@ class AgentConfig:
     def from_env(cls) -> AgentConfig:
         """从 AGENTUTILS_* 环境变量读取覆盖值。"""
         import os
-        kwargs: dict = {}
+        from typing import Any
+
+        kwargs: dict[str, Any] = {}
         for fld in cls.__dataclass_fields__:
             env_key = f"AGENTUTILS_{fld.upper()}"
             if env_key in os.environ:

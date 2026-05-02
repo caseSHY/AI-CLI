@@ -35,8 +35,8 @@ def dangerous_delete_target(path: Path, cwd: Path) -> str | None:
     Returns:
         危险原因字符串，安全时返回 None。
     """
-    resolved = resolve_path(path)                      # 先解析，防止符号链接绕过
-    anchor = Path(resolved.anchor)                     # 文件系统根（C:\ 或 /）
+    resolved = resolve_path(path)  # 先解析，防止符号链接绕过
+    anchor = Path(resolved.anchor)  # 文件系统根（C:\ 或 /）
     home = Path.home().resolve()
     if resolved == anchor:
         return "Refusing to delete a filesystem root."
@@ -64,7 +64,7 @@ def require_inside_cwd(path: Path, cwd: Path, *, allow_outside_cwd: bool) -> Non
     """
     if allow_outside_cwd:
         return
-    resolved = resolve_path(path)                      # 关键：先解析真实路径再判断
+    resolved = resolve_path(path)  # 关键：先解析真实路径再判断
     try:
         resolved.relative_to(cwd)
     except ValueError as exc:
@@ -145,7 +145,7 @@ def remove_one(path: Path, *, dry_run: bool = False, recursive: bool = False, fo
     # 步骤 2：存在性检查
     if not path.exists() and not path.is_symlink():
         if force:
-            return "missing_ignored"                     # force 模式：静默忽略
+            return "missing_ignored"  # force 模式：静默忽略
         raise AgentError("not_found", "Path does not exist.", path=str(path))
     # 步骤 3：dry-run 提前返回
     if dry_run:
@@ -160,6 +160,7 @@ def remove_one(path: Path, *, dry_run: bool = False, recursive: bool = False, fo
             )
         else:
             import shutil
+
             try:
                 shutil.rmtree(str(path))
                 return "directory_removed"
@@ -169,7 +170,7 @@ def remove_one(path: Path, *, dry_run: bool = False, recursive: bool = False, fo
                 raise AgentError("io_error", str(exc), path=str(path)) from exc
     else:
         try:
-            path.unlink()                              # unlink 处理文件和符号链接
+            path.unlink()  # unlink 处理文件和符号链接
             return "removed"
         except PermissionError as exc:
             raise AgentError("permission_denied", "Permission denied while removing path.", path=str(path)) from exc

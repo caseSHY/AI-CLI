@@ -16,8 +16,8 @@ HASH_ALGORITHMS: dict[str, str] = {
     "sha256": "sha256",
     "sha384": "sha384",
     "sha512": "sha512",
-    "b2sum": "blake2b",          # BLAKE2b（SHA-3 竞赛入围算法）
-    "blake2b": "blake2b",        # 别名
+    "b2sum": "blake2b",  # BLAKE2b（SHA-3 竞赛入围算法）
+    "blake2b": "blake2b",  # 别名
 }
 
 

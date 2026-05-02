@@ -19,7 +19,7 @@ def printf_conversions(format_string: str) -> list[str]:
             index += 1
             continue
         if index + 1 < len(format_string) and format_string[index + 1] == "%":
-            index += 2                                   # 跳过转义的 %%
+            index += 2  # 跳过转义的 %%
             continue
         end = index + 1
         while end < len(format_string) and format_string[end] not in valid:

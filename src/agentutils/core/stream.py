@@ -48,12 +48,12 @@ class StreamWriter:
         command: str,
         max_items: int = 0,
     ) -> None:
-        self._stream = stream                          # 输出流（通常 sys.stdout）
-        self._command = command                        # 命令名（用于信封）
-        self._max_items = max_items                    # 最大条目数（0 = 无限制）
-        self._count = 0                                # 已输出条目计数
-        self._truncated = False                        # 是否已截断
-        self._closed = False                           # 是否已关闭
+        self._stream = stream  # 输出流（通常 sys.stdout）
+        self._command = command  # 命令名（用于信封）
+        self._max_items = max_items  # 最大条目数（0 = 无限制）
+        self._count = 0  # 已输出条目计数
+        self._truncated = False  # 是否已截断
+        self._closed = False  # 是否已关闭
 
     def write_item(self, item: dict[str, Any]) -> bool:
         """写入一个 NDJSON 条目。
@@ -86,7 +86,7 @@ class StreamWriter:
             "tool": "agentutils",
             "version": _TOOL_VERSION,
             "command": self._command,
-            "stream": True,                            # 标记这是流式响应
+            "stream": True,  # 标记这是流式响应
             "count": self._count,
             "truncated": self._truncated,
             "summary": summary,
@@ -112,10 +112,10 @@ class NullStream:
     """
 
     def write_item(self, item: dict[str, Any]) -> bool:
-        return True                                    # dry-run 总是"成功"
+        return True  # dry-run 总是"成功"
 
     def write_summary(self, summary: dict[str, Any]) -> None:
-        pass                                           # dry-run 不输出
+        pass  # dry-run 不输出
 
     @property
     def count(self) -> int:

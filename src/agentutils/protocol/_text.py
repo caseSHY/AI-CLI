@@ -87,6 +87,7 @@ def unexpand_line(line: str, *, tab_size: int, all_blanks: bool) -> str:
         tab_size: 制表符宽度。
         all_blanks: True 时转换所有空格运行，False 时仅转换行首。
     """
+
     def compress_spaces(match: re.Match[str]) -> str:
         width = len(match.group(0))
         return "\t" * (width // tab_size) + " " * (width % tab_size)
@@ -96,7 +97,7 @@ def unexpand_line(line: str, *, tab_size: int, all_blanks: bool) -> str:
     leading = re.match(r" +", line)
     if not leading:
         return line
-    return compress_spaces(leading) + line[leading.end():]
+    return compress_spaces(leading) + line[leading.end() :]
 
 
 def split_fields(line: str, delimiter: str | None) -> list[str]:
