@@ -2,7 +2,8 @@
 
 Each test compares agentutils --raw stdout and exit code against the
 equivalent GNU coreutils command.  If a GNU command is not found via
-shutil.which() the test is skipped.
+shutil.which() — or the found executable is not genuine GNU coreutils —
+the test is skipped.
 
 File-based commands (cat, head, tail, wc, paste, join, comm) use TemporaryDirectory.
 Stdin-based commands (sort, uniq, cut, tr, base64, nl, fold) pipe input directly.
@@ -15,6 +16,7 @@ Strategy for stderr:
 
 from __future__ import annotations
 
+import functools
 import shutil
 import subprocess
 import unittest
@@ -26,8 +28,33 @@ from support import run_cli as _run_agent
 # ── helpers ──────────────────────────────────────────────────────────
 
 
+@functools.cache
+def _is_genuine_gnu(exe_path: str) -> bool:
+    """Return True if `exe_path` is a genuine GNU coreutils binary.
+
+    On Windows, ``shutil.which("sort")`` returns the built-in
+    ``sort.exe`` (not GNU), and ``wc.exe`` may come from Git-for-Windows
+    or MSYS2.  We run ``--version`` once per tool and cache the result.
+    """
+    try:
+        result = subprocess.run(
+            [exe_path, "--version"],
+            capture_output=True,
+            timeout=10,
+        )
+        out = (result.stdout + result.stderr).decode("utf-8", errors="replace")
+        return "GNU coreutils" in out or "Free Software Foundation" in out
+    except Exception:
+        return False
+
+
 def find_gnu(name: str) -> str | None:
-    return shutil.which(name)
+    exe = shutil.which(name)
+    if exe is None:
+        return None
+    if not _is_genuine_gnu(exe):
+        return None
+    return exe
 
 
 def run_gnu(
