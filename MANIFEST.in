@@ -1,4 +1,4 @@
-include README.md
+include README.md LICENSE
 include project/AGENTS.md
 recursive-include project/docs *.md
 recursive-include project/vendor *.md

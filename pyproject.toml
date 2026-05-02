@@ -1,10 +1,44 @@
 [project]
 name = "agentutils"
-version = "0.2.0"
+version = "0.3.0"
 description = "Agent-friendly CLI layer inspired by GNU Coreutils."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = []
+authors = [
+    {name = "caseSHY", email = "caseSHY@users.noreply.github.com"},
+]
+keywords = [
+    "cli",
+    "coreutils",
+    "agent",
+    "llm",
+    "json",
+    "ai",
+    "tool-calling",
+    "mcp",
+    "sandbox",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/caseSHY/AI-CLI"
+Repository = "https://github.com/caseSHY/AI-CLI"
+Issues = "https://github.com/caseSHY/AI-CLI/issues"
 
 [project.optional-dependencies]
 test = [
