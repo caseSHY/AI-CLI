@@ -7,12 +7,15 @@ from typing import Any
 
 from support import ROOT, run_cli
 
-# Pattern to detect any absolute path prefix up to and including the project root
-# Matches both Windows (C:\...\) and Unix (/home/.../) styles
-_PATH_UP_TO_PROJECT = re.compile(
-    r"^([A-Za-z]:[/\\]|/)?"  # Optional drive letter or leading /
-    r".*?"  # Match all intermediate directories lazily
-    r"AIBaseCLI-ABC[/\\]"  # Project root directory name
+# Pattern to detect any absolute path prefix up to and including the project root.
+# Matches any drive-letter or /-prefixed path; strips everything before the relative part.
+_PATH_PREFIX_RE = re.compile(
+    r"^([A-Za-z]:[/\\])"  # Drive letter (Windows)
+    r".*?([/\\]project[/\\])"  # Up to project/ directory
+)
+_UNIX_PATH_PREFIX_RE = re.compile(
+    r"^/"
+    r".*?([/\\]project[/\\])"  # Up to project/ directory
 )
 
 
@@ -37,11 +40,12 @@ def _normalize_output(obj: Any) -> Any:
 
 
 def _normalize_path(text: str) -> str:
-    """Replace absolute path prefix up to project root with {{ROOT}}."""
+    """Replace absolute path prefix up to project root with {{ROOT}}/."""
     normalized = text.replace("\\", "/")
-    m = _PATH_UP_TO_PROJECT.search(normalized)
-    if m:
-        return "{{ROOT}}/" + normalized[m.end() :]
+    for pattern in (_PATH_PREFIX_RE, _UNIX_PATH_PREFIX_RE):
+        m = pattern.match(normalized)
+        if m:
+            return "{{ROOT}}/" + normalized[m.end() :]
     return text
 
 
