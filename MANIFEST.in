@@ -1,4 +1,5 @@
 include README.md
-include AGENTS.md
-recursive-include docs *.md
+include project/AGENTS.md
+recursive-include project/docs *.md
+recursive-include project/vendor *.md
 recursive-include .github *.md *.yml *.instructions.md

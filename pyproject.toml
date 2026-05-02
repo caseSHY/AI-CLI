@@ -31,9 +31,11 @@ agentutils = "agentutils.parser:main"
 where = ["src"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["project/tests"]
+cache_dir = ".cache/pytest_cache"
 
 [tool.ruff]
+cache-dir = ".cache/ruff_cache"
 target-version = "py311"
 line-length = 120
 
@@ -55,7 +57,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["N802", "N803", "N806"]
+"project/tests/**" = ["N802", "N803", "N806"]
 "src/agentutils/**" = ["N802"]
 
 [tool.ruff.format]
@@ -64,15 +66,17 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 
 [tool.mypy]
+cache_dir = ".cache/mypy_cache"
 python_version = "3.11"
 strict = true
 ignore_missing_imports = true
-exclude = ["tests/"]
+exclude = ["project/tests/"]
 warn_unused_ignores = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 
 [tool.coverage.run]
+data_file = ".cache/coverage/.coverage"
 source = ["src/agentutils"]
 omit = ["*/__pycache__/*"]
 

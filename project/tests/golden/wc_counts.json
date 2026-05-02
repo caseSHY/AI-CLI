@@ -1,0 +1,1 @@
+{"command":"wc","ok":true,"result":{"count":1,"entries":[{"bytes":246,"chars":246,"lines":1,"path":"C:\\Users\\11593\\Documents\\AIBaseCLI-ABC\\project\\tests\\golden\\base64_hello.json","words":1}],"totals":{"bytes":246,"chars":246,"lines":1,"words":1}},"tool":"agentutils","version":"0.2.0","warnings":[]}

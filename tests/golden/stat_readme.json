@@ -1,1 +1,0 @@
-{"command":"stat","ok":true,"result":{"count":1,"entries":[{"created_at":"2026-04-30T13:54:02.035579Z","is_symlink":false,"mode_octal":"0o666","modified_at":"2026-05-01T16:05:56.940909Z","name":"README.md","path":"C:\\Users\\11593\\Documents\\AIBaseCLI-ABC\\docs\\README.md","size_bytes":4065,"type":"file"}]},"tool":"agentutils","version":"0.2.0","warnings":[]}
