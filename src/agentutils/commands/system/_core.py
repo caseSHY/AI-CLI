@@ -1,4 +1,22 @@
-"""System-information and process commands: date, env, id, uname, timeout, etc."""
+"""System commands: date, env, whoami, uname, timeout, kill, sleep, ...
+
+系统命令层：实现 P3（系统上下文与有界执行）优先级组的所有命令。
+
+命令类型：
+- 系统信息：date/uname/arch/hostname/uptime/nproc/df/du
+- 用户/组：whoami/groups/id/logname/users/who/pinky
+- 环境：env/printenv
+- 终端：tty/stty
+- 执行控制：timeout/nice/nohup/stdbuf/chroot（默认 dry-run + --allow-*）
+- 信号：kill（默认 dry-run + --allow-signal）
+- 安全上下文：chcon/runcon（默认 dry-run + --allow-context）
+- 逻辑/数学：sleep/true/false/expr/factor/pathchk
+
+安全注意：
+- 危险命令（kill/nice/nohup/chroot/chcon/runcon/stty）默认拒绝真实执行。
+- 所有子进程执行命令需 --allow-* 显式授权。
+- 修改此文件后必须运行相关安全测试。
+"""
 
 from __future__ import annotations
 
@@ -17,7 +35,7 @@ import time as timemod
 from pathlib import Path
 from typing import Any, cast
 
-from .protocol import (
+from ...protocol import (
     EXIT,
     AgentError,
     active_user_entries,

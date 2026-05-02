@@ -1,7 +1,22 @@
 """Async command interface for agentutils.
 
-Phase 2.2: Provides async wrappers for running agentutils commands
-from asyncio event loops, enabling concurrent Agent operations.
+异步调用接口：提供 asyncio 包装器，允许 Agent 在事件循环中
+并发运行多个 agentutils 命令，而非串行等待每个子进程。
+
+使用场景：
+    # 并发 ls 多个目录
+    results = await run_async_many([
+        ("ls", "/dir1"),
+        ("ls", "/dir2"),
+        ("ls", "/dir3"),
+    ])
+
+技术实现：
+- run_async 使用 asyncio.create_subprocess_exec 创建子进程。
+- run_async_many 使用 asyncio.Semaphore 控制并发数。
+- 超时通过 asyncio.wait_for 实现，超时后 kill 子进程。
+- 子进程通过 PYTHONPATH 环境变量找到 agentutils 包（避免需要 pip install）。
+- 并发数和超时默认值来自 core.constants。
 """
 
 from __future__ import annotations
@@ -11,27 +26,32 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from .core.constants import ASYNC_DEFAULT_CONCURRENCY
+
 
 async def run_async(
     *args: str,
     cwd: Path | None = None,
     timeout: float | None = None,
 ) -> dict[str, Any]:
-    """Run an agentutils command asynchronously and return the JSON result.
+    """异步运行单个 agentutils 命令并返回 JSON 结果。
+
+    此函数在 asyncio 事件循环中创建子进程，不会阻塞事件循环。
 
     Args:
-        *args: Command-line arguments (e.g., "ls", ".", "--recursive").
-        cwd: Working directory for the command.
-        timeout: Maximum seconds to wait.
+        *args: 命令行参数，如 ("ls", ".", "--recursive")。
+        cwd: 命令的工作目录，None 则继承当前。
+        timeout: 最大等待秒数，None 则无限等待。
 
     Returns:
-        Parsed JSON envelope from the command.
+        解析后的 JSON 信封字典（{"ok": True, "result": ..., ...}）。
 
     Raises:
-        asyncio.TimeoutError: If the command times out.
-        RuntimeError: If the command returns a non-zero exit code.
+        asyncio.TimeoutError: 命令超时。
+        RuntimeError: 命令返回非零退出码。
     """
     cmd = [sys.executable, "-m", "agentutils", *args]
+    # 计算 src/ 目录的绝对路径，放入 PYTHONPATH 确保子进程能找到包
     env = {"PYTHONPATH": str(Path(__file__).resolve().parents[2])}
 
     proc = await asyncio.create_subprocess_exec(
@@ -71,24 +91,32 @@ async def run_async(
 async def run_async_many(
     commands: list[tuple[str, ...]],
     *,
-    concurrency: int = 10,
+    concurrency: int = ASYNC_DEFAULT_CONCURRENCY,
     timeout: float | None = None,
 ) -> list[dict[str, Any]]:
-    """Run multiple agentutils commands concurrently.
+    """并发运行多个 agentutils 命令。
+
+    使用 asyncio.Semaphore 控制并发数，防止同时创建过多子进程。
+    asyncio.gather 保证返回顺序与输入命令顺序一致。
 
     Args:
-        commands: List of command argument tuples.
-        concurrency: Maximum number of concurrent commands.
-        timeout: Per-command timeout in seconds.
+        commands: 命令参数元组列表，如 [("ls", "."), ("stat", "f.txt")]。
+        concurrency: 最大并发数，默认 ASYNC_DEFAULT_CONCURRENCY (10)。
+        timeout: 每个命令的超时秒数，None 则无限等待。
 
     Returns:
-        List of result dicts in the same order as commands.
+        结果字典列表，顺序与输入 commands 一致。
+
+    Raises:
+        RuntimeError: 任一命令失败（return_exceptions=False）。
     """
     semaphore = asyncio.Semaphore(concurrency)
 
     async def _run_one(cmd_args: tuple[str, ...]) -> dict[str, Any]:
+        """包装 run_async，通过信号量限制并发。"""
         async with semaphore:
             return await run_async(*cmd_args, timeout=timeout)
 
     tasks = [_run_one(cmd) for cmd in commands]
+    # return_exceptions=False：任一失败则整体抛出异常
     return await asyncio.gather(*tasks, return_exceptions=False)

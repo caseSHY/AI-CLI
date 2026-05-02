@@ -1,4 +1,20 @@
-"""File-system commands: ls, stat, cat, head, tail, wc, cp, mv, rm, mkdir, touch, etc."""
+"""File-system commands: ls, stat, cat, head, tail, wc, cp, mv, rm, mkdir, chmod, ...
+
+文件系统命令层：实现 P0（读取观察）和 P1（安全修改）优先级组的所有命令。
+
+每个命令函数遵循统一契约：
+    def command_xxx(args: argparse.Namespace) -> dict[str, Any] | bytes:
+        # 1. 路径解析和校验（resolve_path + require_inside_cwd）
+        # 2. 安全检查（dangerous_delete_target + refuse_overwrite）
+        # 3. dry_run 提前返回（if args.dry_run: return {...}）
+        # 4. 实际执行并收集结果
+        # 5. 返回 JSON 兼容字典或 bytes（--raw 模式）
+
+安全注意：
+- 所有写入/删除/截断命令必须通过 sandbox 校验。
+- 路径遍历（../）和符号链接逃逸在 resolve_path 层拦截。
+- 修改此文件后必须运行全部 37 个沙箱测试。
+"""
 
 from __future__ import annotations
 
@@ -6,12 +22,15 @@ import argparse
 import base64
 import os
 import shutil
+import sys
 import tempfile
 import uuid
 from pathlib import Path
 from typing import Any
 
-from .protocol import (
+from ...core.constants import DD_DEFAULT_BLOCK_SIZE
+from ...core.stream import StreamWriter, is_stream_mode
+from ...protocol import (
     EXIT,
     AgentError,
     dangerous_delete_target,
@@ -133,12 +152,30 @@ def command_dirname(args: argparse.Namespace) -> dict[str, Any] | bytes:
 # ── ls / dir / vdir ────────────────────────────────────────────────────
 
 
-def command_ls(args: argparse.Namespace) -> dict[str, Any]:
+def command_ls(args: argparse.Namespace) -> dict[str, Any] | bytes:
     root = resolve_path(args.path, strict=True)
     if args.max_depth < 0:
         raise AgentError("invalid_input", "--max-depth must be >= 0.")
     if args.limit < 1:
         raise AgentError("invalid_input", "--limit must be >= 1.")
+
+    # --stream mode: emit NDJSON lines directly to stdout to avoid
+    # accumulating all entries in memory (important for large directories).
+    if is_stream_mode(args):
+        writer = StreamWriter(sys.stdout, command="ls", max_items=args.limit)
+        entries, truncated = iter_directory(
+            root,
+            include_hidden=args.include_hidden,
+            recursive=args.recursive,
+            max_depth=args.max_depth,
+            follow_symlinks=args.follow_symlinks,
+            limit=args.limit,
+        )
+        for entry in entries:
+            writer.write_item(entry)
+        writer.write_summary({"path": str(root), "count": len(entries), "truncated": truncated})
+        return b""  # signal to dispatch: output already written
+
     entries, truncated = iter_directory(
         root,
         include_hidden=args.include_hidden,
@@ -157,14 +194,18 @@ def command_ls(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
-def command_dir(args: argparse.Namespace) -> dict[str, Any]:
+def command_dir(args: argparse.Namespace) -> dict[str, Any] | bytes:
     result = command_ls(args)
+    if isinstance(result, bytes):
+        return result  # --stream mode: pass through
     result["alias"] = "dir"
     return result
 
 
-def command_vdir(args: argparse.Namespace) -> dict[str, Any]:
+def command_vdir(args: argparse.Namespace) -> dict[str, Any] | bytes:
     result = command_ls(args)
+    if isinstance(result, bytes):
+        return result  # --stream mode: pass through
     result["alias"] = "vdir"
     result["verbose"] = True
     return result
@@ -326,7 +367,7 @@ def command_cksum(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 def command_sum(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    from .protocol import simple_sum16
+    from ...protocol import simple_sum16
 
     if args.block_size < 1:
         raise AgentError("invalid_input", "--block-size must be >= 1.")
@@ -995,7 +1036,7 @@ def command_shred(args: argparse.Namespace) -> dict[str, Any]:
                     suggestion="Run with --dry-run first, then pass --allow-destructive if intentional.",
                 )
             try:
-                chunk = b"\0" * min(size, 1024 * 1024)
+                chunk = b"\0" * min(size, DD_DEFAULT_BLOCK_SIZE)
                 with path.open("r+b") as handle:
                     for _ in range(args.passes):
                         handle.seek(0)
@@ -1021,7 +1062,7 @@ def command_shred(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def command_test(args: argparse.Namespace) -> dict[str, Any]:
-    from .protocol import evaluate_test_predicates
+    from ...protocol import evaluate_test_predicates
 
     path = Path(args.path).expanduser()
     predicates = []

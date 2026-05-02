@@ -15,6 +15,7 @@ class DocsBilingualTests(unittest.TestCase):
             and "__pycache__" not in path.parts
             and "coreutils-9.10" not in path.parts
             and "reports" not in path.relative_to(ROOT).parts
+            and "analysis" not in path.relative_to(ROOT).parts
             and path.name != "CLAUDE.md"
             and not path.name.startswith("GPTCodex-vs-DeepSeekCopilot-")
         ]

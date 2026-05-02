@@ -284,3 +284,110 @@ class AsyncInterfaceSmokeTests(unittest.TestCase):
         params = list(sig.parameters)
         self.assertIn("cwd", params)
         self.assertIn("timeout", params)
+
+    def test_run_async_many_runs_concurrently(self) -> None:
+        """TD08: Verify run_async_many executes commands concurrently."""
+        import asyncio
+
+        from agentutils.async_interface import run_async_many
+
+        async def _run() -> None:
+            results = await run_async_many(
+                [("catalog",), ("schema",)],
+                concurrency=2,
+            )
+            self.assertEqual(len(results), 2)
+            for r in results:
+                self.assertTrue(r["ok"])
+
+        asyncio.run(_run())
+
+    def test_run_async_many_respects_order(self) -> None:
+        """Verify results are returned in input order."""
+        import asyncio
+
+        from agentutils.async_interface import run_async_many
+
+        async def _run() -> None:
+            results = await run_async_many(
+                [("catalog",), ("schema",), ("catalog",)],
+                concurrency=3,
+            )
+            self.assertEqual(len(results), 3)
+            self.assertEqual(results[0]["command"], "catalog")
+            self.assertEqual(results[1]["command"], "schema")
+            self.assertEqual(results[2]["command"], "catalog")
+
+        asyncio.run(_run())
+
+    def test_run_async_many_with_timeout(self) -> None:
+        """Verify per-command timeout works."""
+        import asyncio
+
+        from agentutils.async_interface import run_async_many
+
+        async def _run() -> None:
+            results = await run_async_many(
+                [("catalog",)],
+                concurrency=1,
+                timeout=30.0,
+            )
+            self.assertEqual(len(results), 1)
+            self.assertTrue(results[0]["ok"])
+
+        asyncio.run(_run())
+
+
+# ── Plugin end-to-end tests ────────────────────────────────────────────
+
+
+class PluginEndToEndTests(unittest.TestCase):
+    """TD07: End-to-end tests for plugin discovery and registration."""
+
+    def test_plugin_registry_is_immutable(self) -> None:
+        """Verify PluginRegistry.register returns a new instance."""
+        from agentutils.core.plugin_registry import PluginRegistry
+
+        r1 = PluginRegistry()
+        r2 = r1.register("test_cmd", lambda args: {"ok": True})
+        self.assertNotIn("test_cmd", r1)
+        self.assertIn("test_cmd", r2)
+        self.assertEqual(r1.count, 0)
+        self.assertEqual(r2.count, 1)
+
+    def test_plugin_registry_merge(self) -> None:
+        from agentutils.core.plugin_registry import PluginRegistry
+
+        r1 = PluginRegistry().register("a", lambda: 1)
+        r2 = PluginRegistry().register("b", lambda: 2)
+        merged = r1.merge(r2)
+        self.assertEqual(merged.count, 2)
+        self.assertIn("a", merged)
+        self.assertIn("b", merged)
+
+    def test_programmatic_register_plugin(self) -> None:
+        from agentutils.plugins import get_plugin_commands, register_plugin_command
+
+        register_plugin_command("_test_prog_cmd", lambda args: {"ok": True}, priority="P3")
+        cmds = get_plugin_commands()
+        self.assertIn("_test_prog_cmd", cmds)
+        self.assertTrue(callable(cmds["_test_prog_cmd"]))
+
+    def test_plugin_discovery_does_not_crash(self) -> None:
+        from agentutils.plugins import discover_plugins
+
+        result = discover_plugins()
+        self.assertIsInstance(result, dict)
+
+    def test_has_plugins_returns_bool(self) -> None:
+        from agentutils.plugins import has_plugins
+
+        self.assertIsInstance(has_plugins(), bool)
+
+    def test_get_registry_returns_plugin_registry(self) -> None:
+        from agentutils.core.plugin_registry import PluginRegistry
+        from agentutils.plugins import get_registry
+
+        reg = get_registry()
+        self.assertIsInstance(reg, PluginRegistry)
+

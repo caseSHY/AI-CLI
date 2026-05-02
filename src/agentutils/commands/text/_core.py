@@ -1,4 +1,23 @@
-"""Text-transformation commands: sort, uniq, cut, tr, comm, join, paste, codecs, etc."""
+"""Text-processing commands: sort, uniq, cut, tr, base64, comm, join, ...
+
+文本处理命令层：实现 P2（文本转换与组合）优先级组的所有命令。
+
+命令类型：
+- 排序/去重：sort/uniq/tsort
+- 比较合并：comm/join/paste
+- 选择提取：cut/shuf/tac
+- 格式化：nl/fold/fmt/pr
+- 拆分：csplit/split
+- 字符转换：tr/expand/unexpand
+- 编码：codec（base64/base32）/basenc（base16/32/64/64url）
+- 数值：numfmt/seq/od
+- 输出：printf/echo/yes
+- 索引：ptx
+- 目录颜色：dircolors
+
+每个命令支持 --raw 输出原始字节流和 --max-lines 有界输出。
+排序和比较命令需处理 stdin + 多文件输入。
+"""
 
 from __future__ import annotations
 
@@ -10,7 +29,7 @@ import re
 import textwrap
 from typing import Any, TypedDict
 
-from .protocol import (
+from ...protocol import (
     AgentError,
     alpha_suffix,
     bounded_lines,
