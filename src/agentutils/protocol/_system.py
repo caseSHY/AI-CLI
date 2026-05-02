@@ -8,6 +8,7 @@ from __future__ import annotations
 import base64
 import importlib
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -169,13 +170,27 @@ def subprocess_result(
 def system_uptime_seconds() -> float | None:
     """获取系统运行时间（秒）。
 
-    优先读取 /proc/uptime（Linux），回退 Windows GetTickCount64 API。
+    优先读取 /proc/uptime（Linux），回退 macOS sysctl，
+    最后尝试 Windows GetTickCount64 API。
     """
     proc_uptime = Path("/proc/uptime")
     if proc_uptime.exists():
         try:
             return float(proc_uptime.read_text(encoding="utf-8").split()[0])
         except (OSError, ValueError, IndexError):
+            pass
+    if sys.platform == "darwin":
+        try:
+            import time
+
+            output = subprocess.check_output(["sysctl", "-n", "kern.boottime"], text=True)
+            # Format: { sec = 1234567890, usec = 123456 } Tue Apr 30 10:00:00 2026
+            sec_match = re.search(r"sec\s*=\s*(\d+)", output)
+            if sec_match:
+                boot_time = int(sec_match.group(1))
+                now = time.time()
+                return now - boot_time
+        except Exception:
             pass
     try:
         import ctypes

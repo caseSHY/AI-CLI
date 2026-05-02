@@ -2,15 +2,45 @@ from __future__ import annotations
 
 import json
 import unittest
+from typing import Any
 
 from support import ROOT, run_cli
+
+
+def _normalize_output(obj: Any) -> Any:
+    """Normalize platform-dependent values (paths, timestamps) in JSON output."""
+    root_str = str(ROOT).replace("\\", "/")
+    if isinstance(obj, dict):
+        result: dict[str, Any] = {}
+        for key, value in obj.items():
+            # Skip timestamp fields (platform-dependent)
+            if key.endswith("_at"):
+                result[key] = "{{TIMESTAMP}}"
+            elif isinstance(value, str):
+                # Normalize absolute paths to {{ROOT}}/relative
+                normalized = value.replace("\\", "/")
+                if normalized.startswith(root_str):
+                    result[key] = "{{ROOT}}" + normalized[len(root_str) :]
+                else:
+                    result[key] = value
+            else:
+                result[key] = _normalize_output(value)
+        return result
+    elif isinstance(obj, list):
+        return [_normalize_output(item) for item in obj]
+    elif isinstance(obj, str):
+        normalized = obj.replace("\\", "/")
+        if normalized.startswith(root_str):
+            return "{{ROOT}}" + normalized[len(root_str) :]
+        return obj
+    return obj
 
 
 class GoldenOutputTests(unittest.TestCase):
     def assert_matches_golden(self, golden_name: str, result_stdout: str) -> None:
         expected = json.loads((ROOT / "project" / "tests" / "golden" / golden_name).read_text(encoding="utf-8"))
         actual = json.loads(result_stdout)
-        self.assertEqual(actual, expected)
+        self.assertEqual(_normalize_output(actual), _normalize_output(expected))
 
     def test_seq_output_matches_golden_file(self) -> None:
         result = run_cli("seq", "1", "2", "5")
