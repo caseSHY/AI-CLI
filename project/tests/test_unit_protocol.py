@@ -290,6 +290,24 @@ class TextUtilsTests(unittest.TestCase):
         result = unexpand_line("hello", tab_size=4, all_blanks=False)
         self.assertEqual(result, "hello")
 
+    def test_unexpand_line_all_blanks(self) -> None:
+        result = unexpand_line("hello        world", tab_size=8, all_blanks=True)
+        self.assertIn("\t", result)
+
+    def test_decode_escapes_double_backslash(self) -> None:
+        self.assertEqual(decode_standard_escapes("\\\\"), "\\")
+
+    def test_decode_escapes_non_special_follow(self) -> None:
+        self.assertEqual(decode_standard_escapes("\\q"), "q")
+
+    def test_parse_octal_mode_empty(self) -> None:
+        with self.assertRaises(AgentError):
+            parse_octal_mode("")
+
+    def test_parse_numfmt_unsupported_unit(self) -> None:
+        with self.assertRaises(AgentError):
+            parse_numfmt_value("1Z", "si")
+
 
 if __name__ == "__main__":
     unittest.main()
