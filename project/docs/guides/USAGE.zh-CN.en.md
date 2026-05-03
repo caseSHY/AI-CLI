@@ -1,8 +1,8 @@
-# Agentutils 使用说明 / User Guide
+# AICoreUtils 使用说明 / User Guide
 
 ## 中文说明
 
-`agentutils` 是一个面向 LLM Agent 的命令行工具包原型。它参考 GNU Coreutils
+`aicoreutils` 是一个面向 LLM Agent 的命令行工具包原型。它参考 GNU Coreutils
 的常用工具，但把交互方式改成更适合机器调用的形式：默认输出 JSON，错误写入
 stderr，退出码稳定明确，修改文件的命令支持 `--dry-run`。
 
@@ -316,7 +316,7 @@ python -m agentutils rm coreutils-9.10 --recursive --dry-run
 
 ## English Guide
 
-`agentutils` is a prototype command-line toolkit designed for LLM agents. It is
+`aicoreutils` is a prototype command-line toolkit designed for LLM agents. It is
 inspired by common GNU Coreutils commands, but reshapes the interface for
 machine callers: JSON output by default, JSON errors on stderr, stable semantic
 exit codes, and `--dry-run` support for file mutation commands.

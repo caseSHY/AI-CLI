@@ -1,6 +1,6 @@
-"""Core modules for agentutils: exceptions, envelope, path utilities, sandbox, streaming.
+"""Core modules for aicoreutils: exceptions, envelope, path utilities, sandbox, streaming.
 
-agentutils.core 是项目的核心基础层，提供所有命令实现公用的基础能力。
+aicoreutils.core 是项目的核心基础层，提供所有命令实现公用的基础能力。
 
 模块层次（从底层到高层）：
     exit_codes.py   — 语义退出码 → POSIX 进程退出码映射（无外部依赖）。

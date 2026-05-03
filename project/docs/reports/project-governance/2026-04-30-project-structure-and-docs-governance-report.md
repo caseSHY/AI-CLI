@@ -6,13 +6,13 @@
 
 > **日期**: 2026-04-30
 > **执行者**: GitHub Copilot (DeepSeek V4 Pro)
-> **项目**: agentutils v0.1.0
+> **项目**: aicoreutils v0.1.0
 
 ---
 
 ## 1. 执行摘要
 
-对 agentutils 项目进行了完整的结构扫描、冲突识别、文档治理和状态统一。主要成果：
+对 aicoreutils 项目进行了完整的结构扫描、冲突识别、文档治理和状态统一。主要成果：
 
 - **新建** 2 个关键文档：`docs/status/CURRENT_STATUS.md`（权威状态源）、`docs/reference/SECURITY_MODEL.md`（安全模型）
 - **修正** 4 个过时/矛盾的安全声明：测试报告和变更日志中的"未修复"缺口标记更新为"已修复"

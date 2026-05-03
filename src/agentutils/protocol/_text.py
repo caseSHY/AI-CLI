@@ -48,7 +48,7 @@ def decode_standard_escapes(value: str) -> str:
 def parse_octal_mode(raw: str) -> int:
     """解析八进制权限模式（如 644, 755, 0o644），仅支持八进制。
 
-    注意：不支持 GNU 符号模式（u+x, g-w 等），这是 agentutils 的有意限制。
+    注意：不支持 GNU 符号模式（u+x, g-w 等），这是 aicoreutils 的有意限制。
     """
     value = raw.strip()
     if value.startswith("0o"):

@@ -60,7 +60,7 @@ def command_coreutils(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.raw or args.list:
         return lines_to_raw(commands, encoding="utf-8")
     return {
-        "implementation": "agentutils",
+        "implementation": "aicoreutils",
         "compatible_with": "GNU Coreutils inspired subset",
         "gnu_option_compatible": False,
         "json_default": True,

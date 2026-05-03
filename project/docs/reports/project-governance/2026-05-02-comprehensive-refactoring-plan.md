@@ -11,15 +11,15 @@
 
 ### 1.1 业务功能全景
 
-**agentutils** 是一个面向 LLM Agent 的 JSON 优先命令行工具包。它不是人用的 shell，
+**aicoreutils** 是一个面向 LLM Agent 的 JSON 优先命令行工具包。它不是人用的 shell，
 而是**机器调用的确定性接口层**。
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    LLM Agent (调用方)                     │
-│   function_call → subprocess.run(["agentutils", ...])   │
+│   function_call → subprocess.run(["aicoreutils", ...])   │
 ├─────────────────────────────────────────────────────────┤
-│                 agentutils CLI 层                         │
+│                 aicoreutils CLI 层                         │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐ │
 │  │ 114 命令  │ │ JSON 协议│ │ 安全沙箱  │ │ 插件系统   │ │
 │  │ (4 优先级)│ │ (信封格式)│ │ (cwd 边界)│ │ (命名空间)  │ │
@@ -171,7 +171,7 @@ tests/                       17 文件  ~3000+ 行
 #### 部署方式
 
 - **当前**：开发原型，`pip install -e .` 本地可编辑安装
-- **分发**：`pip install agentutils`（通过 PyPI 或源码）
+- **分发**：`pip install aicoreutils`（通过 PyPI 或源码）
 - **无容器化/编排**：纯 Python 包，无 Docker/K8s
 
 ---
@@ -224,7 +224,7 @@ python -m pytest tests/ -v --tb=short -k "not (property_based or Hypothesis or G
 
 | 路径 | 测试覆盖 | 状态 |
 |------|---------|------|
-| 文件读写 | test_agentutils, test_property_based_cli, test_gnu_differential | ✅ |
+| 文件读写 | test_aicoreutils, test_property_based_cli, test_gnu_differential | ✅ |
 | 安全沙箱 | test_sandbox_escape_hardening (37), test_sandbox_and_side_effects (3) | ✅ |
 | JSON 协议 | test_cli_black_box, test_unit_protocol, test_golden_outputs | ✅ |
 | 错误码 | test_error_exit_codes (6) | ✅ |
@@ -445,7 +445,7 @@ COMMAND_SPECS: dict[str, dict] = {
             {"name": "--all", "action": "store_true", "help": "Include hidden files."},
             {"name": "--raw", "action": "store_true"},
         ],
-        "func": "agentutils.fs_commands.command_ls",
+        "func": "aicoreutils.fs_commands.command_ls",
     },
     # ... 114 个命令的声明式定义
 }
@@ -519,7 +519,7 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class AgentConfig:
-    """Immutable configuration for agentutils commands."""
+    """Immutable configuration for aicoreutils commands."""
 
     # Output bounds
     max_lines: int = 10_000

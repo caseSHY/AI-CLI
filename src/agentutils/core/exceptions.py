@@ -1,6 +1,6 @@
-"""Core exception classes for agentutils.
+"""Core exception classes for aicoreutils.
 
-AgentError 是 agentutils 唯一的异常类型。所有命令实现只抛出此异常，
+AgentError 是 aicoreutils 唯一的异常类型。所有命令实现只抛出此异常，
 不抛出裸 OSError、ValueError 等。这使得上层调用方（parser.main）
 可以统一捕获并转换为 JSON 错误响应。
 
@@ -21,7 +21,7 @@ from .exit_codes import EXIT
 class AgentError(Exception):
     """语义化错误：机器可读的错误码 + 可选路径 + 修复建议。
 
-    所有 agentutils 命令在遇到可恢复/需报告的错误时抛出此异常。
+    所有 aicoreutils 命令在遇到可恢复/需报告的错误时抛出此异常。
     上层 parser.main() 统一捕获并序列化为 JSON 错误信封输出到 stderr。
 
     Attributes:

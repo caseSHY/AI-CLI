@@ -1,6 +1,6 @@
-"""JSON envelope helpers for agentutils.
+"""JSON envelope helpers for aicoreutils.
 
-JSON 信封格式是 agentutils 与 LLM Agent 之间的核心协议。
+JSON 信封格式是 aicoreutils 与 LLM Agent 之间的核心协议。
 每个命令的 stdout 输出（成功）和 stderr 输出（失败）都遵循此格式。
 
 协议契约：

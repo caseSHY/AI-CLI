@@ -104,7 +104,7 @@ def evaluate_test_predicates(path: Path, predicates: list[str]) -> list[dict[str
 def prime_factors(value: int) -> list[int]:
     """计算整数的质因数分解（trial division 算法）。
 
-    有 agentutils 安全上限 FACTOR_MAX，大数分解不应在此函数中完成。
+    有 aicoreutils 安全上限 FACTOR_MAX，大数分解不应在此函数中完成。
     """
     factors: list[int] = []
     number = abs(value)

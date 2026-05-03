@@ -1,7 +1,7 @@
-"""Async command interface for agentutils.
+"""Async command interface for aicoreutils.
 
 异步调用接口：提供 asyncio 包装器，允许 Agent 在事件循环中
-并发运行多个 agentutils 命令，而非串行等待每个子进程。
+并发运行多个 aicoreutils 命令，而非串行等待每个子进程。
 
 使用场景：
     # 并发 ls 多个目录
@@ -15,7 +15,7 @@
 - run_async 使用 asyncio.create_subprocess_exec 创建子进程。
 - run_async_many 使用 asyncio.Semaphore 控制并发数。
 - 超时通过 asyncio.wait_for 实现，超时后 kill 子进程。
-- 子进程通过 PYTHONPATH 环境变量找到 agentutils 包（避免需要 pip install）。
+- 子进程通过 PYTHONPATH 环境变量找到 aicoreutils 包（避免需要 pip install）。
 - 并发数和超时默认值来自 core.constants。
 """
 
@@ -34,7 +34,7 @@ async def run_async(
     cwd: Path | None = None,
     timeout: float | None = None,
 ) -> dict[str, Any]:
-    """异步运行单个 agentutils 命令并返回 JSON 结果。
+    """异步运行单个 aicoreutils 命令并返回 JSON 结果。
 
     此函数在 asyncio 事件循环中创建子进程，不会阻塞事件循环。
 
@@ -94,7 +94,7 @@ async def run_async_many(
     concurrency: int = ASYNC_DEFAULT_CONCURRENCY,
     timeout: float | None = None,
 ) -> list[dict[str, Any]]:
-    """并发运行多个 agentutils 命令。
+    """并发运行多个 aicoreutils 命令。
 
     使用 asyncio.Semaphore 控制并发数，防止同时创建过多子进程。
     asyncio.gather 保证返回顺序与输入命令顺序一致。

@@ -58,7 +58,7 @@ src/agentutils/
 
 | 编号 | 问题 | 影响 |
 |---|---|---|
-| **A-001** | `cli.py` 是纯重导出模块，`pyproject.toml` 入口指向 `agentutils.cli:main`，但真正的 main 在 `parser.py` | 多一层无意义间接，增大维护负担 |
+| **A-001** | `cli.py` 是纯重导出模块，`pyproject.toml` 入口指向 `aicoreutils.cli:main`，但真正的 main 在 `parser.py` | 多一层无意义间接，增大维护负担 |
 | **A-002** | `protocol.py` 是"上帝模块"：混合了异常类、JSON 工具、路径解析、哈希计算、文本处理、子进程管理、sandbox 校验、用户信息查询等数十个函数 | 单文件过大(预估 600+ 行)，职责不清，难以测试和维护 |
 | **A-003** | 三个命令模块 (`fs_commands.py`, `text_commands.py`, `system_commands.py`) 各包含 20-50 个命令函数，文件体积过大 | 新增命令困难，合并冲突风险高 |
 | **A-004** | `registry.py` 的 `_COMMAND_PRIORITY_MAP` 与 `catalog.py` 的 `CATALOG` 是手工维护的冗余数据源 | 新增命令需同时修改两处，易遗漏 |
@@ -160,7 +160,7 @@ src/agentutils/
 | **2.2 异步命令接口** | P1 | 提供 `async def` 命令变体，支持 `asyncio` 并发调用 |
 | **2.3 输出分页** | P1 | `ls`/`cat` 大量结果支持 `--page N` 分页，配合 `--cursor` 续取 |
 | **2.4 GNU 关键缺口补齐** | P1 | 优先补齐 P0/P1 命令的高频选项: `cat` 多文件、`sort` key/stable、`chmod` 递归、`cp` preserve |
-| **2.5 管道增强** | P2 | `--raw` 模式下支持真正的 stdin→stdout 管道传递 (如 `agentutils cat a.txt --raw | agentutils sort --raw`) |
+| **2.5 管道增强** | P2 | `--raw` 模式下支持真正的 stdin→stdout 管道传递 (如 `aicoreutils cat a.txt --raw | aicoreutils sort --raw`) |
 | **2.6 输入校验增强** | P2 | 统一参数校验层，每个命令自动校验必填参数和类型 |
 | **2.7 错误信息国际化** | P3 | 错误 message 支持中/英双语切换 |
 | **2.8 性能基准套件** | P2 | 添加 `pytest-benchmark`，CI 中追踪关键命令性能 |
@@ -180,9 +180,9 @@ src/agentutils/
 | **3.1 插件系统** | P0 | `agentutils` 发现 `agentutils_*` 命名空间包，自动注册命令 |
 | **3.2 API 文档生成** | P0 | Sphinx 自动生成 API 参考文档 |
 | **3.3 Shell 补全** | P1 | 支持 bash/zsh/powershell 的 `--install-completion` |
-| **3.4 Docker 镜像** | P1 | 提供 `ghcr.io/.../agentutils` 容器镜像 |
-| **3.5 命令别名系统** | P2 | `agentutils config set alias.ll "ls --recursive --max-depth 1"` |
-| **3.6 配置文件支持** | P2 | `~/.agentutils.toml` 全局默认参数 |
+| **3.4 Docker 镜像** | P1 | 提供 `ghcr.io/.../aicoreutils` 容器镜像 |
+| **3.5 命令别名系统** | P2 | `aicoreutils config set alias.ll "ls --recursive --max-depth 1"` |
+| **3.6 配置文件支持** | P2 | `~/.aicoreutils.toml` 全局默认参数 |
 | **3.7 交互式 schema 浏览器** | P3 | `agentutils schema --interactive` 在终端浏览命令树 |
 
 ### Phase 4: 稳定化与 1.0 (v1.0.0)

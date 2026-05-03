@@ -7,13 +7,13 @@
 > 分析日期：2026-04-30
 > 分析者：DeepSeekCopilot
 > 被分析方：GPTCodex（第三方更新者）
-> 代码库：agentutils v0.1.0
+> 代码库：aicoreutils v0.1.0
 
 ---
 
 ## 一、项目概述
 
-`agentutils` 是一个面向 LLM Agent 的 JSON 优先命令行工具包原型，受 GNU Coreutils 9.10 启发。
+`aicoreutils` 是一个面向 LLM Agent 的 JSON 优先命令行工具包原型，受 GNU Coreutils 9.10 启发。
 目标是为机器调用方（AI Agent）提供确定、低噪音、易解析的 CLI 接口。
 
 核心设计原则：
@@ -81,7 +81,7 @@
 我可能会写 3-5 个测试文件，主要覆盖核心流程，但不会达到这种系统性覆盖：
 
 GPTCodex 的测试策略解决了：
-- ✅ **GNU 差分测试**：直接将 agentutils 的 `--raw` 输出与 GNU Coreutils 原生命令对比，这是最强的正确性验证
+- ✅ **GNU 差分测试**：直接将 aicoreutils 的 `--raw` 输出与 GNU Coreutils 原生命令对比，这是最强的正确性验证
 - ✅ **基于属性的测试（Property-based Testing）**：不依赖具体输入值，而是验证数学/逻辑恒等式（如 sort 不丢行、不造行、输出非递减）
 - ✅ **沙箱逃逸硬化**：专门测试路径遍历攻击、符号链接逃逸、命令注入文件名等安全边界
 - ✅ **已知缺口标记（Known Gaps）**：用 `@unittest.skip` 诚实标注当前未覆盖的安全边界，而非假装没有问题
@@ -154,7 +154,7 @@ GPTCodex 在每个平台相关调用处加入了防御性 `try/except` 和 `hasa
 **GPTCodex 的方案：**
 
 - 实现了 GNU Coreutils 109 个基线命令中的 102 个
-- 另外 4 个是 agentutils 元命令（`catalog`、`schema`、`hash`、`ginstall`）
+- 另外 4 个是 aicoreutils 元命令（`catalog`、`schema`、`hash`、`ginstall`）
 - 只有 7 个 GNU 命令未实现：`coreutils`、`chroot`、`pinky`、`stdbuf`、`stty`、`chcon`、`runcon`
 - 每个命令都注册了完整的 argparse 参数，提供 `--help` 自描述能力
 
@@ -245,7 +245,7 @@ def implemented_catalog() -> dict[str, list[str]]
 Agent 可以通过以下命令自发现所有工具：
 ```powershell
 agentutils schema --pretty    # 查看 JSON 协议、退出码、所有已实现命令
-agentutils catalog --pretty   # 查看按优先级分类的命令目录
+aicoreutils catalog --pretty   # 查看按优先级分类的命令目录
 ```
 
 **DeepSeekCopilot 的可能方案：**
@@ -325,7 +325,7 @@ def dispatch(args: argparse.Namespace) -> tuple[int, dict[str, Any] | bytes]:
 
 ## 六、结论
 
-GPTCodex 在 agentutils 项目上展现了**系统化工程思维**：从模块化架构、分层测试矩阵、多层安全防护、
+GPTCodex 在 aicoreutils 项目上展现了**系统化工程思维**：从模块化架构、分层测试矩阵、多层安全防护、
 跨平台兼容、中英双语文档、到自描述工具发现——每个维度都经过精心设计。
 
 相比之下，DeepSeekCopilot（我）更可能在单一维度上深入（如写好核心协议和几个关键命令），

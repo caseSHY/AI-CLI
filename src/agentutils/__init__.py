@@ -1,6 +1,6 @@
 """Agent-friendly CLI layer inspired by GNU Coreutils.
 
-agentutils 是一个面向 LLM Agent 的 JSON 优先命令行工具包。
+aicoreutils 是一个面向 LLM Agent 的 JSON 优先命令行工具包。
 
 核心设计原则：
 - JSON 优先输出（--raw 显式绕过）

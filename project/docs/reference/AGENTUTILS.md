@@ -1,8 +1,8 @@
-# Agentutils 协议说明 / Protocol
+# AICoreUtils 协议说明 / Protocol
 
 ## 中文说明
 
-`agentutils` 是受 GNU Coreutils 启发的 Agent 优先 CLI 层。它保留 Unix
+`aicoreutils` 是受 GNU Coreutils 启发的 Agent 优先 CLI 层。它保留 Unix
 “小工具、可组合”的模型，但把接口契约调整为更适合机器调用：
 
 - 成功结果默认写入 stdout，格式为 JSON
@@ -141,7 +141,7 @@ Get-Content data.txt | python -m agentutils sort --raw
 
 ## English
 
-`agentutils` is an agent-first CLI layer inspired by GNU Coreutils. It keeps the
+`aicoreutils` is an agent-first CLI layer inspired by GNU Coreutils. It keeps the
 Unix model of small composable commands, but changes the interface contract for
 machine callers:
 

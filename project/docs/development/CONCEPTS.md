@@ -1,12 +1,12 @@
 # 关键概念 / Key Concepts
 
-> agentutils 开发者参考文档。解释为什么这样设计，以及核心概念的含义。
+> aicoreutils 开发者参考文档。解释为什么这样设计，以及核心概念的含义。
 
 ## 中文说明
 
 ## 1. JSON 信封协议 (JSON Envelope Protocol)
 
-agentutils 的全部 I/O 遵循单一格式：
+aicoreutils 的全部 I/O 遵循单一格式：
 
 ```
 成功 → stdout: {"ok":true, "tool":"agentutils", "version":"...", "command":"...", "result":..., "warnings":[...]}
@@ -23,8 +23,8 @@ agentutils 的全部 I/O 遵循单一格式：
 
 `--raw` 绕过 JSON 信封，直接输出原始字节流到 stdout。这用于：
 
-- 管道组合：`agentutils sort data.txt --raw | agentutils head -n 5`
-- 二进制输出：`agentutils base64 --decode payload.txt --raw > output.bin`
+- 管道组合：`aicoreutils sort data.txt --raw | aicoreutils head -n 5`
+- 二进制输出：`aicoreutils base64 --decode payload.txt --raw > output.bin`
 
 **警告**：`--raw` 模式下，错误仍然以 JSON 写入 stderr，但成功时不产生 JSON 信封。
 
@@ -44,7 +44,7 @@ agentutils 的全部 I/O 遵循单一格式：
 
 ## 4. 沙箱边界模型 (Sandbox / cwd boundary)
 
-agentutils 默认将所有写入/删除操作限制在当前工作目录 (cwd) 内：
+aicoreutils 默认将所有写入/删除操作限制在当前工作目录 (cwd) 内：
 
 - `../outside` → 拒绝（exit code 8, `unsafe_operation`）
 - 绝对路径指向 cwd 外 → 拒绝
@@ -175,11 +175,11 @@ src/agentutils/
 
 ## English
 
-> Developer reference for agentutils. Explains why things are designed this way.
+> Developer reference for aicoreutils. Explains why things are designed this way.
 
 ### 1. JSON Envelope Protocol
 
-All agentutils I/O follows a single format:
+All aicoreutils I/O follows a single format:
 
 ```
 Success → stdout: {"ok":true, "tool":"agentutils", "version":"...", "command":"...", "result":..., "warnings":[...]}
@@ -196,8 +196,8 @@ Failure → stderr: {"ok":false, "tool":"agentutils", "version":"...", "command"
 
 `--raw` bypasses the JSON envelope and writes raw bytes directly to stdout. Used for:
 
-- Pipeline composition: `agentutils sort data.txt --raw | agentutils head -n 5`
-- Binary output: `agentutils base64 --decode payload.txt --raw > output.bin`
+- Pipeline composition: `aicoreutils sort data.txt --raw | aicoreutils head -n 5`
+- Binary output: `aicoreutils base64 --decode payload.txt --raw > output.bin`
 
 **Warning**: In `--raw` mode, errors are still written as JSON to stderr, but success produces no JSON envelope.
 
@@ -217,7 +217,7 @@ All mutating commands (rm, cp, mv, shred, tee, truncate, etc.) support `--dry-ru
 
 ### 4. Sandbox / cwd Boundary
 
-agentutils confines all write/delete operations to the current working directory (cwd) by default:
+aicoreutils confines all write/delete operations to the current working directory (cwd) by default:
 
 - `../outside` → rejected (exit code 8, `unsafe_operation`)
 - Absolute paths outside cwd → rejected

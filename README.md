@@ -1,8 +1,8 @@
-# Agentutils
+# AICoreUtils
 
 ## 中文说明
 
-Agentutils 是一个面向 LLM Agent 的 JSON 优先命令行工具包原型。它参考
+AICoreUtils 是一个面向 LLM Agent 的 JSON 优先命令行工具包原型。它参考
 GNU Coreutils 的常用命令，但不是完整的 GNU 兼容替代品。
 
 项目目标是给机器调用方提供确定、低噪音、易解析的 CLI 接口：
@@ -18,8 +18,8 @@ GNU Coreutils 的常用命令，但不是完整的 GNU 兼容替代品。
 ```powershell
 python -m pip install -e .
 agentutils schema --pretty
-agentutils ls . --limit 20
-agentutils rm build --recursive --dry-run
+aicoreutils ls . --limit 20
+aicoreutils rm build --recursive --dry-run
 ```
 
 不安装、直接从源码运行：
@@ -86,7 +86,7 @@ GNU Coreutils 克隆。
 
 ## English
 
-Agentutils is a JSON-first command-line toolkit prototype for LLM agents. It is
+AICoreUtils is a JSON-first command-line toolkit prototype for LLM agents. It is
 inspired by common GNU Coreutils commands, but it is not a complete GNU-compatible
 replacement.
 
@@ -103,8 +103,8 @@ The goal is a deterministic, low-noise interface for machine callers:
 ```powershell
 python -m pip install -e .
 agentutils schema --pretty
-agentutils ls . --limit 20
-agentutils rm build --recursive --dry-run
+aicoreutils ls . --limit 20
+aicoreutils rm build --recursive --dry-run
 ```
 
 Run from a source checkout without installing:

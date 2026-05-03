@@ -1111,7 +1111,7 @@ def command_dircolors(args: argparse.Namespace) -> dict[str, Any] | bytes:
     result = {
         "colors_enabled": False,
         "ls_colors": "",
-        "reason": "agentutils disables color by default to keep output machine-readable.",
+        "reason": "aicoreutils disables color by default to keep output machine-readable.",
     }
     if args.raw:
         shell = args.shell

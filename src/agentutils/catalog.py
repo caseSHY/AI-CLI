@@ -1,6 +1,6 @@
 """Priority catalog for GNU Coreutils commands in agent workflows.
 
-命令优先级目录：agentutils 所有 114 个命令的唯一权威分类来源。
+命令优先级目录：aicoreutils 所有 114 个命令的唯一权威分类来源。
 
 设计原理：
 - CATALOG 是数据，不是代码——新增命令只需在列表中追加条目，
@@ -233,7 +233,7 @@ def priority_catalog() -> dict[str, object]:
     Returns:
         包含 source（上游基准）、principles（设计原则）、
         categories（四级分类详情）、implemented（已实现命令）的字典。
-        Agent 可通过此输出了解 agentutils 的完整能力面。
+        Agent 可通过此输出了解 aicoreutils 的完整能力面。
     """
     return {
         "source": "GNU Coreutils 9.10",

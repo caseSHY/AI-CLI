@@ -61,7 +61,7 @@
 
 新增并注册了 7 个此前兼容性审计中标为缺失的 GNU/Coreutils 命令名：
 
-- `coreutils`：输出当前 agentutils 命令面，支持 `--list` 和 `--raw`。
+- `coreutils`：输出当前 aicoreutils 命令面，支持 `--list` 和 `--raw`。
 - `pinky`：返回轻量用户/会话记录。
 - `stdbuf`：提供跨平台 buffering hints，并使用有界子进程捕获；不声称等同 GNU LD_PRELOAD 语义。
 - `stty`：支持检查和 dry-run；真实修改需要 `--allow-change`。

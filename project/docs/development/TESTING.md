@@ -70,7 +70,7 @@ python -m pytest project/tests/test_property_based_cli.py -v --tb=short
 
 ### GNU 对照测试 / GNU Differential Tests
 
-对比 agentutils `--raw` 输出与 GNU Coreutils 原生命令，是最强的正确性验证。
+对比 aicoreutils `--raw` 输出与 GNU Coreutils 原生命令，是最强的正确性验证。
 
 ```powershell
 # 单独运行 GNU 对照测试
@@ -226,7 +226,7 @@ python -m pytest project/tests/test_property_based_cli.py -v --tb=short
 
 ### GNU Differential Tests
 
-Compares agentutils `--raw` output against real GNU Coreutils.
+Compares aicoreutils `--raw` output against real GNU Coreutils.
 
 ```powershell
 python -m pytest project/tests/test_gnu_differential.py -v --tb=short

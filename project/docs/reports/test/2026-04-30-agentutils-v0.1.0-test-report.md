@@ -1,4 +1,4 @@
-# 测试结果报告 — agentutils v0.1.0
+# 测试结果报告 — aicoreutils v0.1.0
 
 > **Status: historical archive**
 > This document describes a point-in-time state (pre-sandbox-fix snapshot) and is outdated.
@@ -16,7 +16,7 @@
 | 测试日期 | 2026-04-30 |
 | Git 分支 | `master` |
 | Git commit hash | `11f8cd139d0268a82efcaa505b978e49218b2e01` |
-| Git commit message | "Analyze agentutils project structure" |
+| Git commit message | "Analyze aicoreutils project structure" |
 | Python 版本 | 3.14.4 |
 | 操作系统 | Windows 11 (win32) |
 | pytest 版本 | 9.0.3 |
@@ -77,8 +77,8 @@
 | 通过 | 5（仅 sort 命令在 Windows 有对应 GNU 工具） |
 | 跳过 | 51（其余 GNU 工具在 Windows 不可用） |
 | 跳过原因 | `shutil.which()` 找不到对应 GNU 命令；部分命令的 GNU 版本不支持 UTF-8（Windows sort.exe GBK 编码冲突） |
-| 主要策略 | 对每个命令构造 2–7 组输入（空输入、普通文本、重复行、无末尾换行、中文 UTF-8、包含空格/tab、数值文本），对比 GNU stdout 与 agentutils `--raw` stdout |
-| 对项目维护的价值 | 在 Ubuntu CI 环境中可实际运行 40+ 个对照测试，防止 agentutils 行为偏离 GNU coreutils 标准；Windows 本地开发时 sort 命令已有 5 个对照测试保护 |
+| 主要策略 | 对每个命令构造 2–7 组输入（空输入、普通文本、重复行、无末尾换行、中文 UTF-8、包含空格/tab、数值文本），对比 GNU stdout 与 aicoreutils `--raw` stdout |
+| 对项目维护的价值 | 在 Ubuntu CI 环境中可实际运行 40+ 个对照测试，防止 aicoreutils 行为偏离 GNU coreutils 标准；Windows 本地开发时 sort 命令已有 5 个对照测试保护 |
 | 当前限制 | Windows 环境仅 `C:\Windows\system32\sort.exe` 可用且功能受限（不支持 `-n`、UTF-8 崩溃到 GBK） |
 | 后续动作 | 在 CI 中添加 `apt-get install coreutils` 使大部分测试可运行；对 sort 补充 `--reverse`、`--unique` 的对照测试 |
 
@@ -127,7 +127,7 @@
 
 ### 5.2 因环境缺失而跳过的 GNU 对照测试
 
-以下测试在 Windows 全部跳过，**但不代表 agentutils 在这些命令上正确**——它们仅仅是没有机会被验证。
+以下测试在 Windows 全部跳过，**但不代表 aicoreutils 在这些命令上正确**——它们仅仅是没有机会被验证。
 
 | 命令 | 跳过原因 | 风险等级 | 在 CI 中是否应执行 |
 |---|---|---|---|
@@ -151,8 +151,8 @@
 
 1. **Windows 本地环境下 GNU 工具几乎全部缺失**。Windows 自带的 `sort.exe` 与 GNU sort 行为差异显著（不支持 POSIX 选项、编码问题）。开发者不应依赖 Windows 本地 GNU 测试。
 2. **Ubuntu CI 中预计 50+ 个 GNU 对照测试可以运行**。建议在 CI workflow 中添加 `sudo apt-get install -y coreutils` 保证所有标准 GNU 工具可用。
-3. **sort 命令的 `--numeric` 对照测试**：当前在 Windows 上无法执行；在 Ubuntu CI 上应能通过 `sort -n` 与 agentutils `sort --numeric` 对比。
-4. **是否需要区分 Windows/Linux 预期行为**：agentutils 的目标应是匹配 GNU coreutils（Linux 行为）。Windows 上的差异应在测试中标记为 xfail 并在文档中说明。
+3. **sort 命令的 `--numeric` 对照测试**：当前在 Windows 上无法执行；在 Ubuntu CI 上应能通过 `sort -n` 与 aicoreutils `sort --numeric` 对比。
+4. **是否需要区分 Windows/Linux 预期行为**：aicoreutils 的目标应是匹配 GNU coreutils（Linux 行为）。Windows 上的差异应在测试中标记为 xfail 并在文档中说明。
 5. **建议设为必跑测试**：在 CI 中不对 GNU 对照测试做 `-k` 排除，让它们随 PR 自动验证。缺失的 GNU 工具通过 `skip_if_no_gnu()` 自动跳过，不会导致 CI 失败。
 
 ---

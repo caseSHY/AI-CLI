@@ -1,4 +1,4 @@
-"""Plugin discovery and registration system for agentutils.
+"""Plugin discovery and registration system for aicoreutils.
 
 插件系统：允许第三方通过 agentutils_* 命名空间包或编程式注册扩展命令。
 
@@ -17,7 +17,7 @@ Phase 3 架构：
         "mycommand": my_command_function,
     }
 
-然后 agentutils 会自动发现并注册 "mycommand"。
+然后 aicoreutils 会自动发现并注册 "mycommand"。
 """
 
 from __future__ import annotations

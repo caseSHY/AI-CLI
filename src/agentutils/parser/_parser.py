@@ -1,4 +1,4 @@
-"""Parser, dispatch, and main entry point for agentutils CLI."""
+"""Parser, dispatch, and main entry point for aicoreutils CLI."""
 
 from __future__ import annotations
 
@@ -267,10 +267,10 @@ def build_parser() -> AgentArgumentParser:
     p = add_subparser("catalog", help="List prioritized GNU Coreutils categories for agents.")
     p.set_defaults(func=command_catalog)
 
-    p = add_subparser("schema", help="Print the agentutils JSON protocol and exit codes.")
+    p = add_subparser("schema", help="Print the aicoreutils JSON protocol and exit codes.")
     p.set_defaults(func=command_schema)
 
-    p = add_subparser("coreutils", help="Describe or list the agentutils coreutils-inspired command surface.")
+    p = add_subparser("coreutils", help="Describe or list the aicoreutils coreutils-inspired command surface.")
     p.add_argument("--list", action="store_true", help="List registered command names.")
     p.add_argument("--raw", action="store_true", help="Write one command name per line without a JSON envelope.")
     p.set_defaults(func=command_coreutils)

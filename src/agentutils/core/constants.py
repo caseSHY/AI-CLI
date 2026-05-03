@@ -1,4 +1,4 @@
-"""Centralized configuration constants for agentutils.
+"""Centralized configuration constants for aicoreutils.
 
 所有魔术数字、默认值、限制值的唯一权威来源。
 修改这些值后，所有命令自动同步，无需逐文件搜索替换。

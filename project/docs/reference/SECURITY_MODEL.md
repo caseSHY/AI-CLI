@@ -2,11 +2,11 @@
 
 ## 中文说明
 
-安全策略优先于 GNU 行为兼容。当安全要求与 GNU Coreutils 原生行为冲突时，agentutils 选择安全。
+安全策略优先于 GNU 行为兼容。当安全要求与 GNU Coreutils 原生行为冲突时，aicoreutils 选择安全。
 
 ### 1. Sandbox 边界
 
-agentutils 对所有写入、删除、截断、安装类命令强制执行 **cwd 边界校验**。
+aicoreutils 对所有写入、删除、截断、安装类命令强制执行 **cwd 边界校验**。
 
 **规则**：
 - 目标路径必须位于当前工作目录（cwd）内（解析符号链接后的真实路径）。
@@ -100,7 +100,7 @@ Security policy takes precedence over GNU behavioral compatibility.
 
 ## 1. Sandbox 边界 / Sandbox Boundary
 
-agentutils 对所有写入、删除、截断、安装类命令强制执行 **cwd 边界校验**。
+aicoreutils 对所有写入、删除、截断、安装类命令强制执行 **cwd 边界校验**。
 
 **规则**：
 - 目标路径必须位于当前工作目录（cwd）内（解析符号链接后的真实路径）。
@@ -204,5 +204,5 @@ agentutils 对所有写入、删除、截断、安装类命令强制执行 **cwd
 | 限制 | 说明 |
 |---|---|
 | Windows symlink | Windows 开发环境默认无 symlink 创建权限，相关测试跳过。Ubuntu CI 上应验证。 |
-| GNU 完整兼容 | 安全策略优先于 GNU 行为兼容。例如 `rm` 在 GNU 中可删除任意路径，agentutils 限制在 cwd 内。 |
+| GNU 完整兼容 | 安全策略优先于 GNU 行为兼容。例如 `rm` 在 GNU 中可删除任意路径，aicoreutils 限制在 cwd 内。 |
 | 平台差异 | `os.name == "nt"` 和 POSIX 的行为差异在代码中以 `try/except` 防御。 |

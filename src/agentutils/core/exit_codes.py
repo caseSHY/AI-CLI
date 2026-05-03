@@ -1,6 +1,6 @@
-"""Core exit codes for agentutils.
+"""Core exit codes for aicoreutils.
 
-语义退出码映射表。所有 agentutils 命令通过此表将语义错误码
+语义退出码映射表。所有 aicoreutils 命令通过此表将语义错误码
 转换为 POSIX 进程退出码。这不是 POSIX 标准码的全集，而是针对
 Agent 调用场景精简的语义子集。
 

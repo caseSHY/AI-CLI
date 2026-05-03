@@ -1,4 +1,4 @@
-"""Immutable configuration object for agentutils.
+"""Immutable configuration object for aicoreutils.
 
 Provides AgentConfig, a frozen dataclass that centralizes all
 tunable defaults.  Command functions receive it via argparse namespace
