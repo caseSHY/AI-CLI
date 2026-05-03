@@ -1,6 +1,6 @@
 [project]
 name = "aicoreutils"
-version = "0.3.5"
+version = "0.3.6"
 description = "Agent-friendly CLI layer inspired by GNU Coreutils."
 readme = "README.md"
 license = "MIT"

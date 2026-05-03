@@ -15,7 +15,7 @@ aicoreutils 是一个面向 LLM Agent 的 JSON 优先命令行工具包。
 
 from __future__ import annotations
 
-__version__ = "0.3.5"
+__version__ = "0.3.6"
 
 # 异步接口（0.2.0 新增）：支持在 asyncio 事件循环中并发调用
 from .async_interface import run_async, run_async_many
