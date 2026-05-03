@@ -12,10 +12,15 @@
 pip install aicoreutils
 ```
 
-2. 编辑 Claude Desktop 配置：
+2. 编辑 Claude Desktop 配置文件，路径因系统而异：
 
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+| 系统 | 配置文件位置 |
+|------|-------------|
+| **macOS** | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| **Windows** | `%APPDATA%\Claude\claude_desktop_config.json` |
+| **Linux** | `~/.config/Claude/claude_desktop_config.json` |
+
+写入以下内容：
 
 ```json
 {
@@ -54,10 +59,15 @@ Let Claude Desktop safely operate your filesystem via aicoreutils MCP Server.
 pip install aicoreutils
 ```
 
-2. Edit Claude Desktop config:
+2. Edit Claude Desktop config file, location varies by OS:
 
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+| OS | Config path |
+|----|------------|
+| **macOS** | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| **Windows** | `%APPDATA%\Claude\claude_desktop_config.json` |
+| **Linux** | `~/.config/Claude/claude_desktop_config.json` |
+
+Add the following:
 
 ```json
 {

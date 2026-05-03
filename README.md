@@ -15,21 +15,45 @@ GNU Coreutils 的常用命令，但不是完整的 GNU 兼容替代品。
 
 ### 快速开始
 
-```powershell
-python -m pip install -e .
-agentutils schema --pretty
+```bash
+pip install aicoreutils
+aicoreutils schema --pretty
 aicoreutils ls . --limit 20
 aicoreutils rm build --recursive --dry-run
 ```
 
-不安装、直接从源码运行：
+### 🤖 Claude Desktop / MCP 集成
 
-```powershell
-$env:PYTHONPATH = "src"
-python -m agentutils schema --pretty
+一行配置，让 Claude 直接操作你的文件系统：
+
+编辑 Claude Desktop 配置文件（[详细说明 →](project/docs/guides/INTEGRATION_CLAUDE_DESKTOP.md)）：
+
+| 系统 | 配置文件 |
+|------|---------|
+| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Linux | `~/.config/Claude/claude_desktop_config.json` |
+
+```json
+{
+  "mcpServers": {
+    "aicoreutils": {
+      "command": "python",
+      "args": ["-m", "aicoreutils.mcp_server"]
+    }
+  }
+}
 ```
 
-运行测试：
+重启 Claude Desktop，然后对它说：
+
+> "列出项目里所有 Python 文件，统计代码行数"
+
+Claude 自动调用 `aicoreutils ls` + `aicoreutils wc`，全程 JSON 交互。
+
+更多集成方式：`aicoreutils tool-list --format openai` 输出 OpenAI Function Calling 格式，可直接用于任意 Agent 框架。
+
+### 运行测试
 
 ```powershell
 # 推荐主入口（pytest，含 Hypothesis property-based 测试和 GNU 对照测试）
@@ -77,7 +101,7 @@ python -m unittest discover -s project/tests -v
 
 ### 发布状态
 
-当前实现：`agentutils schema` 中登记 114 个 CLI 命令（含 `tool-list` 等 Agent 元命令）。
+当前实现：`aicoreutils schema` 中登记 114 个 CLI 命令（含 `tool-list` 等 Agent 元命令）。
 
 重要限制：本项目是受 GNU Coreutils 启发的 Agent 友好子集，不是完整的
 GNU Coreutils 克隆。
@@ -100,21 +124,45 @@ The goal is a deterministic, low-noise interface for machine callers:
 
 ### Quick Start
 
-```powershell
-python -m pip install -e .
-agentutils schema --pretty
+```bash
+pip install aicoreutils
+aicoreutils schema --pretty
 aicoreutils ls . --limit 20
 aicoreutils rm build --recursive --dry-run
 ```
 
-Run from a source checkout without installing:
+### 🤖 Claude Desktop / MCP Integration
 
-```powershell
-$env:PYTHONPATH = "src"
-python -m agentutils schema --pretty
+One config line to let Claude operate your filesystem:
+
+Edit Claude Desktop config ([full guide →](project/docs/guides/INTEGRATION_CLAUDE_DESKTOP.md)):
+
+| OS | Config File |
+|----|------------|
+| macOS | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Windows | `%APPDATA%\Claude\claude_desktop_config.json` |
+| Linux | `~/.config/Claude/claude_desktop_config.json` |
+
+```json
+{
+  "mcpServers": {
+    "aicoreutils": {
+      "command": "python",
+      "args": ["-m", "aicoreutils.mcp_server"]
+    }
+  }
+}
 ```
 
-Run tests:
+Restart Claude Desktop, then ask:
+
+> "List all Python files in the project and count lines of code"
+
+Claude calls `aicoreutils ls` + `aicoreutils wc` automatically.
+
+For other frameworks: `aicoreutils tool-list --format openai` outputs OpenAI Function Calling format directly.
+
+### Run tests
 
 ```powershell
 # Recommended primary entry (pytest, includes Hypothesis property-based and GNU differential tests)
@@ -162,7 +210,7 @@ python -m unittest discover -s project/tests -v
 
 ### Release Status
 
-Current implementation: 114 CLI commands in `agentutils schema` (including agent-native meta-commands like `tool-list`).
+Current implementation: 114 CLI commands in `aicoreutils schema` (including agent-native meta-commands like `tool-list`).
 
 Important limitation: this project is an agent-friendly subset inspired by GNU
 Coreutils, not a full GNU Coreutils clone.
