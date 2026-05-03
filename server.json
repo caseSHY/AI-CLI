@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.caseSHY/aicoreutils",
+  "description": "JSON-first Coreutils CLI for AI agents. 114 commands with built-in sandbox, dry-run, and MCP support.",
+  "longDescription": "AICoreUtils is a JSON-first command-line toolkit for LLM agents, inspired by GNU Coreutils. It provides 114 deterministic commands with structured JSON output, semantic exit codes, sandboxing for file safety, dry-run for mutation commands, and zero runtime dependencies. Exposes all commands as MCP tools via a stdio JSON-RPC server.",
+  "repository": {
+    "url": "https://github.com/caseSHY/AI-CLI",
+    "source": "github"
+  },
+  "homepage": "https://github.com/caseSHY/AI-CLI",
+  "version": "0.3.1",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "aicoreutils",
+      "version": "0.3.1",
+      "transport": {
+        "type": "stdio",
+        "command": "aicoreutils-mcp"
+      },
+      "runtime": "python"
+    }
+  ],
+  "tags": ["cli", "coreutils", "filesystem", "developer-tools"],
+  "license": "MIT"
+}

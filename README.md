@@ -1,5 +1,7 @@
 # AICoreUtils
 
+<!-- mcp-name: io.github.caseSHY/aicoreutils -->
+
 ## 中文说明
 
 AICoreUtils 是一个面向 LLM Agent 的 JSON 优先命令行工具包原型。它参考
