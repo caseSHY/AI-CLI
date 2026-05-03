@@ -67,5 +67,7 @@ jobs:
         run: |
           curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
           chmod +x mcp-publisher
+      - name: Login to MCP Registry (OIDC)
+        run: ./mcp-publisher login oidc --audience registry.modelcontextprotocol.io
       - name: Publish to MCP Registry
         run: ./mcp-publisher publish
