@@ -24,7 +24,7 @@ from .async_interface import run_async, run_async_many
 from .core import StreamWriter, is_stream_mode
 
 # Parser：CLI 入口、参数解析、命令分发
-from .parser import build_parser, command_catalog, command_schema, dispatch, main
+from .parser import build_parser, command_catalog, command_schema, command_tool_list, dispatch, main
 
 # 插件系统（0.2.0 新增）：自动发现 aicoreutils_* 命名空间包
 from .plugins import discover_plugins, get_plugin_commands, register_plugin_command
@@ -53,6 +53,7 @@ __all__ = [
     "build_parser",
     "command_catalog",
     "command_schema",
+    "command_tool_list",
     "discover_plugins",
     "dispatch",
     "envelope",
