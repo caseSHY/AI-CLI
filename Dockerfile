@@ -2,11 +2,15 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install aicoreutils from PyPI
-RUN pip install --no-cache-dir aicoreutils
+# Copy project files for Glama verification
+COPY src/ src/
+COPY pyproject.toml .
 
-# Verify installation
-RUN python -c "import aicoreutils; print(f'aicoreutils v{aicoreutils.__version__}')"
+# Install aicoreutils from source with MCP server
+RUN pip install --no-cache-dir -e .
 
-# MCP server runs on stdio (no TCP port needed)
-ENTRYPOINT ["python", "-m", "aicoreutils.mcp_server"]
+# Verify MCP server can be imported
+RUN python -c "from aicoreutils.mcp_server import server_loop; print('MCP server ready')"
+
+# MCP server on stdio
+CMD ["python", "-m", "aicoreutils.mcp_server"]
