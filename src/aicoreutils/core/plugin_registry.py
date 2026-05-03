@@ -24,7 +24,7 @@ class PluginRegistry:
     Usage:
         registry = PluginRegistry()
         registry = registry.register("mycmd", my_func)
-        registry = registry.discover()       # 扫描 agentutils_* 包
+        registry = registry.discover()       # 扫描 aicoreutils_* 包
     """
 
     __slots__ = ("_commands",)
@@ -72,7 +72,7 @@ class PluginRegistry:
     # ── 发现 ──
     @classmethod
     def discover(cls) -> PluginRegistry:
-        """扫描 sys.path 发现所有 agentutils_* 插件包。
+        """扫描 sys.path 发现所有 aicoreutils_* 插件包。
 
         Returns:
             包含所有发现命令的新 PluginRegistry。
@@ -82,7 +82,7 @@ class PluginRegistry:
 
         discovered: dict[str, CommandFunc] = {}
         for _finder, name, ispkg in pkgutil.iter_modules():
-            if not name.startswith("agentutils_") or not ispkg:
+            if not name.startswith("aicoreutils_") or not ispkg:
                 continue
             try:
                 module = importlib.import_module(name)

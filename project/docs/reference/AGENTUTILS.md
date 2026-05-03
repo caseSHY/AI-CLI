@@ -46,13 +46,13 @@ python -m agentutils catalog --pretty
 成功时写入 stdout：
 
 ```json
-{"ok":true,"tool":"agentutils","version":"0.2.0","command":"ls","result":{},"warnings":[]}
+{"ok":true,"tool":"aicoreutils","version":"0.2.0","command":"ls","result":{},"warnings":[]}
 ```
 
 失败时写入 stderr：
 
 ```json
-{"ok":false,"tool":"agentutils","version":"0.2.0","command":"cat","error":{"code":"not_found","message":"Path does not exist.","path":"missing.txt"}}
+{"ok":false,"tool":"aicoreutils","version":"0.2.0","command":"cat","error":{"code":"not_found","message":"Path does not exist.","path":"missing.txt"}}
 ```
 
 退出码：
@@ -75,8 +75,8 @@ python -m agentutils schema --pretty
 python -m agentutils ls . --recursive --max-depth 1
 python -m agentutils dir .
 python -m agentutils vdir .
-python -m agentutils basename src/agentutils/cli.py --suffix .py
-python -m agentutils dirname src/agentutils/cli.py
+python -m agentutils basename src/aicoreutils/cli.py --suffix .py
+python -m agentutils dirname src/aicoreutils/cli.py
 python -m agentutils stat docs/reference/AGENTUTILS.md
 python -m agentutils cat docs/reference/AGENTUTILS.md --max-bytes 4096
 python -m agentutils test docs/reference/AGENTUTILS.md --file --non-empty
@@ -188,13 +188,13 @@ python -m agentutils catalog --pretty
 Success is written to stdout:
 
 ```json
-{"ok":true,"tool":"agentutils","version":"0.2.0","command":"ls","result":{},"warnings":[]}
+{"ok":true,"tool":"aicoreutils","version":"0.2.0","command":"ls","result":{},"warnings":[]}
 ```
 
 Errors are written to stderr:
 
 ```json
-{"ok":false,"tool":"agentutils","version":"0.2.0","command":"cat","error":{"code":"not_found","message":"Path does not exist.","path":"missing.txt"}}
+{"ok":false,"tool":"aicoreutils","version":"0.2.0","command":"cat","error":{"code":"not_found","message":"Path does not exist.","path":"missing.txt"}}
 ```
 
 Exit codes:
@@ -217,8 +217,8 @@ python -m agentutils schema --pretty
 python -m agentutils ls . --recursive --max-depth 1
 python -m agentutils dir .
 python -m agentutils vdir .
-python -m agentutils basename src/agentutils/cli.py --suffix .py
-python -m agentutils dirname src/agentutils/cli.py
+python -m agentutils basename src/aicoreutils/cli.py --suffix .py
+python -m agentutils dirname src/aicoreutils/cli.py
 python -m agentutils stat docs/reference/AGENTUTILS.md
 python -m agentutils cat docs/reference/AGENTUTILS.md --max-bytes 4096
 python -m agentutils test docs/reference/AGENTUTILS.md --file --non-empty

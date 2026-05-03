@@ -44,8 +44,8 @@
 #### 输入输出契约
 
 ```
-成功 → stdout: {"ok":true, "tool":"agentutils", "version":"0.2.0", "command":"...", "result":{...}, "warnings":[...]}
-失败 → stderr: {"ok":false, "tool":"agentutils", "version":"0.2.0", "command":"...", "error":{"code":"...", "message":"...", ...}}
+成功 → stdout: {"ok":true, "tool":"aicoreutils", "version":"0.2.0", "command":"...", "result":{...}, "warnings":[...]}
+失败 → stderr: {"ok":false, "tool":"aicoreutils", "version":"0.2.0", "command":"...", "error":{"code":"...", "message":"...", ...}}
 --raw → stdout: 原始字节流（绕过 JSON 信封）
 --dry-run → 仅输出计划，零文件系统副作用
 ```
@@ -86,7 +86,7 @@
 #### 源代码资产
 
 ```
-src/agentutils/              18 文件  ~8000+ 行 Python
+src/aicoreutils/              18 文件  ~8000+ 行 Python
 ├── __init__.py               55 行    公共 API 导出
 ├── __main__.py                5 行    CLI 入口
 ├── parser.py              3000+ 行  参数解析 + 分发（God File）
@@ -113,7 +113,7 @@ src/agentutils/              18 文件  ~8000+ 行 Python
 ```
 tests/                       17 文件  ~3000+ 行
 ├── support.py                        测试工具函数
-├── test_agentutils.py                基础命令 (19 测试)
+├── test_aicoreutils.py                基础命令 (19 测试)
 ├── test_more_agent_commands.py       附加命令 (4 测试)
 ├── test_even_more_agent_commands.py  更多文本命令 (3 测试)
 ├── test_execution_and_page_commands.py 执行命令 (3 测试)
@@ -236,7 +236,7 @@ python -m pytest tests/ -v --tb=short -k "not (property_based or Hypothesis or G
 
 **需要补充的集成测试**：
 
-1. **插件端到端测试**：创建临时 `agentutils_test_plugin` 包并验证发现/注册/调用
+1. **插件端到端测试**：创建临时 `aicoreutils_test_plugin` 包并验证发现/注册/调用
 2. **异步并发测试**：`run_async_many` 的并发正确性和错误隔离
 3. **流式大数据测试**：NDJSON 输出在 10万+ 条目的行为
 
@@ -331,7 +331,7 @@ Phase 4 (持续): 固化与监控
 在 `core/` 或 `protocol.py` 中创建集中常量模块：
 
 ```python
-# 建议: src/agentutils/core/constants.py 或直接在 protocol.py 顶部
+# 建议: src/aicoreutils/core/constants.py 或直接在 protocol.py 顶部
 
 # 输出限制
 DEFAULT_MAX_LINES = 10_000
@@ -416,7 +416,7 @@ except PermissionError:
 #### 5.1.1 parser.py (3000+ 行) → `parser/` 子包
 
 ```
-src/agentutils/parser/
+src/aicoreutils/parser/
 ├── __init__.py          # 导出 build_parser(), dispatch(), main()
 ├── _specs.py            # 命令参数规格（声明式定义，替代 1500+ 行 inline argparse）
 ├── _dispatch.py         # 命令分发逻辑
@@ -454,7 +454,7 @@ COMMAND_SPECS: dict[str, dict] = {
 #### 5.1.2 protocol.py (1200+ 行) → `protocol/` 子包
 
 ```
-src/agentutils/protocol/
+src/aicoreutils/protocol/
 ├── __init__.py          # Re-export 所有公共 API
 ├── _io.py               # read_stdin_bytes, read_input_bytes, combined_lines, bounded_lines...
 ├── _hashing.py          # digest_file, digest_bytes, simple_sum16, HASH_ALGORITHMS
@@ -470,7 +470,7 @@ src/agentutils/protocol/
 #### 5.1.3 命令模块 → `commands/` 子包
 
 ```
-src/agentutils/commands/
+src/aicoreutils/commands/
 ├── __init__.py
 ├── fs/
 │   ├── __init__.py
@@ -513,7 +513,7 @@ src/agentutils/commands/
 ### 5.2 配置对象集中化
 
 ```python
-# 建议: src/agentutils/core/config.py
+# 建议: src/aicoreutils/core/config.py
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -543,7 +543,7 @@ class AgentConfig:
 
     @classmethod
     def from_env(cls) -> "AgentConfig":
-        """Overrides from AGENTUTILS_* environment variables."""
+        """Overrides from AICOREUTILS_* environment variables."""
         # ...
 ```
 

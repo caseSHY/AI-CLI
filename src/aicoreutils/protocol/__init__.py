@@ -16,7 +16,7 @@ focused submodules, each handling one domain:
 
 from __future__ import annotations
 
-# Re-export core primitives from agentutils.core (unchanged API surface)
+# Re-export core primitives from aicoreutils.core (unchanged API surface)
 from ..core import (  # noqa: F401
     EXIT,
     HASH_CHUNK_SIZE,

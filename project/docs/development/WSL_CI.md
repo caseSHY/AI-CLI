@@ -61,8 +61,8 @@ Clear-DnsClientCache
 3. 安装 `.[test,dev]`。
 4. 运行 `ruff check src/ tests/`。
 5. 运行 `ruff format --check src/ tests/`。
-6. 运行 `mypy src/agentutils/ --strict`。
-7. 运行 `PYTHONPATH=src python -m pytest tests/ -v --tb=short --cov=src/agentutils --cov-report=term-missing`。
+6. 运行 `mypy src/aicoreutils/ --strict`。
+7. 运行 `PYTHONPATH=src python -m pytest tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing`。
 
 复用已安装环境：
 
@@ -146,8 +146,8 @@ This enters WSL and runs `.github/scripts/wsl-ci.sh`, mirroring the GitHub Actio
 3. Install `.[test,dev]`.
 4. Run `ruff check src/ tests/`.
 5. Run `ruff format --check src/ tests/`.
-6. Run `mypy src/agentutils/ --strict`.
-7. Run `PYTHONPATH=src python -m pytest tests/ -v --tb=short --cov=src/agentutils --cov-report=term-missing`.
+6. Run `mypy src/aicoreutils/ --strict`.
+7. Run `PYTHONPATH=src python -m pytest tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing`.
 
 Reuse an existing environment:
 

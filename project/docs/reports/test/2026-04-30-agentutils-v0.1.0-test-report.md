@@ -221,12 +221,12 @@
 
 | 编号 | 命令 | 触发输入 | 预期结果 | 实际结果 | 风险等级 | 可能修复位置 | 回归测试 |
 |---|---|---|---|---|---|---|---|
-| SEC-001 | `rm` | `rm ../outside.txt`（无 `--recursive`） | 拒绝（exit 8, `unsafe_operation`） | 成功删除 cwd 外文件 | **P0** | `src/agentutils/fs_commands.py` → `command_rm` | `test_rm_outside_file_should_be_blocked` |
+| SEC-001 | `rm` | `rm ../outside.txt`（无 `--recursive`） | 拒绝（exit 8, `unsafe_operation`） | 成功删除 cwd 外文件 | **P0** | `src/aicoreutils/fs_commands.py` → `command_rm` | `test_rm_outside_file_should_be_blocked` |
 | SEC-002 | `rm` | `rm /absolute/path/outside.txt`（无 `--recursive`） | 拒绝（exit 8） | 成功删除绝对路径文件 | **P0** | 同上 | `test_rm_absolute_outside_should_be_blocked` |
-| SEC-003 | `tee` | `tee ../outside.txt` | 拒绝 | 成功写入 cwd 外文件 | **P1** | `src/agentutils/fs_commands.py` → `command_tee` | `test_tee_to_outside_should_be_blocked` |
-| SEC-004 | `truncate` | `truncate ../outside.txt --size 0` | 拒绝 | 成功截断 cwd 外文件 | **P1** | `src/agentutils/fs_commands.py` → `command_truncate` | `test_truncate_outside_should_be_blocked` |
-| SEC-005 | `install` | `install tool.txt ../outside_dir/installed` | 拒绝 | 成功安装到 cwd 外 | **P1** | `src/agentutils/fs_commands.py` → `command_install` | `test_install_to_outside_should_be_blocked` |
-| SEC-006 | `dd` | `dd --input src.txt --output ../outside.txt` | 拒绝 | 成功写入 cwd 外 | **P1** | `src/agentutils/fs_commands.py` 或 `system_commands.py` → `command_dd` | `test_dd_output_to_outside_should_be_blocked` |
+| SEC-003 | `tee` | `tee ../outside.txt` | 拒绝 | 成功写入 cwd 外文件 | **P1** | `src/aicoreutils/fs_commands.py` → `command_tee` | `test_tee_to_outside_should_be_blocked` |
+| SEC-004 | `truncate` | `truncate ../outside.txt --size 0` | 拒绝 | 成功截断 cwd 外文件 | **P1** | `src/aicoreutils/fs_commands.py` → `command_truncate` | `test_truncate_outside_should_be_blocked` |
+| SEC-005 | `install` | `install tool.txt ../outside_dir/installed` | 拒绝 | 成功安装到 cwd 外 | **P1** | `src/aicoreutils/fs_commands.py` → `command_install` | `test_install_to_outside_should_be_blocked` |
+| SEC-006 | `dd` | `dd --input src.txt --output ../outside.txt` | 拒绝 | 成功写入 cwd 外 | **P1** | `src/aicoreutils/fs_commands.py` 或 `system_commands.py` → `command_dd` | `test_dd_output_to_outside_should_be_blocked` |
 
 **风险分析**：
 
@@ -252,11 +252,11 @@
 
 | 优先级 | 问题 | 建议修复文件 | 建议修复方式 | 验收测试 |
 |---|---|---|---|---|
-| **P0** | `rm` 可删除 cwd 外文件 | `src/agentutils/fs_commands.py` | 在 `command_rm` 中对每个目标路径调用 `require_inside_cwd(cwd, resolved)` | 去掉 `PathTraversalKnownGapsTests.test_rm_outside_file_should_be_blocked` 和 `test_rm_absolute_outside_should_be_blocked` 的 skip 装饰器 |
-| **P1** | `tee` 可写入 cwd 外文件 | `src/agentutils/fs_commands.py` | `command_tee` 的输出路径调用 `require_inside_cwd()` | 去掉 `test_tee_to_outside_should_be_blocked` 的 skip |
-| **P1** | `truncate` 可截断 cwd 外文件 | `src/agentutils/fs_commands.py` | `command_truncate` 中添加路径校验 | 去掉 `test_truncate_outside_should_be_blocked` 的 skip |
-| **P1** | `install` 可安装到 cwd 外 | `src/agentutils/fs_commands.py` | `command_install` 的目标路径调用 `require_inside_cwd()` | 去掉 `test_install_to_outside_should_be_blocked` 的 skip |
-| **P1** | `dd` 可写入 cwd 外 | `src/agentutils/fs_commands.py` 或 `system_commands.py` | `command_dd` 的输出路径调用 `require_inside_cwd()` | 去掉 `test_dd_output_to_outside_should_be_blocked` 的 skip |
+| **P0** | `rm` 可删除 cwd 外文件 | `src/aicoreutils/fs_commands.py` | 在 `command_rm` 中对每个目标路径调用 `require_inside_cwd(cwd, resolved)` | 去掉 `PathTraversalKnownGapsTests.test_rm_outside_file_should_be_blocked` 和 `test_rm_absolute_outside_should_be_blocked` 的 skip 装饰器 |
+| **P1** | `tee` 可写入 cwd 外文件 | `src/aicoreutils/fs_commands.py` | `command_tee` 的输出路径调用 `require_inside_cwd()` | 去掉 `test_tee_to_outside_should_be_blocked` 的 skip |
+| **P1** | `truncate` 可截断 cwd 外文件 | `src/aicoreutils/fs_commands.py` | `command_truncate` 中添加路径校验 | 去掉 `test_truncate_outside_should_be_blocked` 的 skip |
+| **P1** | `install` 可安装到 cwd 外 | `src/aicoreutils/fs_commands.py` | `command_install` 的目标路径调用 `require_inside_cwd()` | 去掉 `test_install_to_outside_should_be_blocked` 的 skip |
+| **P1** | `dd` 可写入 cwd 外 | `src/aicoreutils/fs_commands.py` 或 `system_commands.py` | `command_dd` 的输出路径调用 `require_inside_cwd()` | 去掉 `test_dd_output_to_outside_should_be_blocked` 的 skip |
 | **P2** | CI 中 GNU 对照测试无法运行 | `.github/workflows/ci.yml` | 添加 `sudo apt-get install -y coreutils` | 重跑 CI 确认 50+ GNU 测试通过 |
 | **P3** | Property 测试 CI 速度 | `.github/workflows/ci.yml` 或 `pyproject.toml` | 设置 `max_examples=50` 或单独 job | CI 完成后确认 property tests 在 5 分钟内完成 |
 
@@ -283,9 +283,9 @@ python -m pytest tests/ -v -k "not test_human_markdown_files"
 
 | 测试文件 | 测试函数 | 原断言问题 | 新断言价值 |
 |---|---|---|---|
-| `tests/test_agentutils.py` | `test_cat_head_tail_wc_hash` | sha256sum/md5sum/b2sum 仅校验 digest **长度**（64/32/128 字符），不校验具体值 | 现在通过 `hashlib.sha256(target.read_bytes()).hexdigest()` 计算精确 digest 并严格相等比较；能发现任何 hash 实现 bug |
+| `tests/test_aicoreutils.py` | `test_cat_head_tail_wc_hash` | sha256sum/md5sum/b2sum 仅校验 digest **长度**（64/32/128 字符），不校验具体值 | 现在通过 `hashlib.sha256(target.read_bytes()).hexdigest()` 计算精确 digest 并严格相等比较；能发现任何 hash 实现 bug |
 | `tests/test_agent_call_flow.py` | `test_agent_can_observe_decide_and_mutate_with_json` | 同上，sha256sum 仅校验长度 | 同上 |
-| `tests/test_agentutils.py` | （导入部分） | 缺少 `hashlib` import | 新增 `import hashlib` |
+| `tests/test_aicoreutils.py` | （导入部分） | 缺少 `hashlib` import | 新增 `import hashlib` |
 | `tests/test_agent_call_flow.py` | （导入部分） | 缺少 `hashlib` import | 新增 `import hashlib` |
 
 **平台兼容说明**：原测试中硬编码 `b"alpha beta\nsecond\nthird\n"` 作为 hash 输入，在 Windows 上因 `write_text` 自动转换 `\n→\r\n` 导致 hash 不匹配。新断言使用 `target.read_bytes()` 直接读取文件实际字节，消除了平台差异。
@@ -360,7 +360,7 @@ jobs:
 
 ## 11. 未来新增 GNU CLI 工具时的补测试流程
 
-当向 `src/agentutils/` 新增命令（如 `split`、`dirname`、`realpath` 等）时，应同步新增以下测试：
+当向 `src/aicoreutils/` 新增命令（如 `split`、`dirname`、`realpath` 等）时，应同步新增以下测试：
 
 ### 11.1 必须添加的测试（按优先级）
 

@@ -59,8 +59,8 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
-agentutils = "agentutils.parser:main"
-aicoreutils = "agentutils.parser:main"
+aicoreutils = "aicoreutils.parser:main"
+agentutils = "aicoreutils.parser:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -93,7 +93,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "project/tests/**" = ["N802", "N803", "N806"]
-"src/agentutils/**" = ["N802"]
+"src/aicoreutils/**" = ["N802"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -112,7 +112,7 @@ disallow_incomplete_defs = true
 
 [tool.coverage.run]
 data_file = ".cache/coverage/.coverage"
-source = ["src/agentutils"]
+source = ["src/aicoreutils"]
 omit = ["*/__pycache__/*"]
 
 [tool.coverage.report]

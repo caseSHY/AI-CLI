@@ -27,7 +27,7 @@
 ### 2.1 当前模块结构
 
 ```
-src/agentutils/
+src/aicoreutils/
 ├── __init__.py        # 版本号
 ├── __main__.py        # 入口: from .parser import main
 ├── cli.py             # ⚠️ 向后兼容重导出模块 (冗余层)
@@ -177,7 +177,7 @@ src/agentutils/
 
 | 任务 | 优先级 | 说明 |
 |---|---|---|
-| **3.1 插件系统** | P0 | `agentutils` 发现 `agentutils_*` 命名空间包，自动注册命令 |
+| **3.1 插件系统** | P0 | `agentutils` 发现 `aicoreutils_*` 命名空间包，自动注册命令 |
 | **3.2 API 文档生成** | P0 | Sphinx 自动生成 API 参考文档 |
 | **3.3 Shell 补全** | P1 | 支持 bash/zsh/powershell 的 `--install-completion` |
 | **3.4 Docker 镜像** | P1 | 提供 `ghcr.io/.../aicoreutils` 容器镜像 |
@@ -206,7 +206,7 @@ src/agentutils/
 ### 5.1 目标架构 / Target Architecture
 
 ```
-src/agentutils/
+src/aicoreutils/
 ├── __init__.py                # 版本号 + public API 重导出
 ├── __main__.py                # from .parser import main
 ├── parser.py                  # CLI 解析 + 命令调度

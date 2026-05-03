@@ -167,7 +167,7 @@ def command_schema(args: argparse.Namespace) -> dict[str, Any]:
         "protocol": {
             "stdout_success": {
                 "ok": True,
-                "tool": "agentutils",
+                "tool": "aicoreutils",
                 "version": __version__,
                 "command": "<subcommand>",
                 "result": {},
@@ -175,7 +175,7 @@ def command_schema(args: argparse.Namespace) -> dict[str, Any]:
             },
             "stderr_error": {
                 "ok": False,
-                "tool": "agentutils",
+                "tool": "aicoreutils",
                 "version": __version__,
                 "command": "<subcommand>",
                 "error": {
@@ -235,18 +235,18 @@ def command_tool_list(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 def build_parser() -> AgentArgumentParser:
     parser = AgentArgumentParser(
-        prog="agentutils",
+        prog="aicoreutils",
         description="Agent-friendly CLI layer inspired by GNU Coreutils. Outputs JSON by default.",
         epilog=(
             "Examples:\n"
-            "  python -m agentutils catalog --pretty\n"
-            "  python -m agentutils ls . --recursive --max-depth 1\n"
-            "  python -m agentutils cat README.md --max-bytes 4096\n"
-            "  python -m agentutils rm build --recursive --dry-run\n"
+            "  python -m aicoreutils catalog --pretty\n"
+            "  python -m aicoreutils ls . --recursive --max-depth 1\n"
+            "  python -m aicoreutils cat README.md --max-bytes 4096\n"
+            "  python -m aicoreutils rm build --recursive --dry-run\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--version", action="version", version=f"agentutils {__version__}")
+    parser.add_argument("--version", action="version", version=f"aicoreutils {__version__}")
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")
     sub = parser.add_subparsers(dest="command", required=True, parser_class=AgentArgumentParser)
     registered_commands: list[str] = []

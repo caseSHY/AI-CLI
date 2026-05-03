@@ -7,7 +7,7 @@
 > **Note (2026-04-30)**: The "remaining known gaps" section below was written
 > before the sandbox hardening fixes were applied. All 5 sandbox escape gaps
 > (dd, install, rm non-recursive, tee, truncate) have since been fixed in
-> `src/agentutils/fs_commands.py`. The current test count is 126 passed, 0 failed.
+> `src/aicoreutils/fs_commands.py`. The current test count is 126 passed, 0 failed.
 > See `docs/analysis/DeepSeek-2026-04-30-安全加固与一致性修复-开发日志.md` for the fix details.
 
 > 日期：2026-04-30
@@ -27,7 +27,7 @@
 ### 当前代码库状态
 
 - `agentutils schema` 当前登记 113 个 CLI 命令。
-- `src/agentutils/` 已拆分为协议、解析、文件系统、文本处理、系统命令、目录和注册表等模块。
+- `src/aicoreutils/` 已拆分为协议、解析、文件系统、文本处理、系统命令、目录和注册表等模块。
 - 当前测试入口覆盖 18 个 `test_*.py` 文件。
 - 最新完整验证结果：`126 passed, 54 skipped`。
 - Markdown 文档已重新按用途归档到 `docs/reference`、`docs/guides`、`docs/audits`、`docs/development`、`docs/agent-guides`、`docs/analysis`、`docs/reports`。
@@ -71,10 +71,10 @@
 
 同步更新：
 
-- `src/agentutils/parser.py`
-- `src/agentutils/system_commands.py`
-- `src/agentutils/catalog.py`
-- `src/agentutils/registry.py`
+- `src/aicoreutils/parser.py`
+- `src/aicoreutils/system_commands.py`
+- `src/aicoreutils/catalog.py`
+- `src/aicoreutils/registry.py`
 - `tests/test_remaining_coreutils_commands.py`
 - `README.md`
 - `docs/audits/GNU_COMPATIBILITY_AUDIT.md`

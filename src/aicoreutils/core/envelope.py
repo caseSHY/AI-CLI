@@ -4,8 +4,8 @@ JSON 信封格式是 aicoreutils 与 LLM Agent 之间的核心协议。
 每个命令的 stdout 输出（成功）和 stderr 输出（失败）都遵循此格式。
 
 协议契约：
-    成功 → stdout: {"ok":true, "tool":"agentutils", "version":"...", "command":"...", "result":..., "warnings":[...]}
-    失败 → stderr: {"ok":false, "tool":"agentutils", "version":"...", "command":"...", "error":{"code":"...", "message":"..."}}
+    成功 → stdout: {"ok":true, "tool":"aicoreutils", "version":"...", "command":"...", "result":..., "warnings":[...]}
+    失败 → stderr: {"ok":false, "tool":"aicoreutils", "version":"...", "command":"...", "error":{"code":"...", "message":"..."}}
 
 --raw 模式会绕过信封，直接输出原始字节流到 stdout。
 """
@@ -67,7 +67,7 @@ def envelope(command: str, result: Any, *, warnings: list[str] | None = None) ->
     """
     return {
         "ok": True,
-        "tool": "agentutils",
+        "tool": "aicoreutils",
         "version": _TOOL_VERSION,
         "command": command,
         "result": result,
@@ -87,7 +87,7 @@ def error_envelope(command: str | None, error: AgentError) -> dict[str, Any]:
     """
     return {
         "ok": False,
-        "tool": "agentutils",
+        "tool": "aicoreutils",
         "version": _TOOL_VERSION,
         "command": command,
         "error": error.to_dict(),

@@ -87,8 +87,8 @@ python -m agentutils readlink --canonicalize docs/reference/AGENTUTILS.md
 提取路径组件：
 
 ```powershell
-python -m agentutils basename src/agentutils/cli.py --suffix .py
-python -m agentutils dirname src/agentutils/cli.py
+python -m agentutils basename src/aicoreutils/cli.py --suffix .py
+python -m agentutils dirname src/aicoreutils/cli.py
 ```
 
 计算 SHA-256：
@@ -285,13 +285,13 @@ python -m agentutils rm coreutils-9.10 --recursive --dry-run
 成功时，结果写入 stdout：
 
 ```json
-{"ok":true,"tool":"agentutils","version":"0.1.0","command":"pwd","result":{"path":"C:\\Users\\example\\project"},"warnings":[]}
+{"ok":true,"tool":"aicoreutils","version":"0.1.0","command":"pwd","result":{"path":"C:\\Users\\example\\project"},"warnings":[]}
 ```
 
 失败时，错误写入 stderr：
 
 ```json
-{"ok":false,"tool":"agentutils","version":"0.1.0","command":"cat","error":{"code":"not_found","message":"Path does not exist.","path":"missing.txt"}}
+{"ok":false,"tool":"aicoreutils","version":"0.1.0","command":"cat","error":{"code":"not_found","message":"Path does not exist.","path":"missing.txt"}}
 ```
 
 ### 退出码
@@ -415,8 +415,8 @@ python -m agentutils readlink --canonicalize docs/reference/AGENTUTILS.md
 Extract path components:
 
 ```powershell
-python -m agentutils basename src/agentutils/cli.py --suffix .py
-python -m agentutils dirname src/agentutils/cli.py
+python -m agentutils basename src/aicoreutils/cli.py --suffix .py
+python -m agentutils dirname src/aicoreutils/cli.py
 ```
 
 Calculate SHA-256:
@@ -613,13 +613,13 @@ python -m agentutils rm coreutils-9.10 --recursive --dry-run
 On success, the result is written to stdout:
 
 ```json
-{"ok":true,"tool":"agentutils","version":"0.1.0","command":"pwd","result":{"path":"C:\\Users\\example\\project"},"warnings":[]}
+{"ok":true,"tool":"aicoreutils","version":"0.1.0","command":"pwd","result":{"path":"C:\\Users\\example\\project"},"warnings":[]}
 ```
 
 On failure, the error is written to stderr:
 
 ```json
-{"ok":false,"tool":"agentutils","version":"0.1.0","command":"cat","error":{"code":"not_found","message":"Path does not exist.","path":"missing.txt"}}
+{"ok":false,"tool":"aicoreutils","version":"0.1.0","command":"cat","error":{"code":"not_found","message":"Path does not exist.","path":"missing.txt"}}
 ```
 
 ### Exit Codes

@@ -27,8 +27,8 @@
 | **GNU 对照测试** | `python -m pytest project/tests/test_gnu_differential.py -v`（56 测试；WSL 本地运行 54 个，2 个硬编码跳过） |
 | **沙箱逃逸测试** | `python -m pytest project/tests/test_sandbox_escape_hardening.py -v` (37 测试, 全部通过或 skip) |
 | **文档治理测试** | `python -m pytest project/tests/test_docs_governance.py -v` (9 测试, 全部通过) |
-| **覆盖率** | `python -m pytest project/tests/ --cov=src/agentutils` (需要 pytest-cov) |
-| **静态检查** | `ruff check src/ tests/`; `ruff format --check src/ tests/`; `mypy src/agentutils/ --strict` 全部通过 |
+| **覆盖率** | `python -m pytest project/tests/ --cov=src/aicoreutils` (需要 pytest-cov) |
+| **静态检查** | `ruff check src/ tests/`; `ruff format --check src/ tests/`; `mypy src/aicoreutils/ --strict` 全部通过 |
 | **WSL 本地 CI** | `.\.github\scripts\run-ci-wsl.ps1 -Distro Ubuntu-24.04 -SkipInstall`（2026-05-02 已通过） |
 
 ### 安全状态
@@ -110,8 +110,8 @@
 | **GNU differential** | `python -m pytest project/tests/test_gnu_differential.py -v` (56 tests; WSL ran 54 locally, 2 hard-skipped) |
 | **Sandbox escape** | `python -m pytest project/tests/test_sandbox_escape_hardening.py -v` (37 tests, all pass or skip) |
 | **Docs governance** | `python -m pytest project/tests/test_docs_governance.py -v` (9 tests, all pass) |
-| **Coverage** | `python -m pytest project/tests/ --cov=src/agentutils` (requires pytest-cov) |
-| **Static checks** | `ruff check src/ tests/`; `ruff format --check src/ tests/`; `mypy src/agentutils/ --strict` all pass |
+| **Coverage** | `python -m pytest project/tests/ --cov=src/aicoreutils` (requires pytest-cov) |
+| **Static checks** | `ruff check src/ tests/`; `ruff format --check src/ tests/`; `mypy src/aicoreutils/ --strict` all pass |
 | **WSL local CI** | `.\.github\scripts\run-ci-wsl.ps1 -Distro Ubuntu-24.04 -SkipInstall` (passed on 2026-05-02) |
 
 ### Security Status

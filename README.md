@@ -43,7 +43,7 @@ python -m unittest discover -s project/tests -v
 
 ```text
 .
-|-- src/agentutils/        # Python 包源码
+|-- src/aicoreutils/        # Python 包源码
 |-- .github/               # CI、Copilot 指令和开发脚本
 |-- pyproject.toml         # 包元数据和构建配置
 |-- README.md              # 项目入口
@@ -128,7 +128,7 @@ python -m unittest discover -s project/tests -v
 
 ```text
 .
-|-- src/agentutils/        # Python package
+|-- src/aicoreutils/        # Python package
 |-- .github/               # CI, Copilot instructions and development scripts
 |-- pyproject.toml         # package metadata and build config
 |-- README.md              # project entry point

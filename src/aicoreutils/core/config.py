@@ -43,13 +43,13 @@ class AgentConfig:
 
     @classmethod
     def from_env(cls) -> AgentConfig:
-        """从 AGENTUTILS_* 环境变量读取覆盖值。"""
+        """从 AICOREUTILS_* 环境变量读取覆盖值。"""
         import os
         from typing import Any
 
         kwargs: dict[str, Any] = {}
         for fld in cls.__dataclass_fields__:
-            env_key = f"AGENTUTILS_{fld.upper()}"
+            env_key = f"AICOREUTILS_{fld.upper()}"
             if env_key in os.environ:
                 raw = os.environ[env_key]
                 target_type = cls.__dataclass_fields__[fld].type

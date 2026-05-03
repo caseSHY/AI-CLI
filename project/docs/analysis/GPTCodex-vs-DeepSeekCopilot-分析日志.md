@@ -173,10 +173,10 @@ GPTCodex 在每个平台相关调用处加入了防御性 `try/except` 和 `hasa
 
 ```json
 // 成功信封
-{"ok":true,"tool":"agentutils","version":"0.1.0","command":"ls","result":{},"warnings":[]}
+{"ok":true,"tool":"aicoreutils","version":"0.1.0","command":"ls","result":{},"warnings":[]}
 
 // 错误信封
-{"ok":false,"tool":"agentutils","version":"0.1.0","command":"cat","error":{"code":"not_found","message":"...","path":"missing.txt"}}
+{"ok":false,"tool":"aicoreutils","version":"0.1.0","command":"cat","error":{"code":"not_found","message":"...","path":"missing.txt"}}
 
 // 语义化退出码
 0: 成功

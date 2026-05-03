@@ -414,7 +414,7 @@ def command_stdbuf(args: argparse.Namespace) -> dict[str, Any]:
     env = os.environ.copy()
     for stream, mode in buffering.items():
         if mode is not None:
-            env[f"AGENTUTILS_STDBUF_{stream.upper()}"] = mode
+            env[f"AICOREUTILS_STDBUF_{stream.upper()}"] = mode
     if buffering["stdout"] == "0" or buffering["stderr"] == "0":
         env["PYTHONUNBUFFERED"] = "1"
 

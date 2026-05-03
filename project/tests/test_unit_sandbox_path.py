@@ -6,9 +6,9 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from agentutils.core.exceptions import AgentError
-from agentutils.core.path_utils import ensure_exists, ensure_parent, path_type, resolve_path, stat_entry
-from agentutils.core.sandbox import (
+from aicoreutils.core.exceptions import AgentError
+from aicoreutils.core.path_utils import ensure_exists, ensure_parent, path_type, resolve_path, stat_entry
+from aicoreutils.core.sandbox import (
     dangerous_delete_target,
     destination_inside_directory,
     refuse_overwrite,

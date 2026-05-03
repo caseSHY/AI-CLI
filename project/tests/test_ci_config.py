@@ -29,8 +29,8 @@ class CiConfigTests(unittest.TestCase):
             'python -m pip install -e ".[test,dev]"',
             "ruff check src/ project/tests/",
             "ruff format --check src/ project/tests/",
-            "mypy src/agentutils/ --strict",
-            "python -m pytest project/tests/ -v --tb=short --cov=src/agentutils --cov-report=term-missing",
+            "mypy src/aicoreutils/ --strict",
+            "python -m pytest project/tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing",
         ]:
             with self.subTest(required=required):
                 self.assertIn(required, script_text)
@@ -42,7 +42,8 @@ class CiConfigTests(unittest.TestCase):
     def test_pyproject_uses_src_layout(self) -> None:
         text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         self.assertIn('where = ["src"]', text)
-        self.assertIn('agentutils = "agentutils.parser:main"', text)
+        self.assertIn('aicoreutils = "aicoreutils.parser:main"', text)
+        self.assertIn('agentutils = "aicoreutils.parser:main"', text)  # backward compat
         self.assertIn("pytest>=8.0", text)
 
 

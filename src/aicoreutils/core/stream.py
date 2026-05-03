@@ -9,7 +9,7 @@ NDJSON 格式说明：
 
     {"type":"item","path":"..."}
     {"type":"item","path":"..."}
-    {"ok":true,"tool":"agentutils",...,"stream":true,"count":1000,"truncated":false,"summary":{...}}
+    {"ok":true,"tool":"aicoreutils",...,"stream":true,"count":1000,"truncated":false,"summary":{...}}
 
 使用场景：
     ls --stream --recursive /large/dir
@@ -83,7 +83,7 @@ class StreamWriter:
         self._closed = True
         envelope = {
             "ok": True,
-            "tool": "agentutils",
+            "tool": "aicoreutils",
             "version": _TOOL_VERSION,
             "command": self._command,
             "stream": True,  # 标记这是流式响应

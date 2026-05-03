@@ -20,7 +20,7 @@ def run_cli(*args: str, cwd: Path | None = None, input_text: str | None = None) 
     env.setdefault("PYTHONIOENCODING", "utf-8")
     env.setdefault("PYTHONUTF8", "1")
     result = subprocess.run(
-        [sys.executable, "-m", "agentutils", *args],
+        [sys.executable, "-m", "aicoreutils", *args],
         cwd=cwd or ROOT,
         env=env,
         input=None if input_text is None else input_text.encode("utf-8"),
@@ -35,7 +35,7 @@ def run_cli(*args: str, cwd: Path | None = None, input_text: str | None = None) 
     )
 
 
-class AgentutilsTests(unittest.TestCase):
+class AICoreUtilsTests(unittest.TestCase):
     def parse_stdout(self, result: subprocess.CompletedProcess[str]) -> dict:
         self.assertEqual(result.returncode, 0, result.stderr)
         return json.loads(result.stdout)

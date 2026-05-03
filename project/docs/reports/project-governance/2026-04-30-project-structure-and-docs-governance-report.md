@@ -202,7 +202,7 @@ python -m pytest tests/test_gnu_differential.py -v --tb=short
 - `docs/reports/test/2026-04-30-agentutils-v0.1.0-test-report.md` — 添加 historical archive 标记 + 修复后状态说明
 
 ### 未修改 (业务源码)
-- 所有 `src/agentutils/*.py` — 未修改
+- 所有 `src/aicoreutils/*.py` — 未修改
 - 所有 `tests/*.py` — 未修改
 - `.github/workflows/ci.yml` — 未修改
 

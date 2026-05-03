@@ -8,11 +8,11 @@ import json
 import os
 import unittest
 
-from agentutils.core.config import DEFAULT_CONFIG, AgentConfig
-from agentutils.core.envelope import _TOOL_VERSION, envelope, error_envelope, utc_iso, write_json
-from agentutils.core.exceptions import AgentError
-from agentutils.core.exit_codes import EXIT
-from agentutils.core.plugin_registry import PluginRegistry
+from aicoreutils.core.config import DEFAULT_CONFIG, AgentConfig
+from aicoreutils.core.envelope import _TOOL_VERSION, envelope, error_envelope, utc_iso, write_json
+from aicoreutils.core.exceptions import AgentError
+from aicoreutils.core.exit_codes import EXIT
+from aicoreutils.core.plugin_registry import PluginRegistry
 
 # ── exit_codes ──
 
@@ -108,7 +108,7 @@ class EnvelopeTests(unittest.TestCase):
         env = envelope("ls", {"entries": []})
         self.assertTrue(env["ok"])
         self.assertEqual(env["command"], "ls")
-        self.assertEqual(env["tool"], "agentutils")
+        self.assertEqual(env["tool"], "aicoreutils")
         self.assertEqual(env["version"], _TOOL_VERSION)
         self.assertIsInstance(env["warnings"], list)
 
@@ -176,36 +176,36 @@ class AgentConfigTests(unittest.TestCase):
         self.assertEqual(c.max_lines, 10_000)
 
     def test_from_env_int_override(self) -> None:
-        os.environ["AGENTUTILS_MAX_LINES"] = "500"
+        os.environ["AICOREUTILS_MAX_LINES"] = "500"
         try:
             c = AgentConfig.from_env()
             self.assertEqual(c.max_lines, "500")
         finally:
-            del os.environ["AGENTUTILS_MAX_LINES"]
+            del os.environ["AICOREUTILS_MAX_LINES"]
 
     def test_from_env_float_override(self) -> None:
-        os.environ["AGENTUTILS_ASYNC_TIMEOUT"] = "60.5"
+        os.environ["AICOREUTILS_ASYNC_TIMEOUT"] = "60.5"
         try:
             c = AgentConfig.from_env()
             self.assertEqual(c.async_timeout, "60.5")
         finally:
-            del os.environ["AGENTUTILS_ASYNC_TIMEOUT"]
+            del os.environ["AICOREUTILS_ASYNC_TIMEOUT"]
 
     def test_from_env_path_override(self) -> None:
-        os.environ["AGENTUTILS_CWD"] = "/tmp/test"
+        os.environ["AICOREUTILS_CWD"] = "/tmp/test"
         try:
             c = AgentConfig.from_env()
             self.assertEqual(str(c.cwd), "/tmp/test")
         finally:
-            del os.environ["AGENTUTILS_CWD"]
+            del os.environ["AICOREUTILS_CWD"]
 
     def test_from_env_unknown_type_passed_as_string(self) -> None:
-        os.environ["AGENTUTILS_CWD"] = "just_string_for_unknown_type"
+        os.environ["AICOREUTILS_CWD"] = "just_string_for_unknown_type"
         try:
             c = AgentConfig.from_env()
             self.assertIsInstance(c.cwd, str)
         finally:
-            del os.environ["AGENTUTILS_CWD"]
+            del os.environ["AICOREUTILS_CWD"]
 
 
 # ── plugin_registry ──

@@ -1,6 +1,6 @@
-"""GNU differential tests — compare agentutils raw output against GNU coreutils.
+"""GNU differential tests — compare aicoreutils raw output against GNU coreutils.
 
-Each test compares agentutils --raw stdout and exit code against the
+Each test compares aicoreutils --raw stdout and exit code against the
 equivalent GNU coreutils command.  If a GNU command is not found via
 shutil.which() — or the found executable is not genuine GNU coreutils —
 the test is skipped.
@@ -10,7 +10,7 @@ Stdin-based commands (sort, uniq, cut, tr, base64, nl, fold) pipe input directly
 No-input commands (seq, printf) call directly.
 
 Strategy for stderr:
-- On success (returncode 0) both GNU and agentutils stderr should be empty.
+- On success (returncode 0) both GNU and aicoreutils stderr should be empty.
 - On error we only compare exit codes, never exact stderr text.
 """
 

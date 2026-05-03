@@ -28,7 +28,7 @@ def run_cli(
     extra_env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     result = subprocess.run(
-        [sys.executable, "-m", "agentutils", *args],
+        [sys.executable, "-m", "aicoreutils", *args],
         cwd=cwd or ROOT,
         env=test_env(extra_env),
         input=None if input_text is None else input_text.encode("utf-8"),

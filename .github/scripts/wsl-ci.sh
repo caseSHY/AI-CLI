@@ -90,7 +90,7 @@ ruff check src/ project/tests/
 ruff format --check src/ project/tests/
 
 echo "== Mypy =="
-mypy src/agentutils/ --strict
+mypy src/aicoreutils/ --strict
 
 echo "== Pytest with coverage =="
-PYTHONPATH=src python -m pytest project/tests/ -v --tb=short --cov=src/agentutils --cov-report=term-missing
+PYTHONPATH=src python -m pytest project/tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing

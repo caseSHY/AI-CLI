@@ -50,7 +50,7 @@ python -m unittest discover -s tests -v
 | **Golden file** | `test_golden_outputs.py` + `tests/golden/` | unittest | 稳定输出与 golden 文件对比 |
 | **GNU 对照测试** | `test_gnu_differential.py` | unittest + skip | 与真实 GNU Coreutils 输出对比（需要 GNU 工具） |
 | **Property-based** | `test_property_based_cli.py` | pytest + Hypothesis | 随机输入验证数学/逻辑不变量 |
-| **功能命令** | `test_agentutils.py`, `test_more_agent_commands.py`, `test_even_more_agent_commands.py`, `test_file_admin_commands.py`, `test_execution_and_page_commands.py`, `test_system_alias_and_encoding_commands.py`, `test_remaining_coreutils_commands.py` | unittest | 各类命令的功能验证 |
+| **功能命令** | `test_aicoreutils.py`, `test_more_agent_commands.py`, `test_even_more_agent_commands.py`, `test_file_admin_commands.py`, `test_execution_and_page_commands.py`, `test_system_alias_and_encoding_commands.py`, `test_remaining_coreutils_commands.py` | unittest | 各类命令的功能验证 |
 | **CI 配置** | `test_ci_config.py` | unittest | GitHub Actions 配置存在性验证 |
 | **文档双语** | `test_docs_bilingual.py` | unittest | Markdown 文档中英双语格式检查 |
 | **文档治理** | `test_docs_governance.py` | unittest | Copilot/Agent 规则、CI 状态和 stale 文案检查 |
@@ -144,8 +144,8 @@ WSL 内实际执行：
 ```bash
 ruff check src/ tests/
 ruff format --check src/ tests/
-mypy src/agentutils/ --strict
-PYTHONPATH=src python -m pytest project/tests/ -v --tb=short --cov=src/agentutils --cov-report=term-missing
+mypy src/aicoreutils/ --strict
+PYTHONPATH=src python -m pytest project/tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing
 ```
 
 详细说明见 `project/docs/development/WSL_CI.md`。WSL 本地通过不等于远程 CI 已通过；远程 GitHub Actions 仍是最终发布门禁。
@@ -153,7 +153,7 @@ PYTHONPATH=src python -m pytest project/tests/ -v --tb=short --cov=src/agentutil
 ### 覆盖率 / Coverage
 
 ```powershell
-python -m pytest project/tests/ --cov=src/agentutils --cov-report=term-missing
+python -m pytest project/tests/ --cov=src/aicoreutils --cov-report=term-missing
 ```
 
 需要 `pytest-cov` 包。
@@ -207,7 +207,7 @@ python -m unittest discover -s tests -v
 | **Golden file** | `test_golden_outputs.py` + `tests/golden/` | unittest | Stable output compared to golden files |
 | **GNU differential** | `test_gnu_differential.py` | unittest + skip | Output comparison with real GNU Coreutils (needs GNU tools) |
 | **Property-based** | `test_property_based_cli.py` | pytest + Hypothesis | Random input validation of mathematical/logical invariants |
-| **Feature commands** | `test_agentutils.py`, `test_more_agent_commands.py`, `test_even_more_agent_commands.py`, `test_file_admin_commands.py`, `test_execution_and_page_commands.py`, `test_system_alias_and_encoding_commands.py`, `test_remaining_coreutils_commands.py` | unittest | Functional verification of various command groups |
+| **Feature commands** | `test_aicoreutils.py`, `test_more_agent_commands.py`, `test_even_more_agent_commands.py`, `test_file_admin_commands.py`, `test_execution_and_page_commands.py`, `test_system_alias_and_encoding_commands.py`, `test_remaining_coreutils_commands.py` | unittest | Functional verification of various command groups |
 | **CI config** | `test_ci_config.py` | unittest | GitHub Actions config existence check |
 | **Bilingual docs** | `test_docs_bilingual.py` | unittest | Markdown bilingual format verification |
 | **Docs governance** | `test_docs_governance.py` | unittest | Copilot/Agent rules, CI status, and stale wording checks |
@@ -289,8 +289,8 @@ The WSL script runs:
 ```bash
 ruff check src/ tests/
 ruff format --check src/ tests/
-mypy src/agentutils/ --strict
-PYTHONPATH=src python -m pytest project/tests/ -v --tb=short --cov=src/agentutils --cov-report=term-missing
+mypy src/aicoreutils/ --strict
+PYTHONPATH=src python -m pytest project/tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing
 ```
 
 See `project/docs/development/WSL_CI.md` for details. Passing locally in WSL is not the same as passing remote CI; GitHub Actions remains the release gate.
@@ -298,7 +298,7 @@ See `project/docs/development/WSL_CI.md` for details. Passing locally in WSL is 
 ### Coverage
 
 ```powershell
-python -m pytest project/tests/ --cov=src/agentutils --cov-report=term-missing
+python -m pytest project/tests/ --cov=src/aicoreutils --cov-report=term-missing
 ```
 
 Requires `pytest-cov`.

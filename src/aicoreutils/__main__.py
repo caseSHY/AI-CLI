@@ -1,6 +1,6 @@
-"""CLI entry point for `python -m agentutils ...`.
+"""CLI entry point for `python -m aicoreutils ...`.
 
-当用户执行 `python -m agentutils ls .` 时，Python 会运行此文件。
+当用户执行 `python -m aicoreutils ls .` 时，Python 会运行此文件。
 它只是委托给 parser.main()，后者负责参数解析、命令分发和异常处理。
 """
 

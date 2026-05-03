@@ -50,7 +50,7 @@ async def run_async(
         asyncio.TimeoutError: 命令超时。
         RuntimeError: 命令返回非零退出码。
     """
-    cmd = [sys.executable, "-m", "agentutils", *args]
+    cmd = [sys.executable, "-m", "aicoreutils", *args]
     # 计算 src/ 目录的绝对路径，放入 PYTHONPATH 确保子进程能找到包
     env = {"PYTHONPATH": str(Path(__file__).resolve().parents[2])}
 

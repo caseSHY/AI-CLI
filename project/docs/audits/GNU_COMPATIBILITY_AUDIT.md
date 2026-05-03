@@ -83,7 +83,7 @@
 
 ```powershell
 $env:PYTHONPATH = "src"
-python -m pytest tests/test_gnu_differential.py tests/test_agentutils.py tests/test_property_based_cli.py -q --tb=line
+python -m pytest tests/test_gnu_differential.py tests/test_aicoreutils.py tests/test_property_based_cli.py -q --tb=line
 .\.github\scripts\run-ci-wsl.ps1 -Distro Ubuntu-24.04 -SkipInstall
 ```
 
@@ -188,7 +188,7 @@ Current verification command:
 
 ```powershell
 $env:PYTHONPATH = "src"
-python -m pytest tests/test_gnu_differential.py tests/test_agentutils.py tests/test_property_based_cli.py -q --tb=line
+python -m pytest tests/test_gnu_differential.py tests/test_aicoreutils.py tests/test_property_based_cli.py -q --tb=line
 .\.github\scripts\run-ci-wsl.ps1 -Distro Ubuntu-24.04 -SkipInstall
 ```
 

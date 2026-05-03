@@ -1,6 +1,6 @@
 """Property-based tests using Hypothesis.
 
-Verifies mathematical/logical properties of agentutils commands under
+Verifies mathematical/logical properties of aicoreutils commands under
 randomized inputs.  Uses Hypothesis for test-case generation.
 
 Strategy:
@@ -367,7 +367,7 @@ class JsonEnvelopePropertyTests(unittest.TestCase):
             self.assertIn("result", payload)
             self.assertIn("warnings", payload)
             self.assertTrue(payload["ok"])
-            self.assertEqual(payload["tool"], "agentutils")
+            self.assertEqual(payload["tool"], "aicoreutils")
 
     @given(flat_text)
     @settings(max_examples=ENVELOPE_EXAMPLES, deadline=None)

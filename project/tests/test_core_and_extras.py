@@ -22,7 +22,7 @@ from pathlib import Path
 class StreamWriterTests(unittest.TestCase):
     def test_write_item_single(self) -> None:
         buf = io.StringIO()
-        from agentutils.core.stream import StreamWriter
+        from aicoreutils.core.stream import StreamWriter
 
         w = StreamWriter(buf, command="test")
         result = w.write_item({"key": "value"})
@@ -33,7 +33,7 @@ class StreamWriterTests(unittest.TestCase):
     def test_write_item_no_truncation_when_zero(self) -> None:
         """max_items=0 means no limit (0 is falsy in guard)."""
         buf = io.StringIO()
-        from agentutils.core.stream import StreamWriter
+        from aicoreutils.core.stream import StreamWriter
 
         w = StreamWriter(buf, command="test", max_items=0)
         self.assertTrue(w.write_item({"a": 1}))
@@ -41,7 +41,7 @@ class StreamWriterTests(unittest.TestCase):
 
     def test_write_item_truncation_after_limit(self) -> None:
         buf = io.StringIO()
-        from agentutils.core.stream import StreamWriter
+        from aicoreutils.core.stream import StreamWriter
 
         w = StreamWriter(buf, command="test", max_items=2)
         self.assertTrue(w.write_item({"a": 1}))
@@ -52,7 +52,7 @@ class StreamWriterTests(unittest.TestCase):
 
     def test_write_after_close_returns_false(self) -> None:
         buf = io.StringIO()
-        from agentutils.core.stream import StreamWriter
+        from aicoreutils.core.stream import StreamWriter
 
         w = StreamWriter(buf, command="test")
         w.write_summary({"total": 1})
@@ -60,7 +60,7 @@ class StreamWriterTests(unittest.TestCase):
 
     def test_summary_contains_stream_field(self) -> None:
         buf = io.StringIO()
-        from agentutils.core.stream import StreamWriter
+        from aicoreutils.core.stream import StreamWriter
 
         w = StreamWriter(buf, command="test")
         w.write_item({"key": "v"})
@@ -78,7 +78,7 @@ class StreamWriterTests(unittest.TestCase):
 
     def test_double_summary_is_idempotent(self) -> None:
         buf = io.StringIO()
-        from agentutils.core.stream import StreamWriter
+        from aicoreutils.core.stream import StreamWriter
 
         w = StreamWriter(buf, command="test")
         w.write_summary({"total": 0})
@@ -87,7 +87,7 @@ class StreamWriterTests(unittest.TestCase):
 
     def test_count_and_truncated_properties(self) -> None:
         buf = io.StringIO()
-        from agentutils.core.stream import StreamWriter
+        from aicoreutils.core.stream import StreamWriter
 
         w = StreamWriter(buf, command="test", max_items=1)
         self.assertEqual(w.count, 0)
@@ -101,7 +101,7 @@ class StreamWriterTests(unittest.TestCase):
 
     def test_ndjson_output_is_parseable(self) -> None:
         buf = io.StringIO()
-        from agentutils.core.stream import StreamWriter
+        from aicoreutils.core.stream import StreamWriter
 
         w = StreamWriter(buf, command="test")
         items = [{"id": i, "name": f"item_{i}"} for i in range(5)]
@@ -124,7 +124,7 @@ class StreamWriterTests(unittest.TestCase):
 
     def test_special_chars_in_item(self) -> None:
         buf = io.StringIO()
-        from agentutils.core.stream import StreamWriter
+        from aicoreutils.core.stream import StreamWriter
 
         w = StreamWriter(buf, command="test")
         w.write_item({"path": "/tmp/a b", "content": "line1\nline2"})
@@ -134,20 +134,20 @@ class StreamWriterTests(unittest.TestCase):
 
 class NullStreamTests(unittest.TestCase):
     def test_null_stream_always_accepts(self) -> None:
-        from agentutils.core.stream import NullStream
+        from aicoreutils.core.stream import NullStream
 
         ns = NullStream()
         self.assertTrue(ns.write_item({"a": 1}))
         self.assertTrue(ns.write_item({"b": 2}))
 
     def test_null_stream_summary_is_noop(self) -> None:
-        from agentutils.core.stream import NullStream
+        from aicoreutils.core.stream import NullStream
 
         ns = NullStream()
         ns.write_summary({"total": 100})  # should not raise
 
     def test_null_stream_properties(self) -> None:
-        from agentutils.core.stream import NullStream
+        from aicoreutils.core.stream import NullStream
 
         ns = NullStream()
         self.assertEqual(ns.count, 0)
@@ -156,7 +156,7 @@ class NullStreamTests(unittest.TestCase):
 
 class IsStreamModeTests(unittest.TestCase):
     def test_stream_flag_true(self) -> None:
-        from agentutils.core.stream import is_stream_mode
+        from aicoreutils.core.stream import is_stream_mode
 
         class Args:
             stream = True
@@ -164,7 +164,7 @@ class IsStreamModeTests(unittest.TestCase):
         self.assertTrue(is_stream_mode(Args()))
 
     def test_stream_flag_false(self) -> None:
-        from agentutils.core.stream import is_stream_mode
+        from aicoreutils.core.stream import is_stream_mode
 
         class Args:
             stream = False
@@ -172,7 +172,7 @@ class IsStreamModeTests(unittest.TestCase):
         self.assertFalse(is_stream_mode(Args()))
 
     def test_stream_flag_absent(self) -> None:
-        from agentutils.core.stream import is_stream_mode
+        from aicoreutils.core.stream import is_stream_mode
 
         class Args:
             pass
@@ -185,19 +185,19 @@ class IsStreamModeTests(unittest.TestCase):
 
 class PluginDiscoveryTests(unittest.TestCase):
     def test_discover_plugins_returns_dict(self) -> None:
-        from agentutils.plugins import discover_plugins
+        from aicoreutils.plugins import discover_plugins
 
         result = discover_plugins()
         self.assertIsInstance(result, dict)
 
     def test_get_plugin_commands_returns_dict(self) -> None:
-        from agentutils.plugins import get_plugin_commands
+        from aicoreutils.plugins import get_plugin_commands
 
         result = get_plugin_commands()
         self.assertIsInstance(result, dict)
 
     def test_register_and_retrieve_plugin_command(self) -> None:
-        from agentutils.plugins import get_plugin_commands, register_plugin_command
+        from aicoreutils.plugins import get_plugin_commands, register_plugin_command
 
         def dummy_cmd(args):
             return {"ok": True}
@@ -213,7 +213,7 @@ class PluginDiscoveryTests(unittest.TestCase):
         # built once at import time from the catalog. The plugin was
         # registered in the previous test, so verify it's in the dynamic
         # plugin registry.
-        from agentutils.plugins import get_plugin_commands
+        from aicoreutils.plugins import get_plugin_commands
 
         commands = get_plugin_commands()
         self.assertIn("dummy_test_cmd", commands)
@@ -225,7 +225,7 @@ class PluginDiscoveryTests(unittest.TestCase):
 class MainModuleTests(unittest.TestCase):
     def test_main_module_runs_help(self) -> None:
         result = subprocess.run(
-            [sys.executable, "-m", "agentutils", "--help"],
+            [sys.executable, "-m", "aicoreutils", "--help"],
             capture_output=True,
             env={**__import__("os").environ, "PYTHONPATH": "src"},
             timeout=10,
@@ -235,7 +235,7 @@ class MainModuleTests(unittest.TestCase):
 
     def test_main_module_runs_schema(self) -> None:
         result = subprocess.run(
-            [sys.executable, "-m", "agentutils", "schema", "--pretty"],
+            [sys.executable, "-m", "aicoreutils", "schema", "--pretty"],
             capture_output=True,
             cwd=str(Path(__file__).resolve().parents[1]),
             env={**__import__("os").environ, "PYTHONPATH": "src"},
@@ -248,7 +248,7 @@ class MainModuleTests(unittest.TestCase):
 
     def test_main_module_catalog(self) -> None:
         result = subprocess.run(
-            [sys.executable, "-m", "agentutils", "catalog", "--pretty"],
+            [sys.executable, "-m", "aicoreutils", "catalog", "--pretty"],
             capture_output=True,
             cwd=str(Path(__file__).resolve().parents[1]),
             env={**__import__("os").environ, "PYTHONPATH": "src"},
@@ -266,19 +266,19 @@ class AsyncInterfaceSmokeTests(unittest.TestCase):
     """Smoke tests for async_interface module-level imports."""
 
     def test_run_async_is_callable(self) -> None:
-        from agentutils.async_interface import run_async
+        from aicoreutils.async_interface import run_async
 
         self.assertTrue(callable(run_async))
 
     def test_run_async_many_is_callable(self) -> None:
-        from agentutils.async_interface import run_async_many
+        from aicoreutils.async_interface import run_async_many
 
         self.assertTrue(callable(run_async_many))
 
     def test_run_async_accepts_args_signature(self) -> None:
         import inspect
 
-        from agentutils.async_interface import run_async
+        from aicoreutils.async_interface import run_async
 
         sig = inspect.signature(run_async)
         params = list(sig.parameters)
@@ -289,7 +289,7 @@ class AsyncInterfaceSmokeTests(unittest.TestCase):
         """TD08: Verify run_async_many executes commands concurrently."""
         import asyncio
 
-        from agentutils.async_interface import run_async_many
+        from aicoreutils.async_interface import run_async_many
 
         async def _run() -> None:
             results = await run_async_many(
@@ -306,7 +306,7 @@ class AsyncInterfaceSmokeTests(unittest.TestCase):
         """Verify results are returned in input order."""
         import asyncio
 
-        from agentutils.async_interface import run_async_many
+        from aicoreutils.async_interface import run_async_many
 
         async def _run() -> None:
             results = await run_async_many(
@@ -324,7 +324,7 @@ class AsyncInterfaceSmokeTests(unittest.TestCase):
         """Verify per-command timeout works."""
         import asyncio
 
-        from agentutils.async_interface import run_async_many
+        from aicoreutils.async_interface import run_async_many
 
         async def _run() -> None:
             results = await run_async_many(
@@ -346,7 +346,7 @@ class PluginEndToEndTests(unittest.TestCase):
 
     def test_plugin_registry_is_immutable(self) -> None:
         """Verify PluginRegistry.register returns a new instance."""
-        from agentutils.core.plugin_registry import PluginRegistry
+        from aicoreutils.core.plugin_registry import PluginRegistry
 
         r1 = PluginRegistry()
         r2 = r1.register("test_cmd", lambda args: {"ok": True})
@@ -356,7 +356,7 @@ class PluginEndToEndTests(unittest.TestCase):
         self.assertEqual(r2.count, 1)
 
     def test_plugin_registry_merge(self) -> None:
-        from agentutils.core.plugin_registry import PluginRegistry
+        from aicoreutils.core.plugin_registry import PluginRegistry
 
         r1 = PluginRegistry().register("a", lambda: 1)
         r2 = PluginRegistry().register("b", lambda: 2)
@@ -366,7 +366,7 @@ class PluginEndToEndTests(unittest.TestCase):
         self.assertIn("b", merged)
 
     def test_programmatic_register_plugin(self) -> None:
-        from agentutils.plugins import get_plugin_commands, register_plugin_command
+        from aicoreutils.plugins import get_plugin_commands, register_plugin_command
 
         register_plugin_command("_test_prog_cmd", lambda args: {"ok": True}, priority="P3")
         cmds = get_plugin_commands()
@@ -374,19 +374,19 @@ class PluginEndToEndTests(unittest.TestCase):
         self.assertTrue(callable(cmds["_test_prog_cmd"]))
 
     def test_plugin_discovery_does_not_crash(self) -> None:
-        from agentutils.plugins import discover_plugins
+        from aicoreutils.plugins import discover_plugins
 
         result = discover_plugins()
         self.assertIsInstance(result, dict)
 
     def test_has_plugins_returns_bool(self) -> None:
-        from agentutils.plugins import has_plugins
+        from aicoreutils.plugins import has_plugins
 
         self.assertIsInstance(has_plugins(), bool)
 
     def test_get_registry_returns_plugin_registry(self) -> None:
-        from agentutils.core.plugin_registry import PluginRegistry
-        from agentutils.plugins import get_registry
+        from aicoreutils.core.plugin_registry import PluginRegistry
+        from aicoreutils.plugins import get_registry
 
         reg = get_registry()
         self.assertIsInstance(reg, PluginRegistry)

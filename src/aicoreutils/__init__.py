@@ -26,7 +26,7 @@ from .core import StreamWriter, is_stream_mode
 # Parser：CLI 入口、参数解析、命令分发
 from .parser import build_parser, command_catalog, command_schema, dispatch, main
 
-# 插件系统（0.2.0 新增）：自动发现 agentutils_* 命名空间包
+# 插件系统（0.2.0 新增）：自动发现 aicoreutils_* 命名空间包
 from .plugins import discover_plugins, get_plugin_commands, register_plugin_command
 
 # Protocol：核心协议类型和工具函数（向后兼容导出）

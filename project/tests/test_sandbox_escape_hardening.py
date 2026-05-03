@@ -1,6 +1,6 @@
 """Sandbox escape hardening tests.
 
-Verifies that agentutils cannot be tricked into reading/writing/deleting
+Verifies that aicoreutils cannot be tricked into reading/writing/deleting
 files outside its working directory through path traversal, absolute paths,
 symlinks, malicious file names, or dry-run bypass.
 

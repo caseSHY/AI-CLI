@@ -9,8 +9,8 @@
 aicoreutils 的全部 I/O 遵循单一格式：
 
 ```
-成功 → stdout: {"ok":true, "tool":"agentutils", "version":"...", "command":"...", "result":..., "warnings":[...]}
-失败 → stderr: {"ok":false, "tool":"agentutils", "version":"...", "command":"...", "error":{"code":"...", "message":"..."}}
+成功 → stdout: {"ok":true, "tool":"aicoreutils", "version":"...", "command":"...", "result":..., "warnings":[...]}
+失败 → stderr: {"ok":false, "tool":"aicoreutils", "version":"...", "command":"...", "error":{"code":"...", "message":"..."}}
 ```
 
 **设计决策**：Agent 不需要解析多种输出格式。stdout 永远是成功 JSON，stderr 永远是错误 JSON。唯一的例外是 `--raw` 模式（见下文）。
@@ -91,10 +91,10 @@ aicoreutils 默认将所有写入/删除操作限制在当前工作目录 (cwd) 
 
 ## 7. 插件系统 (Plugin System)
 
-第三方可通过 `agentutils_*` 命名空间包扩展命令：
+第三方可通过 `aicoreutils_*` 命名空间包扩展命令：
 
 ```python
-# agentutils_extra/__init__.py
+# aicoreutils_extra/__init__.py
 COMMANDS = {
     "mycommand": lambda args: {"ok": True, "result": "hello"},
 }
@@ -103,7 +103,7 @@ COMMANDS = {
 或编程式注册：
 
 ```python
-from agentutils.plugins import register_plugin_command
+from aicoreutils.plugins import register_plugin_command
 register_plugin_command("mycommand", my_func, priority="P3")
 ```
 
@@ -147,7 +147,7 @@ python -m pytest tests/ -v --tb=short -k "not (property_based or Hypothesis or G
 ## 10. 项目结构（重构后）
 
 ```
-src/agentutils/
+src/aicoreutils/
 ├── core/                 # 基础层（无业务逻辑）
 │   ├── config.py         # AgentConfig 不可变配置
 │   ├── constants.py      # 集中化默认值
@@ -182,8 +182,8 @@ src/agentutils/
 All aicoreutils I/O follows a single format:
 
 ```
-Success → stdout: {"ok":true, "tool":"agentutils", "version":"...", "command":"...", "result":..., "warnings":[...]}
-Failure → stderr: {"ok":false, "tool":"agentutils", "version":"...", "command":"...", "error":{"code":"...", "message":"..."}}
+Success → stdout: {"ok":true, "tool":"aicoreutils", "version":"...", "command":"...", "result":..., "warnings":[...]}
+Failure → stderr: {"ok":false, "tool":"aicoreutils", "version":"...", "command":"...", "error":{"code":"...", "message":"..."}}
 ```
 
 **Design rationale**: Agents shouldn't parse multiple output formats. stdout is always success JSON, stderr is always error JSON. The only exception is `--raw` mode.
@@ -264,10 +264,10 @@ aicoreutils confines all write/delete operations to the current working director
 
 ### 7. Plugin System
 
-Third-parties can extend commands via `agentutils_*` namespace packages:
+Third-parties can extend commands via `aicoreutils_*` namespace packages:
 
 ```python
-# agentutils_extra/__init__.py
+# aicoreutils_extra/__init__.py
 COMMANDS = {
     "mycommand": lambda args: {"ok": True, "result": "hello"},
 }
@@ -276,7 +276,7 @@ COMMANDS = {
 Or programmatic registration:
 
 ```python
-from agentutils.plugins import register_plugin_command
+from aicoreutils.plugins import register_plugin_command
 register_plugin_command("mycommand", my_func, priority="P3")
 ```
 
@@ -320,7 +320,7 @@ python -m pytest tests/ -v --tb=short -k "not (property_based or Hypothesis or G
 ### 10. Project Structure (post-refactoring)
 
 ```
-src/agentutils/
+src/aicoreutils/
 ├── core/                 # Foundation layer (no business logic)
 │   ├── config.py         # AgentConfig immutable config
 │   ├── constants.py      # Centralized defaults

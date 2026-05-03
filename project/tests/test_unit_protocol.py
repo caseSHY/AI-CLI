@@ -5,12 +5,12 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-from agentutils.core.exceptions import AgentError
-from agentutils.protocol._hashing import HASH_ALGORITHMS, digest_bytes, simple_sum16
-from agentutils.protocol._numfmt import IEC_UNITS, SI_UNITS, format_numfmt_value, parse_numfmt_value
-from agentutils.protocol._printf import coerce_printf_value, format_printf, printf_conversions
-from agentutils.protocol._ranges import alpha_suffix, numeric_suffix, parse_ranges, selected_indexes
-from agentutils.protocol._text import (
+from aicoreutils.core.exceptions import AgentError
+from aicoreutils.protocol._hashing import HASH_ALGORITHMS, digest_bytes, simple_sum16
+from aicoreutils.protocol._numfmt import IEC_UNITS, SI_UNITS, format_numfmt_value, parse_numfmt_value
+from aicoreutils.protocol._printf import coerce_printf_value, format_printf, printf_conversions
+from aicoreutils.protocol._ranges import alpha_suffix, numeric_suffix, parse_ranges, selected_indexes
+from aicoreutils.protocol._text import (
     count_words,
     decode_standard_escapes,
     expand_tr_set,
@@ -334,7 +334,7 @@ class DigestFileTests(unittest.TestCase):
     def test_digest_file_temporary(self) -> None:
         from tempfile import NamedTemporaryFile
 
-        from agentutils.protocol._hashing import digest_file
+        from aicoreutils.protocol._hashing import digest_file
 
         with NamedTemporaryFile(delete=False, suffix=".txt") as f:
             f.write(b"hello world")
@@ -348,7 +348,7 @@ class DigestFileTests(unittest.TestCase):
             path.unlink()
 
     def test_digest_file_directory_raises(self) -> None:
-        from agentutils.protocol._hashing import digest_file
+        from aicoreutils.protocol._hashing import digest_file
 
         with self.assertRaises(AgentError) as ctx:
             digest_file(Path("."), "md5")

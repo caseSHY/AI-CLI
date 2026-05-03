@@ -1,4 +1,4 @@
-"""Regenerate golden output files from current agentutils output.
+"""Regenerate golden output files from current aicoreutils output.
 
 Usage:
     python .github/scripts/update_golden.py

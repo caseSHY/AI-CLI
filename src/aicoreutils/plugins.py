@@ -1,6 +1,6 @@
 """Plugin discovery and registration system for aicoreutils.
 
-插件系统：允许第三方通过 agentutils_* 命名空间包或编程式注册扩展命令。
+插件系统：允许第三方通过 aicoreutils_* 命名空间包或编程式注册扩展命令。
 
 Phase 3 架构：
 - PluginRegistry（来自 core.plugin_registry）是不可变容器。
@@ -10,9 +10,9 @@ Phase 3 架构：
 - 向后兼容：旧的 discover_plugins / register_plugin_command /
   get_plugin_commands 保持原有签名，委托给模块级 PluginRegistry。
 
-使用示例（在 agentutils_extra 插件包中）：
+使用示例（在 aicoreutils_extra 插件包中）：
 
-    # agentutils_extra/__init__.py
+    # aicoreutils_extra/__init__.py
     COMMANDS = {
         "mycommand": my_command_function,
     }
@@ -30,7 +30,7 @@ _registry: PluginRegistry = PluginRegistry()
 
 
 def discover_plugins() -> dict[str, CommandFunc]:
-    """扫描 agentutils_* 包并更新全局注册表。
+    """扫描 aicoreutils_* 包并更新全局注册表。
 
     Returns:
         发现的命令名 → 命令函数字典。

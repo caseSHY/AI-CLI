@@ -12,11 +12,11 @@ def read_text(relative: str) -> str:
     return (ROOT / relative).read_text(encoding="utf-8")
 
 
-def _agentutils_output(*args: str) -> dict:
-    """Run agentutils and return parsed JSON result dict."""
+def _aicoreutils_output(*args: str) -> dict:
+    """Run aicoreutils and return parsed JSON result dict."""
     env = {**dict(subprocess.os.environ), "PYTHONPATH": str(ROOT / "src")}
     cp = subprocess.run(
-        [sys.executable, "-m", "agentutils", *args],
+        [sys.executable, "-m", "aicoreutils", *args],
         capture_output=True,
         text=True,
         cwd=str(ROOT),
@@ -175,7 +175,7 @@ class DocsGovernanceTests(unittest.TestCase):
         self.assertNotIn("| **Project version** | 0.1.0 |", status)
 
     def test_command_count_consistency_across_docs(self) -> None:
-        output = _agentutils_output("schema")
+        output = _aicoreutils_output("schema")
         actual_count = output["result"]["command_count"]
         self.assertEqual(actual_count, 114)
 
@@ -205,7 +205,7 @@ class DocsGovernanceTests(unittest.TestCase):
                 if "schema" in stripped.lower() and "113" in stripped and "command" in stripped.lower():
                     with self.subTest(relative=relative, line=i):
                         self.fail(f"{relative}:{i} has stale '113 commands' near 'schema': {stripped}")
-                if "agentutils schema" in stripped and "113" in stripped:
+                if "aicoreutils schema" in stripped and "113" in stripped:
                     with self.subTest(relative=relative, line=i):
                         self.fail(f"{relative}:{i} has stale '113': {stripped}")
 

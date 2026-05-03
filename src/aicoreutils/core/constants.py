@@ -4,7 +4,7 @@
 修改这些值后，所有命令自动同步，无需逐文件搜索替换。
 
 使用方式：
-    from agentutils.core.constants import DEFAULT_MAX_LINES
+    from aicoreutils.core.constants import DEFAULT_MAX_LINES
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES)
 """
 
