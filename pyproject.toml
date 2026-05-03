@@ -60,6 +60,7 @@ build-backend = "setuptools.build_meta"
 
 [project.scripts]
 aicoreutils = "aicoreutils.parser:main"
+aicoreutils-mcp = "aicoreutils.mcp_server:main"
 agentutils = "aicoreutils.parser:main"
 
 [tool.setuptools.packages.find]
