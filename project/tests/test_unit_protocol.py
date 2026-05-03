@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from agentutils.core.exceptions import AgentError
 from agentutils.protocol._hashing import HASH_ALGORITHMS, digest_bytes, simple_sum16
@@ -307,6 +308,51 @@ class TextUtilsTests(unittest.TestCase):
     def test_parse_numfmt_unsupported_unit(self) -> None:
         with self.assertRaises(AgentError):
             parse_numfmt_value("1Z", "si")
+
+    def test_parse_numfmt_unsupported_iec_unit(self) -> None:
+        with self.assertRaises(AgentError):
+            parse_numfmt_value("1Z", "iec")
+
+    def test_format_numfmt_large_ieee(self) -> None:
+        result = format_numfmt_value(2_000_000_000_000.0, "si", 1)
+        self.assertIn("T", result)
+
+    def test_coerce_printf_char_from_char(self) -> None:
+        result = coerce_printf_value("A", "c")
+        self.assertEqual(result, "A")
+
+    def test_coerce_printf_invalid_float(self) -> None:
+        with self.assertRaises(AgentError):
+            coerce_printf_value("not_a_number", "f")
+
+    def test_selected_indexes_end_negative_raises(self) -> None:
+        with self.assertRaises(AgentError):
+            parse_ranges("1-0")
+
+
+class DigestFileTests(unittest.TestCase):
+    def test_digest_file_temporary(self) -> None:
+        from tempfile import NamedTemporaryFile
+
+        from agentutils.protocol._hashing import digest_file
+
+        with NamedTemporaryFile(delete=False, suffix=".txt") as f:
+            f.write(b"hello world")
+            f.flush()
+            path = Path(f.name)
+        try:
+            result = digest_file(path, "sha256")
+            self.assertEqual(len(result), 64)
+            self.assertNotEqual(result, "")
+        finally:
+            path.unlink()
+
+    def test_digest_file_directory_raises(self) -> None:
+        from agentutils.protocol._hashing import digest_file
+
+        with self.assertRaises(AgentError) as ctx:
+            digest_file(Path("."), "md5")
+        self.assertEqual(ctx.exception.code, "invalid_input")
 
 
 if __name__ == "__main__":
