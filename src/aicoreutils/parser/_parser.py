@@ -203,29 +203,36 @@ def command_schema(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def command_tool_list(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    """Return a compact tool list suitable for LLM function-calling context."""
+    """Return a tool list suitable for LLM function-calling context.
+
+    Supports three formats:
+      - default (aicoreutils): compact name+priority list
+      - openai: OpenAI function calling format
+      - anthropic: Anthropic tool use format
+    """
+    if getattr(args, "format", "aicoreutils") in ("openai", "anthropic"):
+        from ..tool_schema import _command_tools, tools_anthropic, tools_openai
+        from ._parser import build_parser as _build
+
+        tools = _command_tools(_build())
+        formatted = tools_openai(tools) if args.format == "openai" else tools_anthropic(tools)
+        if args.raw:
+            import json as _json
+
+            return _json.dumps(formatted, ensure_ascii=False).encode("utf-8")
+        return {"tools": formatted, "count": len(formatted), "format": args.format}
+
+    # Default format: name + priority
     implemented = schema_command_names(args)
     prioritized = get_commands_by_priority()
-    tools: list[dict[str, Any]] = []
+    result: list[dict[str, Any]] = []
     for name in sorted(implemented):
-        tools.append(
-            {
-                "name": name,
-                "priority": get_priority(name),
-            }
-        )
+        result.append({"name": name, "priority": get_priority(name)})
     if args.raw:
         import json as _json
 
-        return _json.dumps(
-            {"tools": tools, "count": len(tools)},
-            ensure_ascii=False,
-        ).encode("utf-8")
-    return {
-        "tools": tools,
-        "count": len(tools),
-        "priorities": prioritized,
-    }
+        return _json.dumps({"tools": result, "count": len(result)}, ensure_ascii=False).encode("utf-8")
+    return {"tools": result, "count": len(result), "priorities": prioritized}
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -277,6 +284,12 @@ def build_parser() -> AgentArgumentParser:
 
     p = add_subparser("tool-list", help="Return a compact tool list for LLM function-calling context.")
     p.add_argument("--raw", action="store_true", help="Write tools JSON directly without a JSON envelope.")
+    p.add_argument(
+        "--format",
+        choices=["aicoreutils", "openai", "anthropic"],
+        default="aicoreutils",
+        help="Output format for function calling.",
+    )
     p.set_defaults(func=command_tool_list)
 
     p = add_subparser("pwd", help="Print the current working directory as JSON.")
