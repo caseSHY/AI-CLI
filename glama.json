@@ -1,0 +1,27 @@
+{
+  "name": "aicoreutils",
+  "description": "JSON-first Coreutils CLI for AI agents. 114 commands with sandbox, dry-run, and MCP zero-dependency server.",
+  "repository": "https://github.com/caseSHY/AI-CLI",
+  "mcp": {
+    "command": "python",
+    "args": ["-m", "aicoreutils.mcp_server"]
+  },
+  "categories": [
+    "command-line",
+    "file-systems",
+    "developer-tools"
+  ],
+  "tags": [
+    "cli",
+    "coreutils",
+    "filesystem",
+    "agent",
+    "sandbox",
+    "dry-run",
+    "json",
+    "ai"
+  ],
+  "build": {
+    "dockerfile": "Dockerfile"
+  }
+}

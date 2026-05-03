@@ -1,5 +1,7 @@
 # AICoreUtils
 
+[![AI-CLI MCP server](https://glama.ai/mcp/servers/caseSHY/AI-CLI/badges/card.svg)](https://glama.ai/mcp/servers/caseSHY/AI-CLI)
+
 <!-- mcp-name: io.github.caseSHY/aicoreutils -->
 
 ## 中文说明
