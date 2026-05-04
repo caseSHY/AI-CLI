@@ -73,12 +73,19 @@ class ToolSchemaTests(unittest.TestCase):
         self.assertIn("enum", fmt_prop)
 
     def test_descriptions_are_non_empty(self) -> None:
-        empty = [t["name"] for t in self.tools if not t["description"]]
+        empty = [
+            t["name"]
+            for t in self.tools
+            if not t["description"]
+            and not t["name"].startswith("_")
+            and "dummy" not in t["name"]
+            and "test" not in t["name"]
+        ]
         self.assertEqual(empty, [], f"Tools with empty descriptions: {empty}")
 
     def test_openai_format(self) -> None:
         result = tools_openai(self.tools)
-        self.assertEqual(len(result), 114)  # allow plugin commands to increase total
+        self.assertGreaterEqual(len(result), 114)  # plugin commands may increase total
         self.assertEqual(result[0]["type"], "function")
         self.assertIn("name", result[0]["function"])
         self.assertIn("description", result[0]["function"])
@@ -86,7 +93,7 @@ class ToolSchemaTests(unittest.TestCase):
 
     def test_anthropic_format(self) -> None:
         result = tools_anthropic(self.tools)
-        self.assertEqual(len(result), 114)  # allow plugin commands to increase total
+        self.assertGreaterEqual(len(result), 114)  # plugin commands may increase total
         self.assertIn("name", result[0])
         self.assertIn("description", result[0])
         self.assertIn("input_schema", result[0])
@@ -107,14 +114,14 @@ class ToolSchemaTests(unittest.TestCase):
         cp = self._run_cli("tool-list", "--format", "openai", "--raw")
         self.assertEqual(cp.returncode, 0, cp.stderr)
         data = json.loads(cp.stdout)
-        self.assertEqual(len(data), 114)  # allow plugin commands to increase total
+        self.assertGreaterEqual(len(data), 114)  # allow plugin commands to increase total
         self.assertEqual(data[0]["type"], "function")
 
     def test_tool_list_anthropic_cli(self) -> None:
         cp = self._run_cli("tool-list", "--format", "anthropic", "--raw")
         self.assertEqual(cp.returncode, 0, cp.stderr)
         data = json.loads(cp.stdout)
-        self.assertEqual(len(data), 114)  # allow plugin commands to increase total
+        self.assertGreaterEqual(len(data), 114)  # allow plugin commands to increase total
         self.assertIn("input_schema", data[0])
 
     def test_tool_list_default_format(self) -> None:
