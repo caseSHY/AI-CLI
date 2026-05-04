@@ -20,8 +20,13 @@ if TYPE_CHECKING:
     from .exceptions import AgentError
 
 # 项目版本号。作为信封的 version 字段，允许 Agent 做版本兼容性判断。
-# 每次发版前需同步 pyproject.toml 中的 version。
-_TOOL_VERSION = "0.3.6"
+# 版本号单一来源为 aicoreutils.__version__。
+try:
+    from .. import __version__
+
+    _TOOL_VERSION = __version__
+except ImportError:
+    _TOOL_VERSION = "0.3.9"  # 回退：无法导入时使用硬编码
 
 
 def utc_iso(timestamp: float) -> str:

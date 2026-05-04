@@ -15,6 +15,7 @@ import json
 import sys
 from typing import Any, cast
 
+from . import __version__
 from .parser._parser import build_parser
 from .tool_schema import _command_tools
 
@@ -137,7 +138,7 @@ def server_loop() -> None:
                     "id": req_id,
                     "result": {
                         "protocolVersion": "2024-11-05",
-                        "serverInfo": {"name": "aicoreutils", "version": "0.3.1"},
+                        "serverInfo": {"name": "aicoreutils", "version": __version__},
                         "capabilities": {"tools": {}},
                     },
                 }

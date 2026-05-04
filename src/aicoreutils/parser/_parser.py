@@ -126,6 +126,7 @@ from ..core.constants import (
     DEFAULT_TAB_SIZE,
     FACTOR_MAX,
 )
+from ..plugins import get_registry
 from ..protocol import (
     EXIT,
     HASH_ALGORITHMS,
@@ -1085,6 +1086,16 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--allow-destructive", action="store_true", help="Allow real destructive overwrite.")
     p.add_argument("--dry-run", action="store_true", help="Report operations without changing files.")
     p.set_defaults(func=command_shred)
+
+    # ── 插件命令注册 ──────────────────────────────────────────────────
+    _plugin_registry = get_registry()
+    for plugin_name in sorted(_plugin_registry.names):
+        if plugin_name in registered_commands:
+            continue  # 跳过与内置命令同名的插件命令
+        plugin_func = _plugin_registry[plugin_name]
+        plugin_parser = add_subparser(plugin_name, help=f"Plugin: {plugin_name}")
+        plugin_parser.add_argument("args", nargs="*", help="Arguments forwarded to plugin.")
+        plugin_parser.set_defaults(func=plugin_func, _plugin=True)
 
     parser.set_defaults(implemented_commands=registered_commands)
     return parser
