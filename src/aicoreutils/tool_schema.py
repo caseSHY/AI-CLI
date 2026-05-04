@@ -150,6 +150,123 @@ def _arg_to_schema(action: argparse.Action) -> dict[str, Any]:
     return schema
 
 
+_READ_ONLY_TOOLS: set[str] = {
+    "catalog",
+    "schema",
+    "coreutils",
+    "tool-list",
+    "pwd",
+    "basename",
+    "dirname",
+    "realpath",
+    "readlink",
+    "test",
+    "[",
+    "ls",
+    "dir",
+    "vdir",
+    "stat",
+    "cat",
+    "head",
+    "tail",
+    "wc",
+    "od",
+    "pr",
+    "md5sum",
+    "sha1sum",
+    "sha224sum",
+    "sha256sum",
+    "sha384sum",
+    "sha512sum",
+    "b2sum",
+    "hash",
+    "cksum",
+    "sum",
+    "sort",
+    "comm",
+    "join",
+    "paste",
+    "shuf",
+    "tac",
+    "nl",
+    "fold",
+    "fmt",
+    "ptx",
+    "uniq",
+    "cut",
+    "tr",
+    "expand",
+    "unexpand",
+    "base64",
+    "base32",
+    "basenc",
+    "date",
+    "env",
+    "printenv",
+    "whoami",
+    "groups",
+    "id",
+    "uname",
+    "arch",
+    "hostname",
+    "hostid",
+    "logname",
+    "uptime",
+    "tty",
+    "users",
+    "pinky",
+    "who",
+    "nproc",
+    "df",
+    "du",
+    "sync",
+    "dircolors",
+    "seq",
+    "printf",
+    "echo",
+    "pathchk",
+    "factor",
+    "expr",
+    "true",
+    "false",
+    "yes",
+    "numfmt",
+    "tsort",
+}
+
+_DESTRUCTIVE_TOOLS: set[str] = {
+    "csplit",
+    "split",
+    "mkdir",
+    "touch",
+    "cp",
+    "mv",
+    "ln",
+    "link",
+    "chmod",
+    "chown",
+    "chgrp",
+    "truncate",
+    "mktemp",
+    "mkfifo",
+    "mknod",
+    "install",
+    "ginstall",
+    "tee",
+    "rmdir",
+    "unlink",
+    "rm",
+    "shred",
+    "dd",
+    "chroot",
+    "stty",
+    "kill",
+    "chcon",
+    "runcon",
+    "timeout",
+}
+
+
 def _command_tools(parser: argparse.ArgumentParser) -> list[dict[str, Any]]:
     """Generate MCP-compatible tool list from all registered subcommands."""
     subparsers_action = None
@@ -184,6 +301,14 @@ def _command_tools(parser: argparse.ArgumentParser) -> list[dict[str, Any]]:
 
         description = _COMMAND_DESCRIPTIONS.get(name, subparser.description or "")
 
+        annotations: dict[str, Any] = {}
+        if name in _READ_ONLY_TOOLS:
+            annotations["readOnlyHint"] = True
+        if name in _DESTRUCTIVE_TOOLS:
+            annotations["destructiveHint"] = True
+        if name in ("true", "false"):
+            annotations["idempotentHint"] = True
+
         tools.append(
             {
                 "name": name,
@@ -193,6 +318,7 @@ def _command_tools(parser: argparse.ArgumentParser) -> list[dict[str, Any]]:
                     "properties": properties,
                     "required": required,
                 },
+                "annotations": annotations,
             }
         )
 
