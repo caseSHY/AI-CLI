@@ -24,13 +24,19 @@ jobs:
       - name: Run tests with coverage
         env:
           PYTHONPATH: src
-        run: python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=25
+        run: python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-report=xml --cov-fail-under=35
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-ubuntu-${{ matrix.python-version }}
+          path: coverage.xml
 
   test-macos:
     runs-on: macos-latest
     strategy:
       matrix:
-        python-version: ["3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -43,7 +49,7 @@ jobs:
       - name: Run tests with coverage
         env:
           PYTHONPATH: src
-        run: python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=25
+        run: python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=35
 
   test-windows:
     runs-on: windows-latest
@@ -61,7 +67,7 @@ jobs:
         env:
           PYTHONPATH: src
           PYTHONIOENCODING: utf-8
-        run: python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=25
+        run: python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=35
 
   lint:
     runs-on: ubuntu-latest
