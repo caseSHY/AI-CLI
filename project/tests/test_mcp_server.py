@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from aicoreutils.parser._parser import build_parser
+from aicoreutils.plugins import reset_plugins
 from aicoreutils.tool_schema import _command_tools, tools_anthropic, tools_openai
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -22,6 +23,7 @@ SRC = ROOT / "src"
 class ToolSchemaTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        reset_plugins()
         cls.parser = build_parser()
         cls.tools = _command_tools(cls.parser)
 
@@ -73,14 +75,7 @@ class ToolSchemaTests(unittest.TestCase):
         self.assertIn("enum", fmt_prop)
 
     def test_descriptions_are_non_empty(self) -> None:
-        empty = [
-            t["name"]
-            for t in self.tools
-            if not t["description"]
-            and not t["name"].startswith("_")
-            and "dummy" not in t["name"]
-            and "test" not in t["name"]
-        ]
+        empty = [t["name"] for t in self.tools if not t["description"]]
         self.assertEqual(empty, [], f"Tools with empty descriptions: {empty}")
 
     def test_openai_format(self) -> None:

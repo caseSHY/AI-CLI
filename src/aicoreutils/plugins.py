@@ -67,6 +67,12 @@ def get_registry() -> PluginRegistry:
     return _registry
 
 
+def reset_plugins() -> None:
+    """将全局注册表重置为空。供测试隔离使用。"""
+    global _registry
+    _registry = PluginRegistry()
+
+
 def has_plugins() -> bool:
     """如果有任何插件已注册则返回 True。"""
     return _registry.count > 0
