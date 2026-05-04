@@ -69,7 +69,7 @@ _COMMAND_DESCRIPTIONS: dict[str, str] = {
     "ls": "List directory contents as structured JSON. Read-only. Supports recursive depth, streaming, and symlink following. See also 'dir', 'stat'.",
     "md5sum": "Compute MD5 hash of files as JSON. Read-only. Use for non-cryptographic integrity checks. Not for security — use 'sha256sum' or 'b2sum'. Returns per-file hashes.",
     "mkdir": "Create directories with dry-run and parent directory creation support. Destructive. Use to create new directories. Use --dry_run to preview. See also 'rmdir', 'touch'.",
-    "mkfifo": "Create named pipes (FIFOs) with dry-run support. Destructive. Use for inter-process communication. Use --dry_run to preview. See also 'mknod'.",
+    "mkfifo": "Create named pipes (FIFOs) for inter-process communication. Destructive: creates special files on the filesystem that block until both reader and writer connect. Use --dry_run to preview without creating files, --mode to set permissions (default 666), and --parents to auto-create parent directories. Returns JSON with created path, mode, and status. Prefer 'mkfifo' for FIFO pipes; use 'mknod' for device nodes, 'mkdir' for regular directories. See also 'mknod', 'mkdir'.",
     "mknod": "Create device nodes with dry-run support. Destructive, typically requires elevated privileges. Use --dry_run to preview. See also 'mkfifo'.",
     "mktemp": "Create temporary files or directories safely with unique names. Creates the path atomically to prevent race conditions. Returns the path as JSON. See also 'mkdir'.",
     "mv": "Move or rename files and directories with dry-run and overwrite protection. Destructive. Overwrite disabled by default. Use --dry_run to preview. See also 'cp', 'ln'.",
