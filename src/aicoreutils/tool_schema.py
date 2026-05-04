@@ -73,7 +73,7 @@ _COMMAND_DESCRIPTIONS: dict[str, str] = {
     "mknod": "Create device nodes with dry-run support. Destructive, typically requires elevated privileges. Use --dry_run to preview. See also 'mkfifo'.",
     "mktemp": "Create temporary files or directories safely with unique names. Creates the path atomically to prevent race conditions. Returns the path as JSON. See also 'mkdir'.",
     "mv": "Move or rename files and directories with dry-run and overwrite protection. Destructive. Overwrite disabled by default. Use --dry_run to preview. See also 'cp', 'ln'.",
-    "nice": "Run a command with a niceness adjustment. Executes the given command. Use to lower priority of background tasks. See also 'stdbuf'.",
+    "nice": "Run a command with adjusted CPU scheduling priority (niceness). Executes the given command as a subprocess, captures bounded stdout/stderr, and enforces a safety timeout. Use --dry_run to preview without execution. Positive niceness lowers priority for background tasks; negative values require elevated privileges. Prefer 'nice' for CPU priority, 'stdbuf' for I/O buffering, 'nohup' for hangup immunity, and 'timeout' for execution time limits.",
     "nl": "Number input lines with configurable formatting. Read-only. Use to add line numbers to text. Returns JSON by default, raw with --raw. See also 'cat -n'.",
     "nohup": "Run a command immune to hangups (SIGHUP). Use for long-running background tasks. Requires --allow_nohup confirmation. See also 'timeout'.",
     "nproc": "Return the number of available CPU cores. Read-only. Use for parallelism decisions. Returns plain integer with --raw. See also 'uptime', 'arch'.",
