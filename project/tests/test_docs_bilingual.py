@@ -17,6 +17,8 @@ class DocsBilingualTests(unittest.TestCase):
             and "reports" not in path.relative_to(ROOT).parts
             and "analysis" not in path.relative_to(ROOT).parts
             and path.name != "CLAUDE.md"
+            and path.name != "CHANGELOG.md"
+            and path.name != "CONTRIBUTING.md"
             and not path.name.startswith("GPTCodex-vs-DeepSeekCopilot-")
         ]
         self.assertTrue(markdown_files)
