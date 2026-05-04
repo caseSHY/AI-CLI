@@ -34,7 +34,7 @@ _COMMAND_DESCRIPTIONS: dict[str, str] = {
     "chroot": "Plan or run a command inside a changed root directory. Potentially destructive, requires elevated privileges. Use --dry_run to preview. Requires --allow_chroot to execute.",
     "cksum": "Return CRC32 checksums for files or stdin. Read-only. Use for fast data-transmission integrity checks. Not for security — prefer 'sha256sum'. Returns checksum and byte count.",
     "comm": "Compare two sorted files and return column-tagged records (lines unique to each and common to both). Read-only. Requires pre-sorted input — use 'sort' first. See also 'join'.",
-    "coreutils": "List all available commands or describe individual tools by name. Read-only. Use 'list=true' to enumerate tools. See also 'tool-list' for LLM-optimized output.",
+    "coreutils": "List all available commands as a flat index. Read-only. Use --list to enumerate tool names, --raw for plain text output without JSON envelope. See also 'tool-list' for LLM-optimized function-calling format.",
     "cp": "Copy files and directories with dry-run and overwrite protection. Destructive to destination. Overwrite disabled by default. Use --dry_run to preview. See also 'mv', 'install'.",
     "csplit": "Split input into multiple files at regex match points with dry-run and overwrite protection. Destructive (creates files). Use --dry_run to preview. See also 'split'.",
     "cut": "Select specific fields, characters, or bytes from each input line. Read-only. Use to extract columns from tabular data. See also 'paste', 'tr'.",
