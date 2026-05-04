@@ -1,8 +1,12 @@
 # AICoreUtils
 
 [![AI-CLI MCP server](https://glama.ai/mcp/servers/caseSHY/AI-CLI/badges/card.svg)](https://glama.ai/mcp/servers/caseSHY/AI-CLI)
+[![Glama Score](https://glama.ai/mcp/servers/caseSHY/AI-CLI/badges/score.svg)](https://glama.ai/mcp/servers/caseSHY/AI-CLI/score)
+[![PyPI](https://img.shields.io/pypi/v/aicoreutils)](https://pypi.org/project/aicoreutils/)
 
-<!-- mcp-name: io.github.caseSHY/aicoreutils -->
+> **Glama 92%** | TDQS A 级 (均值 4.6) | 114 工具全部 A 级 | CI 12/12 全平台
+
+🤖 MCP 目录已收录：**Glama** · **ModelScope** · **awesome-mcp-servers**
 
 ## 中文说明
 

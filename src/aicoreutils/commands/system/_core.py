@@ -82,11 +82,17 @@ def command_date(args: argparse.Namespace) -> dict[str, Any] | bytes:
         formatted = value.date().isoformat()
     else:
         formatted = value.isoformat()
-    result = {
+    tzname = value.tzname()
+    if tzname is not None:
+        try:
+            tzname.encode("ascii")
+        except UnicodeEncodeError:
+            tzname = str(value.utcoffset()) if value.utcoffset() is not None else "unknown"
+    result: dict[str, Any] = {
         "timestamp": timestamp,
         "iso": value.isoformat(),
         "utc": args.utc,
-        "timezone": value.tzname(),
+        "timezone": tzname,
         "formatted": formatted,
     }
     if args.raw:
