@@ -2,6 +2,10 @@
 
 > 目标：114 个工具全部达到 **A 级 (≥3.5)**，理想目标 **≥4.0**
 
+## 中文说明
+
+本文档是 TDQS 改进计划，目标为 114 个工具全部 A 级 (≥3.5)，理想 ≥4.0。
+
 ## English
 
 This document is a TDQS improvement plan. Summary: target all 114 tools at A-grade (≥3.5).
