@@ -338,6 +338,105 @@ class AsyncInterfaceSmokeTests(unittest.TestCase):
         asyncio.run(_run())
 
 
+class AsyncInterfaceExecutionTests(unittest.TestCase):
+    """Phase 2: deeper tests covering run_async success/failure/timeout paths."""
+
+    def test_run_async_success_returns_json(self) -> None:
+        import asyncio
+
+        from aicoreutils.async_interface import run_async
+
+        async def _run() -> None:
+            result = await run_async("true")
+            self.assertIsInstance(result, dict)
+            self.assertTrue(result["ok"])
+
+        asyncio.run(_run())
+
+    def test_run_async_with_cwd(self) -> None:
+        import asyncio
+        from pathlib import Path
+
+        from aicoreutils.async_interface import run_async
+
+        async def _run() -> None:
+            result = await run_async("pwd", cwd=Path.cwd())
+            self.assertIsInstance(result, dict)
+            self.assertTrue(result["ok"])
+
+        asyncio.run(_run())
+
+    def test_run_async_nonzero_exit_raises(self) -> None:
+        import asyncio
+
+        from aicoreutils.async_interface import run_async
+
+        async def _run() -> None:
+            with self.assertRaises(RuntimeError):
+                await run_async("false")
+
+        asyncio.run(_run())
+
+    def test_run_async_nonexistent_command_returns_error(self) -> None:
+        import asyncio
+
+        from aicoreutils.async_interface import run_async
+
+        async def _run() -> None:
+            with self.assertRaises(RuntimeError):
+                await run_async("nonexistent_cmd_xyz")
+
+        asyncio.run(_run())
+
+    def test_run_async_many_single_command(self) -> None:
+        import asyncio
+
+        from aicoreutils.async_interface import run_async_many
+
+        async def _run() -> None:
+            results = await run_async_many([("pwd",)], concurrency=1)
+            self.assertEqual(len(results), 1)
+            self.assertTrue(results[0]["ok"])
+
+        asyncio.run(_run())
+
+    def test_run_async_many_concurrency_limit(self) -> None:
+        import asyncio
+
+        from aicoreutils.async_interface import run_async_many
+
+        async def _run() -> None:
+            commands = [("true",)] * 5
+            results = await run_async_many(commands, concurrency=2)
+            self.assertEqual(len(results), 5)
+            for r in results:
+                self.assertTrue(r["ok"])
+
+        asyncio.run(_run())
+
+    def test_run_async_many_empty_list(self) -> None:
+        import asyncio
+
+        from aicoreutils.async_interface import run_async_many
+
+        async def _run() -> None:
+            results = await run_async_many([], concurrency=1)
+            self.assertEqual(results, [])
+
+        asyncio.run(_run())
+
+    def test_run_async_many_exception_propagates(self) -> None:
+        import asyncio
+
+        from aicoreutils.async_interface import run_async_many
+
+        async def _run() -> None:
+            with self.assertRaises(RuntimeError):
+                await run_async_many([("true",), ("false",)], concurrency=2)
+
+        asyncio.run(_run())
+
+
 # ── Plugin end-to-end tests ────────────────────────────────────────────
 
 
