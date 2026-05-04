@@ -8,12 +8,12 @@
     "source": "github"
   },
   "homepage": "https://github.com/caseSHY/AI-CLI",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "aicoreutils",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "transport": {
         "type": "stdio",
         "command": "aicoreutils-mcp"
