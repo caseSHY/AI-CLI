@@ -24,7 +24,7 @@ jobs:
       - name: Run tests with coverage
         env:
           PYTHONPATH: src
-        run: python -m pytest project/tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=25
+        run: python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=25
 
   test-macos:
     runs-on: macos-latest
@@ -43,7 +43,7 @@ jobs:
       - name: Run tests with coverage
         env:
           PYTHONPATH: src
-        run: python -m pytest project/tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=25
+        run: python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=25
 
   test-windows:
     runs-on: windows-latest
@@ -61,7 +61,7 @@ jobs:
         env:
           PYTHONPATH: src
           PYTHONIOENCODING: utf-8
-        run: python -m pytest project/tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=25
+        run: python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=25
 
   lint:
     runs-on: ubuntu-latest

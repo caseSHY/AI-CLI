@@ -158,17 +158,25 @@ class DocsGovernanceTests(unittest.TestCase):
 
     def test_current_status_records_correct_test_count(self) -> None:
         status = read_text("project/docs/status/CURRENT_STATUS.md")
-        self.assertIn("| **Windows 推荐入口结果** | 169 passed, 59 skipped, 0 failed, 118 subtests passed |", status)
-        self.assertIn("| **WSL 本地 CI 结果** | 190 passed, 1 skipped, 0 failed, 118 subtests passed |", status)
         self.assertIn(
-            "| **Windows recommended-entry result** | 169 passed, 59 skipped, 0 failed, 118 subtests passed |",
+            "| **Windows 推荐入口结果** | 343 passed, 60 skipped, 0 failed, 460 subtests passed (Python 3.14) |", status
+        )
+        self.assertIn(
+            "| **CI 全平台结果 (最新)** | Ubuntu: 397 passed, 2 skipped; macOS: 343 passed, 56 skipped; Windows: 391 passed, 8 skipped; lint + typecheck",
             status,
         )
-        self.assertIn("| **WSL local CI result** | 190 passed, 1 skipped, 0 failed, 118 subtests passed |", status)
+        self.assertIn(
+            "| **Windows recommended-entry result** | 343 passed, 60 skipped, 0 failed, 460 subtests passed (Python 3.14) |",
+            status,
+        )
+        self.assertIn(
+            "| **CI all-platform results (latest)** | Ubuntu: 397 passed, 2 skipped; macOS: 343 passed, 56 skipped; Windows: 391 passed, 8 skipped; lint + typecheck",
+            status,
+        )
         self.assertIn("(9 测试, 全部通过)", status)
         self.assertIn("(9 tests, all pass)", status)
-        self.assertIn("| **项目版本** | 0.2.0 |", status)
-        self.assertIn("| **Project version** | 0.2.0 |", status)
+        self.assertIn("| **项目版本** | 0.4.4 |", status)
+        self.assertIn("| **Project version** | 0.4.4 |", status)
         self.assertNotIn("137 passed", status)
         self.assertNotIn("132 passed", status)
         self.assertNotIn("| **项目版本** | 0.1.0 |", status)

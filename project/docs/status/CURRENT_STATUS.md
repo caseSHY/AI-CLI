@@ -7,11 +7,11 @@
 
 | 属性 | 值 |
 |---|---|
-| **最后验证日期** | 2026-05-02 |
-| **验证对象** | 本地工作区（`cb3e61e`，已推送并通过 CI #7 全平台验证） |
+| **最后验证日期** | 2026-05-04 |
+| **验证对象** | 本地工作区（`be9e11f`，已推送并通过 CI 全平台验证 10/10） |
 | **Python 版本** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
-| **操作系统** | Windows 11 (开发) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + windows-latest |
-| **项目版本** | 0.2.0 |
+| **操作系统** | Windows 11 (开发) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
+| **项目版本** | 0.4.4 |
 
 ### 测试
 
@@ -19,17 +19,18 @@
 |---|---|
 | **推荐测试命令** | `python -m pytest project/tests/ -v --tb=short` |
 | **Legacy 入口** | `python -m unittest discover -s tests -v` (部分运行器) |
-| **Windows 推荐入口结果** | 169 passed, 59 skipped, 0 failed, 118 subtests passed |
-| **WSL 本地 CI 结果** | 190 passed, 1 skipped, 0 failed, 118 subtests passed |
-| **Windows 跳过原因** | 51: GNU 工具在 Windows 不可用; 3: Windows 无 symlink 支持 |
-| **WSL 跳过原因** | 2: `test_sort_chinese_utf8`（locale 相关中文排序）和 `test_wc_chinese_text`（locale 相关中文分词）硬编码跳过 |
-| **Property-based 测试** | `python -m pytest project/tests/test_property_based_cli.py -v` (25 测试, PROPERTY_EXAMPLES=25) |
-| **GNU 对照测试** | `python -m pytest project/tests/test_gnu_differential.py -v`（56 测试；WSL 本地运行 54 个，2 个硬编码跳过） |
+| **Windows 推荐入口结果** | 343 passed, 60 skipped, 0 failed, 460 subtests passed (Python 3.14) |
+| **CI 全平台结果 (最新)** | Ubuntu: 397 passed, 2 skipped; macOS: 343 passed, 56 skipped; Windows: 391 passed, 8 skipped; lint + typecheck ✅ |
+| **Windows 跳过原因** | GNU 工具不可用 (Windows 无 coreutils); 无 symlink 支持; locale 相关中文排序/分词 |
+| **Property-based 测试** | `python -m pytest project/tests/test_property_based_cli.py -v` (25 测试) |
+| **GNU 对照测试** | `python -m pytest project/tests/test_gnu_differential.py -v`（56 测试；Ubuntu CI 通过；Windows/macOS 按平台跳过） |
 | **沙箱逃逸测试** | `python -m pytest project/tests/test_sandbox_escape_hardening.py -v` (37 测试, 全部通过或 skip) |
 | **文档治理测试** | `python -m pytest project/tests/test_docs_governance.py -v` (9 测试, 全部通过) |
-| **覆盖率** | `python -m pytest project/tests/ --cov=src/aicoreutils` (需要 pytest-cov) |
-| **静态检查** | `ruff check src/ tests/`; `ruff format --check src/ tests/`; `mypy src/aicoreutils/ --strict` 全部通过 |
-| **WSL 本地 CI** | `.\.github\scripts\run-ci-wsl.ps1 -Distro Ubuntu-24.04 -SkipInstall`（2026-05-02 已通过） |
+| **双语文档测试** | `python -m pytest project/tests/test_docs_bilingual.py -v` (1 测试, 通过) |
+| **版本一致性测试** | `python -m pytest tests/test_version_consistency.py -v` (4 测试, 本地通过; CI 未纳入) |
+| **覆盖率** | `python -m pytest project/tests/ --cov=src/aicoreutils` (需要 pytest-cov; 阈值 25%) |
+| **静态检查** | `ruff check src/ project/tests/`; `ruff format --check src/ project/tests/`; `mypy src/aicoreutils/ --strict` 全部通过 |
+| **CI 平台** | GitHub Actions: ubuntu-latest (3.11/3.12/3.13), macos-latest (3.12/3.13), windows-latest (3.11/3.12/3.13) |
 
 ### 安全状态
 
@@ -59,27 +60,28 @@
 |---|---|
 | **CI 平台** | GitHub Actions |
 | **Ubuntu runner** | ubuntu-latest, Python 3.11/3.12/3.13 |
+| **macOS runner** | macos-latest, Python 3.12/3.13 |
 | **Windows runner** | windows-latest, Python 3.11/3.12/3.13 |
-| **CI 测试命令** | `python -m pytest project/tests/ -v` |
-| **GNU coreutils** | ✅ Ubuntu job 已安装（`apt-get install coreutils`） |
-| **本地 WSL CI 入口** | ✅ `.github/scripts/run-ci-wsl.ps1` + `.github/scripts/wsl-ci.sh` 已添加 |
-| **本机 WSL 状态** | ✅ Ubuntu-24.04 已安装，WSL 版本 2，Ubuntu 24.04.4 LTS |
-| **本地 WSL CI 结果** | ✅ 2026-05-02 通过：190 passed, 1 skipped, 0 failed, 118 subtests passed |
-| **远程最新 push CI** | ✅ #7 (`cb3e61e`) 全部通过：lint、typecheck、test-ubuntu (3.11/3.12/3.13)、test-windows (3.11/3.12/3.13) |
-| **本地修复状态** | ✅ 已推送并通过 CI #7 全平台验证（Ubuntu + Windows, Python 3.11/3.12/3.13） |
+| **Lint + Typecheck** | ruff check + ruff format --check + mypy --strict, Python 3.13 |
+| **CI 测试命令** | `python -m pytest project/tests/ -v --tb=short --cov=src/aicoreutils --cov-fail-under=25` |
+| **GNU coreutils** | ✅ Ubuntu job 已安装（`apt-get update && apt-get install coreutils`）; macOS: `brew install coreutils` |
+| **最新 CI 结果** | ✅ 10/10 全平台通过 (commit `be9e11f`): lint, typecheck, test-ubuntu, test-macos, test-windows |
+| **本地 WSL CI 入口** | ✅ `.github/scripts/run-ci-wsl.ps1` + `.github/scripts/wsl-ci.sh` |
 
 ### 已知未解决问题
 
 | 编号 | 问题 | 优先级 |
 |---|---|---|
-| K-003 | 8 条 CI Node.js 20 deprecation 警告，需等 GitHub 官方更新 actions/checkout 和 actions/setup-python 版本 | P4 |
+| K-003 | CI Node.js 20 deprecation 警告 — 需等 GitHub Actions 发布 Node.js 24 版本的 checkout/setup-python | P4 |
+| K-004 | `tests/test_version_consistency.py` 未纳入 CI（不在 `project/tests/` 下） | P2 |
+| K-005 | `mcp_server.py` 0% 测试覆盖率 — 缺少 `_call_tool` 和 `server_loop` 单元测试 | P1 |
 
 ### 建议下一步
 
-1. **补充测试覆盖**：为 `async_interface`、`plugins`、`stream` 模块添加单元测试
-2. **修复代码质量**：`path_utils.py` 中静默 PermissionError 应添加警告标记
-3. **覆盖率子进程模式**：启用 coverage.py 的 `concurrency=multiprocessing` 以反映真实测试覆盖
-4. **添加 macOS CI**：扩展平台矩阵以验证 macOS 兼容性
+1. **补充 MCP server 单元测试**：为 `mcp_server.py` 的 `_call_tool` 和协议解析添加测试
+2. **纳入版本一致性测试**：将 `tests/test_version_consistency.py` 加入 CI pipeline
+3. **补充测试覆盖**：为 `async_interface`、`plugins`、`stream` 模块添加单元测试
+4. **提升覆盖率门槛**：当前 `--cov-fail-under=25` 偏低，目标提升到 35%
 
 ---
 
@@ -90,11 +92,11 @@
 
 | Property | Value |
 |---|---|
-| **Last verified** | 2026-05-02 |
-| **Verified target** | local working tree (`cb3e61e`, pushed and verified by CI #7 on all platforms) |
+| **Last verified** | 2026-05-04 |
+| **Verified target** | local working tree (`be9e11f`, pushed and verified by CI 10/10 on all platforms) |
 | **Python version** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
-| **OS** | Windows 11 (dev) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + windows-latest |
-| **Project version** | 0.2.0 |
+| **OS** | Windows 11 (dev) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
+| **Project version** | 0.4.4 |
 
 ### Tests
 
@@ -102,17 +104,18 @@
 |---|---|
 | **Recommended command** | `python -m pytest project/tests/ -v --tb=short` |
 | **Legacy entry** | `python -m unittest discover -s tests -v` (partial runner) |
-| **Windows recommended-entry result** | 169 passed, 59 skipped, 0 failed, 118 subtests passed |
-| **WSL local CI result** | 190 passed, 1 skipped, 0 failed, 118 subtests passed |
-| **Windows skip reasons** | 51: GNU tools unavailable on Windows; 3: Windows no symlink support |
-| **WSL skip reason** | 2: `test_sort_chinese_utf8` (locale-dependent Chinese sort) and `test_wc_chinese_text` (locale-dependent Chinese word count) are hard-skipped |
-| **Property-based** | `python -m pytest project/tests/test_property_based_cli.py -v` (25 tests, PROPERTY_EXAMPLES=25) |
-| **GNU differential** | `python -m pytest project/tests/test_gnu_differential.py -v` (56 tests; WSL ran 54 locally, 2 hard-skipped) |
+| **Windows recommended-entry result** | 343 passed, 60 skipped, 0 failed, 460 subtests passed (Python 3.14) |
+| **CI all-platform results (latest)** | Ubuntu: 397 passed, 2 skipped; macOS: 343 passed, 56 skipped; Windows: 391 passed, 8 skipped; lint + typecheck ✅ |
+| **Windows skip reasons** | GNU tools unavailable on Windows; no symlink support; locale-dependent Chinese sort/word-count |
+| **Property-based** | `python -m pytest project/tests/test_property_based_cli.py -v` (25 tests) |
+| **GNU differential** | `python -m pytest project/tests/test_gnu_differential.py -v` (56 tests; Ubuntu CI passes; Windows/macOS skip per platform) |
 | **Sandbox escape** | `python -m pytest project/tests/test_sandbox_escape_hardening.py -v` (37 tests, all pass or skip) |
 | **Docs governance** | `python -m pytest project/tests/test_docs_governance.py -v` (9 tests, all pass) |
-| **Coverage** | `python -m pytest project/tests/ --cov=src/aicoreutils` (requires pytest-cov) |
-| **Static checks** | `ruff check src/ tests/`; `ruff format --check src/ tests/`; `mypy src/aicoreutils/ --strict` all pass |
-| **WSL local CI** | `.\.github\scripts\run-ci-wsl.ps1 -Distro Ubuntu-24.04 -SkipInstall` (passed on 2026-05-02) |
+| **Bilingual docs** | `python -m pytest project/tests/test_docs_bilingual.py -v` (1 test, passes) |
+| **Version consistency** | `python -m pytest tests/test_version_consistency.py -v` (4 tests, local pass; not yet in CI) |
+| **Coverage** | `python -m pytest project/tests/ --cov=src/aicoreutils` (requires pytest-cov; threshold 25%) |
+| **Static checks** | `ruff check src/ project/tests/`; `ruff format --check src/ project/tests/`; `mypy src/aicoreutils/ --strict` all pass |
+| **CI platform** | GitHub Actions: ubuntu-latest (3.11/3.12/3.13), macos-latest (3.12/3.13), windows-latest (3.11/3.12/3.13) |
 
 ### Security Status
 
@@ -142,24 +145,25 @@
 |---|---|
 | **CI platform** | GitHub Actions |
 | **Ubuntu runner** | ubuntu-latest, Python 3.11/3.12/3.13 |
+| **macOS runner** | macos-latest, Python 3.12/3.13 |
 | **Windows runner** | windows-latest, Python 3.11/3.12/3.13 |
-| **CI test command** | `python -m pytest project/tests/ -v` |
-| **GNU coreutils** | ✅ Installed in Ubuntu job |
-| **Local WSL CI entry** | ✅ `.github/scripts/run-ci-wsl.ps1` + `.github/scripts/wsl-ci.sh` added |
-| **Machine WSL status** | ✅ Ubuntu-24.04 installed, WSL version 2, Ubuntu 24.04.4 LTS |
-| **Local WSL CI result** | ✅ Passed on 2026-05-02: 190 passed, 1 skipped, 0 failed, 118 subtests passed |
-| **Latest remote push CI** | ✅ #7 (`cb3e61e`) all passed: lint, typecheck, test-ubuntu (3.11/3.12/3.13), test-windows (3.11/3.12/3.13) |
-| **Local fix status** | ✅ Pushed and verified by CI #7 on all platforms (Ubuntu + Windows, Python 3.11/3.12/3.13) |
+| **Lint + Typecheck** | ruff check + ruff format --check + mypy --strict, Python 3.13 |
+| **CI test command** | `python -m pytest project/tests/ -v --tb=short --cov=src/aicoreutils --cov-fail-under=25` |
+| **GNU coreutils** | ✅ Ubuntu: `apt-get update && apt-get install coreutils`; macOS: `brew install coreutils` |
+| **Latest CI result** | ✅ 10/10 all platforms pass (commit `be9e11f`): lint, typecheck, test-ubuntu, test-macos, test-windows |
+| **Local WSL CI entry** | ✅ `.github/scripts/run-ci-wsl.ps1` + `.github/scripts/wsl-ci.sh` |
 
 ### Known Open Issues
 
 | # | Issue | Priority |
 |---|---|---|
-| K-003 | 8 CI Node.js 20 deprecation warnings; requires upstream actions/checkout and actions/setup-python version updates | P4 |
+| K-003 | CI Node.js 20 deprecation warnings — awaiting GitHub Actions Node.js 24 checkout/setup-python releases | P4 |
+| K-004 | `tests/test_version_consistency.py` not in CI (located outside `project/tests/`) | P2 |
+| K-005 | `mcp_server.py` 0% test coverage — missing `_call_tool` and `server_loop` unit tests | P1 |
 
 ### Next Required Actions
 
-1. **Add test coverage**: Unit tests for `async_interface`, `plugins`, `stream` modules
-2. **Fix code quality**: Silent `PermissionError` in `path_utils.py` should add warning markers
-3. **Coverage subprocess mode**: Enable `concurrency=multiprocessing` to reflect true test coverage
-4. **Add macOS CI**: Extend platform matrix to verify macOS compatibility
+1. **Add MCP server unit tests**: Test `_call_tool` and protocol parsing in `mcp_server.py`
+2. **Include version consistency in CI**: Add `tests/test_version_consistency.py` to CI pipeline
+3. **Add test coverage**: Unit tests for `async_interface`, `plugins`, `stream` modules
+4. **Raise coverage threshold**: Current `--cov-fail-under=25` is low; target 35%
