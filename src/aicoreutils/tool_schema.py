@@ -41,7 +41,7 @@ _COMMAND_DESCRIPTIONS: dict[str, str] = {
     "date": "Return current or supplied time as structured JSON. Read-only. Use to query system time or parse date strings. See also 'uptime'.",
     "dd": "Copy and convert input to output with bounded preview and dry-run support. Destructive to output. Use for block-level data copying. Use --dry_run to preview.",
     "df": "Return disk space usage for filesystems as JSON. Read-only. Use to check free space across mounted filesystems. See also 'du' for per-directory usage.",
-    "dir": "List directory contents in structured format — alias for 'ls'. Read-only. Use for clean column-aligned output. See also 'ls', 'vdir'.",
+    "dir": "List directory contents with column-aligned output — alias for 'ls' producing structured JSON. Read-only. Supports recursive depth, hidden files, symlink following, streaming (NDJSON), and result limiting. Returns per-entry metadata: type, size, permissions, modification time. Use to list directory contents in a clean tabular format; prefer 'dir' over 'ls' when column-aligned output is desired, and over 'vdir' when metadata is not needed. See also 'ls', 'vdir', 'stat'.",
     "dircolors": "Return LS_COLORS configuration. Read-only. Color output disabled by default for agent-friendly display. Use to inspect shell color mappings.",
     "dirname": "Return parent directory path components from file paths. Read-only. Use to extract directory portions. See also 'basename' for the inverse.",
     "du": "Estimate file and directory space usage as JSON. Read-only. Use to find space-consuming directories. See also 'df' for filesystem-level overview, 'stat' for single files.",
