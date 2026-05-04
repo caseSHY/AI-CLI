@@ -2,6 +2,54 @@
 
 All notable changes to AICoreUtils.
 
+## [1.0.1] - 2026-05-04
+
+### Fixed
+- `date` command: non-ASCII timezone names replaced with UTC offset format (fixes garbled output on Windows with CJK locales)
+
+### Removed
+- Obsolete planning documents (`PROJECT_ITERATION_PLAN_v2.md`, `TDQS_DEVELOPMENT_PLAN.md`)
+
+## [1.0.0] - 2026-05-04
+
+Milestone release. 114 tools all A-grade TDQS (avg 4.6), Glama 92%, CI 12/12.
+
+### Added
+- AI IDE integration guide (Cursor, Windsurf, Continue.dev)
+- Agent task examples
+- LangChain tool wrapper
+- Community launch copy (HN / Reddit / Chinese platforms)
+
+### Changed
+- All 114 tool descriptions rewritten using paper-backed 5-segment best-practices template
+
+### Fixed
+- CI: GitHub Actions upgraded to Node.js 24 (`checkout@v6`, `setup-python@v6`, `upload-artifact@v7`, `download-artifact@v8`)
+
+## [0.5.1] - 2026-05-04
+
+### Changed
+- CI: GitHub Actions versions bumped (Node.js 24 migration)
+- Code review: `os.path` already fully migrated to `pathlib` — no changes needed
+
+## [0.5.0] - 2026-05-04
+
+### Added
+- 8 new `async_interface` execution tests
+
+### Changed
+- CI coverage gate raised 35% → 45%
+
+## [0.4.9] - 2026-05-04
+
+### Changed
+- All 114 tool descriptions rewritten with 5-segment best-practices template (Purpose + Behavior + Output + Usage + Alternatives), based on arXiv papers 2602.14878 and 2602.18914
+
+## [0.4.8] - 2026-05-04
+
+### Fixed
+- TDQS: `mkfifo` description improved (B 3.3 → A ~4.0)
+
 ## [0.4.7] - 2026-05-04
 
 ### Added

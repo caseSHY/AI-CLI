@@ -6,6 +6,8 @@
 
 > **Glama 92%** | TDQS A 级 (均值 4.6) | 114 工具全部 A 级 | CI 12/12 全平台
 
+> ⚠️ **Stability**: This project is actively evolving. While the JSON output schema and MCP tool interface are stable, internal CLI argument parsing and per-command flags may change. 阅读 [稳定性说明](#稳定性和-semver) 了解详情。
+
 🤖 MCP 目录已收录：**Glama** · **ModelScope** · **awesome-mcp-servers**
 
 ## 中文说明
@@ -233,3 +235,13 @@ Current implementation: 114 CLI commands in `aicoreutils schema` (including agen
 
 Important limitation: this project is an agent-friendly subset inspired by GNU
 Coreutils, not a full GNU Coreutils clone.
+
+### 稳定性和 SemVer
+
+aicoreutils 从 v1.0.0 起采用语义化版本控制，承诺如下：
+
+- **Patch (1.0.x)**：修复 bug、改进错误消息、补充文档。JSON 输出结构不变。
+- **Minor (1.x.0)**：新增命令、新增参数。已有命令的 JSON 输出结构保持向后兼容。
+- **Major (x.0.0)**：破坏性变更 — JSON schema 变化、命令重命名、MCP tool schema 变化。
+
+⚠️ 当前状态：项目仍在活跃开发中。CLI 内部参数解析和 per-command flag 可能因 argparse 重构频繁变化，但 JSON envelope（`ok`, `result`, `error`, `command`, `version`）和 MCP tool schema 是稳定的。生产使用前请固定版本号 (`pip install aicoreutils==1.0.1`)。

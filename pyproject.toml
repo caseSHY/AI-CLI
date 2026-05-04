@@ -1,6 +1,6 @@
 [project]
 name = "aicoreutils"
-version = "1.0.1"
+version = "1.0.2"
 description = "Agent-friendly CLI layer inspired by GNU Coreutils."
 readme = "README.md"
 license = "MIT"
@@ -22,7 +22,7 @@ keywords = [
     "sandbox",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
