@@ -4,6 +4,10 @@
 >
 > 当前状态：TDQS **A** (3.2/5) | 114 工具 | PyPI v0.3.9 | Glama 75%
 
+## English
+
+Project iteration plan v2.0. Vision: the standard AI agent system interface — 114 JSON-first commands, zero dependencies, safety-first.
+
 ---
 
 ## 一、项目定位与核心竞争力

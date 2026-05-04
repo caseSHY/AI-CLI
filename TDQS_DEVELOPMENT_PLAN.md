@@ -1,6 +1,10 @@
 # AI-CLI TDQS 修复与升级开发计划
 
 > 目标：114 个工具全部达到 **A 级 (≥3.5)**，理想目标 **≥4.0**
+
+## English
+
+This document is a TDQS improvement plan. Summary: target all 114 tools at A-grade (≥3.5).
 >
 > 当前状态：均值 3.1/5，最低 2.2，仅 23 个 A 级
 
