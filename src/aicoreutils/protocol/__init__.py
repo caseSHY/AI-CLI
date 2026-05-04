@@ -17,24 +17,23 @@ focused submodules, each handling one domain:
 from __future__ import annotations
 
 # Re-export core primitives from aicoreutils.core (unchanged API surface)
-from ..core import (  # noqa: F401
-    EXIT,
-    HASH_CHUNK_SIZE,
-    AgentError,
-    dangerous_delete_target,
-    destination_inside_directory,
+from ..core.constants import HASH_CHUNK_SIZE  # noqa: F401
+from ..core.envelope import envelope, error_envelope, utc_iso, write_json  # noqa: F401
+from ..core.exceptions import AgentError  # noqa: F401
+from ..core.exit_codes import EXIT  # noqa: F401
+from ..core.path_utils import (  # noqa: F401
     ensure_exists,
     ensure_parent,
-    envelope,
-    error_envelope,
     path_type,
+    resolve_path,
+    stat_entry,
+)
+from ..core.sandbox import (  # noqa: F401
+    dangerous_delete_target,
+    destination_inside_directory,
     refuse_overwrite,
     remove_one,
     require_inside_cwd,
-    resolve_path,
-    stat_entry,
-    utc_iso,
-    write_json,
 )
 
 # ── _hashing ──
