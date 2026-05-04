@@ -57,6 +57,17 @@ Claude 自动调用 `aicoreutils ls` + `aicoreutils wc`，全程 JSON 交互。
 
 更多集成方式：`aicoreutils tool-list --format openai` 输出 OpenAI Function Calling 格式，可直接用于任意 Agent 框架。
 
+### 🤖 AI IDE 集成
+
+在 Cursor / Windsurf / Continue.dev 中直接使用 aicoreutils：[AI IDE 集成指南 →](project/docs/guides/INTEGRATION_AI_IDE.md)
+
+```json
+// ~/.cursor/mcp.json
+{ "mcpServers": { "aicoreutils": { "command": "python", "args": ["-m", "aicoreutils.mcp_server"] } } }
+```
+
+🔗 更多：Claude Desktop 集成 | [AI IDE 集成](project/docs/guides/INTEGRATION_AI_IDE.md) | [Agent 任务示例](project/examples/AGENT_TASKS.md) | [LangChain 包装器](project/examples/langchain_wrapper.py)
+
 ### 运行测试
 
 ```powershell
