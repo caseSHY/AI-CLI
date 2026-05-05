@@ -71,6 +71,31 @@ $env:PYTHONPATH = "src"
 python -m pytest tests/ -v --tb=short
 ```
 
+### 版本治理规则
+
+版本号、PyPI 发布号、Git tag、README pin、CURRENT_STATUS 均属于**强治理事实**，
+任何一处修改必须同步更新其他所有位置。
+
+强制规则：
+
+1. **单一版本来源**：`pyproject.toml` `[project].version` 是源码版本权威来源。
+   `src/aicoreutils/__init__.py` 的 `__version__` 必须与之完全一致。
+2. **Bump 版本必须同步 5 个位置**：`pyproject.toml`、`__init__.py`、`server.json`、
+   `CHANGELOG.md`（新增版本条目）、`CURRENT_STATUS.md`（项目版本字段）。
+3. **README pin 不得落后**：README 中 `pip install aicoreutils==X.Y.Z` 的版本号
+   必须与当前 `pyproject.toml` 版本一致。新增 `test_readme_pin_version` 后会阻断漂移。
+4. **CURRENT_STATUS 不得自相矛盾**：同一文档中两处对同一事实的描述不得冲突。
+   例如"CI 未纳入"与 CI 命令中已包含该测试的矛盾。
+5. **CI commit 不得过时**：CURRENT_STATUS 中引用的 commit hash 必须为最近一次
+   推送或 tag。读者应能通过该 hash 定位到真实的 CI 运行。
+6. **Unverified 必须标记**：无法本地确认的事实（如远程 CI 的最新通过状态），
+   必须标记为 "CI 运行中" 或 "Not verified"，不得写成 "CI verified"。
+7. **Bump 后必须运行版本一致性测试**：
+   ```powershell
+   $env:PYTHONPATH = "src"
+   python -m pytest tests/test_version_consistency.py -v
+   ```
+
 ## English
 
 This file governs changes to documentation, CI, test status, and governance

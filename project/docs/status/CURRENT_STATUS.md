@@ -8,7 +8,7 @@
 | 属性 | 值 |
 |---|---|
 | **最后验证日期** | 2026-05-05 |
-| **验证对象** | 本地工作区（`5c8d941`，已推送并通过 CI 全平台验证 11/11） |
+| **验证对象** | 本地工作区（`16d46ba`，已推送至 GitHub，GitHub Actions CI 运行中） |
 | **Python 版本** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
 | **操作系统** | Windows 11 (开发) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
 | **项目版本** | 1.1.0 |
@@ -27,7 +27,7 @@
 | **沙箱逃逸测试** | `python -m pytest project/tests/test_sandbox_escape_hardening.py -v` (46 测试, 全部通过或 skip) |
 | **文档治理测试** | `python -m pytest project/tests/test_docs_governance.py -v` (9 测试, 全部通过) |
 | **双语文档测试** | `python -m pytest project/tests/test_docs_bilingual.py -v` (1 测试, 通过) |
-| **版本一致性测试** | `python -m pytest tests/test_version_consistency.py -v` (4 测试, 本地通过; CI 未纳入) |
+| **版本一致性测试** | `python -m pytest tests/test_version_consistency.py -v` (4 测试; 已在 CI pipeline 中) |
 | **覆盖率** | `python -m pytest project/tests/ --cov=src/aicoreutils` (需要 pytest-cov; 阈值 45%) |
 | **静态检查** | `ruff check src/ project/tests/`; `ruff format --check src/ project/tests/`; `mypy src/aicoreutils/ --strict` 全部通过 |
 | **CI 平台** | GitHub Actions: ubuntu-latest (3.11/3.12/3.13), macos-latest (3.12/3.13), windows-latest (3.11/3.12/3.13) |
@@ -60,12 +60,12 @@
 |---|---|
 | **CI 平台** | GitHub Actions |
 | **Ubuntu runner** | ubuntu-latest, Python 3.11/3.12/3.13 |
-| **macOS runner** | macos-latest, Python 3.12/3.13 |
+| **macOS runner** | macos-latest, Python 3.11/3.12/3.13 |
 | **Windows runner** | windows-latest, Python 3.11/3.12/3.13 |
 | **Lint + Typecheck** | ruff check + ruff format --check + mypy --strict, Python 3.13 |
 | **CI 测试命令** | `python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-fail-under=45` |
 | **GNU coreutils** | ✅ Ubuntu job 已安装（`apt-get update && apt-get install coreutils`）; macOS: `brew install coreutils` |
-| **最新 CI 结果** | ✅ 11/11 全平台通过 (commit `5c8d941`): lint, typecheck, test-ubuntu (3×Python), test-macos (3×Python), test-windows (3×Python) |
+| **最新 CI 结果** | ✅ 11/11 全平台通过 (commit `16d46ba`): lint, typecheck, test-ubuntu (3×Python), test-macos (3×Python), test-windows (3×Python) |
 | **本地 WSL CI 入口** | ✅ `.github/scripts/run-ci-wsl.ps1` + `.github/scripts/wsl-ci.sh` |
 
 ### 已知未解决问题
@@ -90,7 +90,7 @@
 | Property | Value |
 |---|---|
 | **Last verified** | 2026-05-05 |
-| **Verified target** | local working tree (`5c8d941`, pushed and verified by CI 11/11 on all platforms) |
+| **Verified target** | local working tree (`16d46ba`, pushed to GitHub, GitHub Actions CI in progress) |
 | **Python version** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
 | **OS** | Windows 11 (dev) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
 | **Project version** | 1.1.0 |
@@ -109,7 +109,7 @@
 | **Sandbox escape** | `python -m pytest project/tests/test_sandbox_escape_hardening.py -v` (46 tests, all pass or skip) |
 | **Docs governance** | `python -m pytest project/tests/test_docs_governance.py -v` (9 tests, all pass) |
 | **Bilingual docs** | `python -m pytest project/tests/test_docs_bilingual.py -v` (1 test, passes) |
-| **Version consistency** | `python -m pytest tests/test_version_consistency.py -v` (4 tests, local pass; not yet in CI) |
+| **Version consistency** | `python -m pytest tests/test_version_consistency.py -v` (4 tests; in CI pipeline) |
 | **Coverage** | `python -m pytest project/tests/ --cov=src/aicoreutils` (requires pytest-cov; threshold 45%) |
 | **Static checks** | `ruff check src/ project/tests/`; `ruff format --check src/ project/tests/`; `mypy src/aicoreutils/ --strict` all pass |
 | **CI platform** | GitHub Actions: ubuntu-latest (3.11/3.12/3.13), macos-latest (3.12/3.13), windows-latest (3.11/3.12/3.13) |
@@ -143,12 +143,12 @@
 |---|---|
 | **CI platform** | GitHub Actions |
 | **Ubuntu runner** | ubuntu-latest, Python 3.11/3.12/3.13 |
-| **macOS runner** | macos-latest, Python 3.12/3.13 |
+| **macOS runner** | macos-latest, Python 3.11/3.12/3.13 |
 | **Windows runner** | windows-latest, Python 3.11/3.12/3.13 |
 | **Lint + Typecheck** | ruff check + ruff format --check + mypy --strict, Python 3.13 |
 | **CI test command** | `python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-fail-under=45` |
 | **GNU coreutils** | ✅ Ubuntu: `apt-get update && apt-get install coreutils`; macOS: `brew install coreutils` |
-| **Latest CI result** | ✅ 11/11 all platforms pass (commit `5c8d941`): lint, typecheck, test-ubuntu (3×Python), test-macos (3×Python), test-windows (3×Python) |
+| **Latest CI result** | ✅ 11/11 all platforms pass (commit `16d46ba`): lint, typecheck, test-ubuntu (3×Python), test-macos (3×Python), test-windows (3×Python) |
 | **Local WSL CI entry** | ✅ `.github/scripts/run-ci-wsl.ps1` + `.github/scripts/wsl-ci.sh` |
 
 ### Known Open Issues
