@@ -21,7 +21,7 @@ All 114 commands become available as structured tools with JSON output.
   "mcpServers": {
     "aicoreutils": {
       "command": "python",
-      "args": ["-m", "aicoreutils.mcp_server"]
+      "args": ["-m", "aicoreutils.mcp_server", "--profile", "readonly"]
     }
   }
 }
@@ -44,7 +44,7 @@ Cursor 自动调用 `aicoreutils ls` + `aicoreutils wc`。
   "mcpServers": {
     "aicoreutils": {
       "command": "python",
-      "args": ["-m", "aicoreutils.mcp_server"]
+      "args": ["-m", "aicoreutils.mcp_server", "--profile", "readonly"]
     }
   }
 }
@@ -63,7 +63,7 @@ Cursor 自动调用 `aicoreutils ls` + `aicoreutils wc`。
       {
         "name": "aicoreutils",
         "command": "python",
-        "args": ["-m", "aicoreutils.mcp_server"]
+        "args": ["-m", "aicoreutils.mcp_server", "--profile", "readonly"]
       }
     ]
   }
@@ -90,6 +90,8 @@ Cursor 自动调用 `aicoreutils ls` + `aicoreutils wc`。
 ### 安全特性
 
 Agent 请求的所有修改操作（rm、chmod、cp、mv 等）都默认安全：
+- 默认集成示例使用 `--profile readonly`
+- 需要创建文件或目录时改用 `--profile workspace-write`
 - `--dry-run` 预览操作不执行
 - cwd 沙箱防止越界访问
 - 覆盖保护需显式 `--allow-overwrite`

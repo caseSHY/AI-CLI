@@ -211,29 +211,48 @@ def command_tool_list(args: argparse.Namespace) -> dict[str, Any] | bytes:
       - openai: OpenAI function calling format
       - anthropic: Anthropic tool use format
     """
+    include_risk = bool(getattr(args, "include_risk", False))
     if getattr(args, "format", "aicoreutils") in ("openai", "anthropic"):
         from ..tool_schema import _command_tools, tools_anthropic, tools_openai
         from ._parser import build_parser as _build
 
         tools = _command_tools(_build())
-        formatted = tools_openai(tools) if args.format == "openai" else tools_anthropic(tools)
+        formatted = (
+            tools_openai(tools, include_risk=include_risk)
+            if args.format == "openai"
+            else tools_anthropic(tools, include_risk=include_risk)
+        )
         if args.raw:
             import json as _json
 
             return _json.dumps(formatted, ensure_ascii=False).encode("utf-8")
-        return {"tools": formatted, "count": len(formatted), "format": args.format}
+        payload: dict[str, Any] = {"tools": formatted, "count": len(formatted), "format": args.format}
+        if include_risk:
+            payload["includeRisk"] = True
+        return payload
 
     # Default format: name + priority
+    from ..tool_schema import tool_risk_metadata
+
     implemented = schema_command_names(args)
     prioritized = get_commands_by_priority()
     result: list[dict[str, Any]] = []
     for name in sorted(implemented):
-        result.append({"name": name, "priority": get_priority(name)})
+        entry: dict[str, Any] = {"name": name, "priority": get_priority(name)}
+        if include_risk:
+            entry.update(tool_risk_metadata(name))
+        result.append(entry)
     if args.raw:
         import json as _json
 
-        return _json.dumps({"tools": result, "count": len(result)}, ensure_ascii=False).encode("utf-8")
-    return {"tools": result, "count": len(result), "priorities": prioritized}
+        payload = {"tools": result, "count": len(result)}
+        if include_risk:
+            payload["includeRisk"] = True
+        return _json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    payload = {"tools": result, "count": len(result), "priorities": prioritized}
+    if include_risk:
+        payload["includeRisk"] = True
+    return payload
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -290,6 +309,11 @@ def build_parser() -> AgentArgumentParser:
         choices=["aicoreutils", "openai", "anthropic"],
         default="aicoreutils",
         help="Output format for function calling.",
+    )
+    p.add_argument(
+        "--include-risk",
+        action="store_true",
+        help="Include aicoreutils risk metadata in tool-list output.",
     )
     p.set_defaults(func=command_tool_list)
 

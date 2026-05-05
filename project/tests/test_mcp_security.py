@@ -81,6 +81,98 @@ class McpReadOnlyTests(unittest.TestCase):
             proc.terminate()
 
 
+class McpProfileTests(unittest.TestCase):
+    """Test MCP server built-in security profiles."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.env = {**dict(subprocess.os.environ), "PYTHONPATH": str(SRC), "PYTHONIOENCODING": "utf-8"}
+
+    def _start_server(self, *extra_args: str) -> subprocess.Popen[Any]:
+        return subprocess.Popen(
+            [sys.executable, "-m", "aicoreutils.mcp_server", *extra_args],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            env=self.env,
+            cwd=str(ROOT),
+        )
+
+    def test_readonly_profile_allows_read_commands(self) -> None:
+        proc = self._start_server("--profile", "readonly")
+        try:
+            _mcp_request(proc, "initialize")
+            proc.stdin.write(json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n")
+            proc.stdin.flush()
+            resp = _mcp_request(proc, "tools/call", {"name": "pwd", "arguments": {}})
+            data = json.loads(resp["result"]["content"][0]["text"])
+            self.assertTrue(data.get("ok"), data)
+        finally:
+            proc.terminate()
+
+    def test_readonly_profile_blocks_write_commands(self) -> None:
+        proc = self._start_server("--profile", "readonly")
+        try:
+            _mcp_request(proc, "initialize")
+            proc.stdin.write(json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n")
+            proc.stdin.flush()
+            resp = _mcp_request(proc, "tools/call", {"name": "mkdir", "arguments": {"paths": ["_profile_blocked"]}})
+            data = json.loads(resp["result"]["content"][0]["text"])
+            self.assertFalse(data.get("ok"))
+            self.assertEqual(data["error"]["code"], "SECURITY_DENIED")
+        finally:
+            proc.terminate()
+
+    def test_workspace_write_profile_allows_safe_workspace_write(self) -> None:
+        proc = self._start_server("--profile", "workspace-write")
+        target = ROOT / "_profile_allowed"
+        try:
+            _mcp_request(proc, "initialize")
+            proc.stdin.write(json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n")
+            proc.stdin.flush()
+            resp = _mcp_request(proc, "tools/call", {"name": "mkdir", "arguments": {"paths": [target.name]}})
+            data = json.loads(resp["result"]["content"][0]["text"])
+            self.assertTrue(data.get("ok"), data)
+        finally:
+            proc.terminate()
+            import shutil
+
+            if target.is_dir():
+                shutil.rmtree(target)
+
+    def test_workspace_write_profile_blocks_process_exec(self) -> None:
+        proc = self._start_server("--profile", "workspace-write")
+        try:
+            _mcp_request(proc, "initialize")
+            proc.stdin.write(json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n")
+            proc.stdin.flush()
+            resp = _mcp_request(
+                proc,
+                "tools/call",
+                {"name": "timeout", "arguments": {"seconds": "1", "command": ["python", "--version"]}},
+            )
+            data = json.loads(resp["result"]["content"][0]["text"])
+            self.assertFalse(data.get("ok"))
+            self.assertEqual(data["error"]["code"], "SECURITY_DENIED")
+        finally:
+            proc.terminate()
+
+    def test_workspace_write_profile_blocks_explicit_danger(self) -> None:
+        proc = self._start_server("--profile", "workspace-write")
+        try:
+            _mcp_request(proc, "initialize")
+            proc.stdin.write(json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n")
+            proc.stdin.flush()
+            resp = _mcp_request(proc, "tools/call", {"name": "rm", "arguments": {"paths": ["_noexist"]}})
+            data = json.loads(resp["result"]["content"][0]["text"])
+            self.assertFalse(data.get("ok"))
+            self.assertEqual(data["error"]["code"], "SECURITY_DENIED")
+        finally:
+            proc.terminate()
+
+
 class McpAllowCommandTests(unittest.TestCase):
     """Test MCP server --allow-command."""
 

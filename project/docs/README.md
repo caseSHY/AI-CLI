@@ -12,6 +12,10 @@
 - [使用指南](guides/USAGE.zh-CN.en.md)
 - [GNU Coreutils 兼容性审计](audits/GNU_COMPATIBILITY_AUDIT.md)
 - [测试与开发说明](development/TESTING.md)
+- [软件开发与审计计划](development/DEVELOPMENT_AUDIT_PLAN.md)
+- [命令测试矩阵](development/COMMAND_TEST_MATRIX.md)
+- [命令规格试点](development/COMMAND_SPEC_PILOT.md)
+- [发布治理](development/RELEASE_GOVERNANCE.md)
 - [WSL 本地 CI 说明](development/WSL_CI.md)
 - [AI 辅助编码规范](agent-guides/CLAUDE.md)
 - [文档治理规则](agent-guides/DOC_GOVERNANCE_RULES.md)
@@ -24,6 +28,8 @@
 - [分析日志：GPTCodex vs DeepSeekCopilot](analysis/GPTCodex-vs-DeepSeekCopilot-分析日志.md) ⚠️ 历史归档
 - [分析日志：GPTCodex 代码库变更日志](analysis/GPTCodex-代码库变更日志.md) ⚠️ 历史归档
 - [分析日志：DeepSeek 安全加固与一致性修复](analysis/DeepSeek-2026-04-30-安全加固与一致性修复-开发日志.md) ⚠️ 历史归档
+- [治理报告：稳定化 P0 基线审计](reports/project-governance/2026-05-05-stabilization-p0-baseline-audit.md) ⚠️ 历史归档
+- [治理报告：外部审计准备](reports/project-governance/2026-05-05-external-audit-readiness.md) ⚠️ 历史归档
 - [测试报告：v0.1.0](reports/test/2026-04-30-agentutils-v0.1.0-test-report.md) ⚠️ 历史归档（修复前快照）
 
 ### 目录约定
@@ -51,6 +57,10 @@ The following documents are the authoritative sources for current project state:
 - [Usage guide](guides/USAGE.zh-CN.en.md)
 - [GNU Coreutils compatibility audit](audits/GNU_COMPATIBILITY_AUDIT.md)
 - [Testing and development notes](development/TESTING.md)
+- [Development and audit plan](development/DEVELOPMENT_AUDIT_PLAN.md)
+- [Command test matrix](development/COMMAND_TEST_MATRIX.md)
+- [Command spec pilot](development/COMMAND_SPEC_PILOT.md)
+- [Release governance](development/RELEASE_GOVERNANCE.md)
 - [WSL local CI notes](development/WSL_CI.md)
 - [AI coding assistant guidance](agent-guides/CLAUDE.md)
 - [Documentation governance rules](agent-guides/DOC_GOVERNANCE_RULES.md)
@@ -63,6 +73,8 @@ The following are point-in-time snapshots that may be outdated. **Do not treat a
 - [Analysis: GPTCodex vs DeepSeekCopilot](analysis/GPTCodex-vs-DeepSeekCopilot-分析日志.md) ⚠️ historical archive
 - [Analysis: GPTCodex codebase changelog](analysis/GPTCodex-代码库变更日志.md) ⚠️ historical archive
 - [Analysis: DeepSeek sandbox hardening & consistency fix](analysis/DeepSeek-2026-04-30-安全加固与一致性修复-开发日志.md) ⚠️ historical archive
+- [Governance report: stabilization P0 baseline audit](reports/project-governance/2026-05-05-stabilization-p0-baseline-audit.md) ⚠️ historical archive
+- [Governance report: external audit readiness](reports/project-governance/2026-05-05-external-audit-readiness.md) ⚠️ historical archive
 - [Test report: v0.1.0](reports/test/2026-04-30-agentutils-v0.1.0-test-report.md) ⚠️ historical archive (pre-fix snapshot)
 
 ### Directory Conventions

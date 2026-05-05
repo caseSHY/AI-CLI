@@ -277,6 +277,138 @@ _DESTRUCTIVE_TOOLS: set[str] = {
 }
 
 
+_WRITE_TOOLS: set[str] = {
+    "dd",
+    "mkdir",
+    "touch",
+    "cp",
+    "mv",
+    "ln",
+    "link",
+    "chmod",
+    "chown",
+    "chgrp",
+    "truncate",
+    "mktemp",
+    "mkfifo",
+    "mknod",
+    "install",
+    "ginstall",
+    "tee",
+    "rmdir",
+    "unlink",
+    "rm",
+    "shred",
+    "csplit",
+    "split",
+    "chcon",
+}
+
+
+_PROCESS_EXEC_TOOLS: set[str] = {
+    "chroot",
+    "nice",
+    "nohup",
+    "runcon",
+    "stdbuf",
+    "timeout",
+}
+
+
+_PLATFORM_SENSITIVE_TOOLS: set[str] = {
+    "chcon",
+    "chgrp",
+    "chmod",
+    "chown",
+    "chroot",
+    "groups",
+    "id",
+    "kill",
+    "logname",
+    "mkfifo",
+    "mknod",
+    "nice",
+    "nohup",
+    "nproc",
+    "pinky",
+    "runcon",
+    "sleep",
+    "stty",
+    "sync",
+    "tty",
+    "users",
+    "who",
+}
+
+
+_EXPLICIT_ALLOW_TOOLS: set[str] = {
+    "chcon",
+    "chroot",
+    "kill",
+    "nice",
+    "nohup",
+    "rm",
+    "runcon",
+    "shred",
+    "stty",
+}
+
+
+_WORKSPACE_WRITE_TOOLS: set[str] = {
+    "cp",
+    "csplit",
+    "ginstall",
+    "install",
+    "link",
+    "ln",
+    "mkdir",
+    "mktemp",
+    "split",
+    "tee",
+    "touch",
+}
+
+
+def tool_risk_level(name: str) -> str:
+    """Return the single primary risk level for a command."""
+    if name in _READ_ONLY_TOOLS:
+        return "read-only"
+    if name in _PROCESS_EXEC_TOOLS:
+        return "process-exec"
+    if name in {"rm", "shred", "unlink", "rmdir", "truncate", "dd", "kill", "chroot", "chcon", "runcon", "stty"}:
+        return "destructive"
+    if name in _WRITE_TOOLS:
+        return "write"
+    if name in _PLATFORM_SENSITIVE_TOOLS:
+        return "platform-sensitive"
+    return "unknown"
+
+
+def tool_risk_categories(name: str) -> list[str]:
+    """Return all risk categories that apply to a command."""
+    categories: list[str] = []
+    if name in _READ_ONLY_TOOLS:
+        categories.append("read-only")
+    if name in _WRITE_TOOLS:
+        categories.append("write")
+    if name in _DESTRUCTIVE_TOOLS:
+        categories.append("destructive")
+    if name in _PROCESS_EXEC_TOOLS:
+        categories.append("process-exec")
+    if name in _PLATFORM_SENSITIVE_TOOLS:
+        categories.append("platform-sensitive")
+    return categories or ["unknown"]
+
+
+def tool_risk_metadata(name: str) -> dict[str, bool | str | list[str]]:
+    """Return machine-readable risk metadata for external tool-list formats."""
+    return {
+        "riskLevel": tool_risk_level(name),
+        "riskCategory": tool_risk_categories(name),
+        "requiresExplicitAllow": name in _EXPLICIT_ALLOW_TOOLS,
+    }
+
+
 def _command_tools(parser: argparse.ArgumentParser) -> list[dict[str, Any]]:
     """Generate MCP-compatible tool list from all registered subcommands."""
     subparsers_action = None
@@ -310,7 +442,7 @@ def _command_tools(parser: argparse.ArgumentParser) -> list[dict[str, Any]]:
                 properties[dest] = prop_schema
 
         desc = _COMMAND_DESCRIPTIONS.get(name, subparser.description or "")
-        annotations: dict[str, bool | str] = {}
+        annotations: dict[str, bool | str | list[str]] = tool_risk_metadata(name)
         if name in _READ_ONLY_TOOLS:
             annotations["readOnlyHint"] = True
         if name in _DESTRUCTIVE_TOOLS:
@@ -350,32 +482,43 @@ def _build_input_schema(name: str, subparser: argparse.ArgumentParser) -> dict[s
     return schema
 
 
-def tools_openai(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _risk_extension(tool: dict[str, Any]) -> dict[str, bool | str | list[str]]:
+    annotations = tool.get("annotations", {})
+    return {
+        "riskLevel": annotations.get("riskLevel", "unknown"),
+        "riskCategory": annotations.get("riskCategory", ["unknown"]),
+        "requiresExplicitAllow": bool(annotations.get("requiresExplicitAllow", False)),
+    }
+
+
+def tools_openai(tools: list[dict[str, Any]], *, include_risk: bool = False) -> list[dict[str, Any]]:
     """Convert tool schemas to OpenAI function-calling format."""
     result: list[dict[str, Any]] = []
     for tool in tools:
-        result.append(
-            {
-                "type": "function",
-                "function": {
-                    "name": tool["name"],
-                    "description": tool["description"],
-                    "parameters": tool["inputSchema"],
-                },
-            }
-        )
+        item: dict[str, Any] = {
+            "type": "function",
+            "function": {
+                "name": tool["name"],
+                "description": tool["description"],
+                "parameters": tool["inputSchema"],
+            },
+        }
+        if include_risk:
+            item["x-aicoreutils-risk"] = _risk_extension(tool)
+        result.append(item)
     return result
 
 
-def tools_anthropic(tools: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def tools_anthropic(tools: list[dict[str, Any]], *, include_risk: bool = False) -> list[dict[str, Any]]:
     """Convert tool schemas to Anthropic tool-use format."""
     result: list[dict[str, Any]] = []
     for tool in tools:
-        result.append(
-            {
-                "name": tool["name"],
-                "description": tool["description"],
-                "input_schema": tool["inputSchema"],
-            }
-        )
+        item: dict[str, Any] = {
+            "name": tool["name"],
+            "description": tool["description"],
+            "input_schema": tool["inputSchema"],
+        }
+        if include_risk:
+            item["x-aicoreutils-risk"] = _risk_extension(tool)
+        result.append(item)
     return result

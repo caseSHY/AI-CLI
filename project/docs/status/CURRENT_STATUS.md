@@ -4,14 +4,17 @@
 
 > **这是项目当前状态的唯一权威来源。**
 > 历史报告见 `docs/reports/`，分析日志见 `docs/analysis/`。
+> `项目版本`、`验证对象 commit`、命令数和 coverage gate 由 `scripts/generate_status.py` 检查；修改后必须运行该脚本。
 
 | 属性 | 值 |
 |---|---|
+<!-- status-managed:start cn-baseline -->
 | **最后验证日期** | 2026-05-05 |
-| **验证对象** | 本地工作区（`102dec4`，已推送至 GitHub，GitHub Actions CI 运行中） |
+| **验证对象** | 本地工作区（`5107694`，已推送至 GitHub，GitHub Actions CI 运行中） |
 | **Python 版本** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
 | **操作系统** | Windows 11 (开发) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
 | **项目版本** | 1.1.1 |
+<!-- status-managed:end cn-baseline -->
 
 ### 测试
 
@@ -86,14 +89,17 @@
 
 > **This is the single authoritative source for current project status.**
 > Historical reports are in `docs/reports/`, analysis logs in `docs/analysis/`.
+> `Project version`, `verified-target commit`, command count, and coverage gate are checked by `scripts/generate_status.py`; run it after edits.
 
 | Property | Value |
 |---|---|
+<!-- status-managed:start en-baseline -->
 | **Last verified** | 2026-05-05 |
-| **Verified target** | local working tree (`16d46ba`, pushed to GitHub, GitHub Actions CI in progress) |
+| **Verified target** | local working tree (`5107694`, pushed to GitHub, GitHub Actions CI in progress) |
 | **Python version** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
 | **OS** | Windows 11 (dev) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
 | **Project version** | 1.1.1 |
+<!-- status-managed:end en-baseline -->
 
 ### Tests
 

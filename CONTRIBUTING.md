@@ -48,6 +48,12 @@ mypy src/aicoreutils/ --strict
 
 ## 版本发布
 
+完整发布治理清单见 `project/docs/development/RELEASE_GOVERNANCE.md`。Tag 前先运行：
+
+```bash
+PYTHONPATH=src python scripts/release_gate.py --full
+```
+
 ```bash
 # 1. bump 版本号（自动修改 5 个文件 + CHANGELOG 模板）
 python scripts/bump_version.py x.y.z
@@ -59,7 +65,7 @@ python scripts/bump_version.py x.y.z
 python scripts/generate_status.py --write
 
 # 4. 运行版本一致性测试
-PYTHONPATH=src python -m pytest tests/test_version_consistency.py tests/test_project_consistency.py -v
+PYTHONPATH=src python scripts/release_gate.py
 
 # 5. 提交并打 tag
 git add pyproject.toml src/aicoreutils/__init__.py server.json CHANGELOG.md project/docs/status/CURRENT_STATUS.md

@@ -8,7 +8,14 @@ import sys
 import unittest
 from unittest.mock import patch
 
-from aicoreutils.mcp_server import _call_tool, _check_tool_access, _read_request, _send, server_loop
+from aicoreutils.mcp_server import (
+    _call_tool,
+    _check_tool_access,
+    _merge_security_policy,
+    _read_request,
+    _send,
+    server_loop,
+)
 
 
 class CallToolTests(unittest.TestCase):
@@ -253,6 +260,35 @@ class SecurityCheckTests(unittest.TestCase):
         self.assertIn("command", result["error"])
         self.assertEqual(result["error"]["command"], "shred")
         self.assertIn("reason", result["error"])
+
+    def test_readonly_profile_merges_to_read_only_allow_list(self) -> None:
+        read_only, allow_commands, deny_commands = _merge_security_policy(profile="readonly")
+        self.assertTrue(read_only)
+        self.assertIsNotNone(allow_commands)
+        self.assertIn("pwd", allow_commands)
+        self.assertNotIn("mkdir", allow_commands)
+        self.assertIsNone(deny_commands)
+
+    def test_workspace_write_profile_allows_safe_writes_and_blocks_danger(self) -> None:
+        read_only, allow_commands, deny_commands = _merge_security_policy(profile="workspace-write")
+        self.assertFalse(read_only)
+        self.assertIsNotNone(allow_commands)
+        self.assertIn("mkdir", allow_commands)
+        self.assertNotIn("timeout", allow_commands)
+        self.assertIsNotNone(deny_commands)
+        self.assertIn("rm", deny_commands)
+
+    def test_explicit_allow_extends_profile_but_deny_still_applies(self) -> None:
+        read_only, allow_commands, deny_commands = _merge_security_policy(
+            profile="workspace-write",
+            allow_commands={"timeout"},
+            deny_commands={"timeout"},
+        )
+        self.assertFalse(read_only)
+        self.assertIsNotNone(allow_commands)
+        self.assertIn("timeout", allow_commands)
+        self.assertIsNotNone(deny_commands)
+        self.assertIn("timeout", deny_commands)
 
 
 class MainEntrypointTests(unittest.TestCase):

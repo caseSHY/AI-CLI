@@ -8,6 +8,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   test-ubuntu:
     runs-on: ubuntu-latest
@@ -101,9 +104,9 @@ jobs:
       - name: Install package and dev deps
         run: python -m pip install -e ".[dev]"
       - name: Ruff check
-        run: ruff check src/ project/tests/
+        run: ruff check src/ project/tests/ tests/ scripts/
       - name: Ruff format check
-        run: ruff format --check src/ project/tests/
+        run: ruff format --check src/ project/tests/ tests/ scripts/
 
   typecheck:
     runs-on: ubuntu-latest
@@ -128,3 +131,23 @@ jobs:
         run: python -m pip install -e ".[test,dev]"
       - name: Verify CURRENT_STATUS.md consistency
         run: python scripts/generate_status.py
+      - name: Verify command risk/test matrix
+        run: python scripts/audit_command_matrix.py
+      - name: Verify command spec registry
+        run: python scripts/audit_command_specs.py
+      - name: Verify supply-chain posture
+        run: python scripts/audit_supply_chain.py
+
+  governance-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Install package and dev deps
+        run: python -m pip install -e ".[test,dev]"
+      - name: Run release gate
+        env:
+          PYTHONPATH: src
+        run: python scripts/release_gate.py

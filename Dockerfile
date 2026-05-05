@@ -18,5 +18,5 @@ RUN python -c "from aicoreutils.mcp_server import server_loop; print('MCP server
 # Switch to non-root user
 USER aicoreutils
 
-# MCP server on stdio
-CMD ["python", "-m", "aicoreutils.mcp_server"]
+# MCP server on stdio; default to read-only exposure.
+CMD ["python", "-m", "aicoreutils.mcp_server", "--profile", "readonly"]

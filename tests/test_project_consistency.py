@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -90,3 +91,39 @@ def test_catalog_commands_are_in_parser():
     catalog_cmds = set(_get_catalog_commands())
     missing = catalog_cmds - parser_cmds
     assert not missing, f"Catalog commands not in parser: {sorted(missing)}"
+
+
+def test_command_matrix_audit_passes():
+    """The command risk/test matrix audit must pass."""
+    result = subprocess.run(
+        [sys.executable, "scripts/audit_command_matrix.py"],
+        capture_output=True,
+        text=True,
+        cwd=str(ROOT),
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_command_spec_pilot_audit_passes():
+    """The command spec pilot must stay consistent with the current parser."""
+    result = subprocess.run(
+        [sys.executable, "scripts/audit_command_specs.py"],
+        capture_output=True,
+        text=True,
+        cwd=str(ROOT),
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_supply_chain_audit_passes():
+    """Supply-chain and release hardening controls must stay in place."""
+    result = subprocess.run(
+        [sys.executable, "scripts/audit_supply_chain.py"],
+        capture_output=True,
+        text=True,
+        cwd=str(ROOT),
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

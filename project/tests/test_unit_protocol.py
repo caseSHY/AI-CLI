@@ -10,6 +10,19 @@ from aicoreutils.protocol._hashing import HASH_ALGORITHMS, digest_bytes, simple_
 from aicoreutils.protocol._numfmt import IEC_UNITS, SI_UNITS, format_numfmt_value, parse_numfmt_value
 from aicoreutils.protocol._printf import coerce_printf_value, format_printf, printf_conversions
 from aicoreutils.protocol._ranges import alpha_suffix, numeric_suffix, parse_ranges, selected_indexes
+from aicoreutils.protocol._system import (
+    active_user_entries,
+    normalize_command_args,
+    parse_signal,
+    resolve_group_id,
+    resolve_user_id,
+    run_subprocess_capture,
+    selected_environment,
+    split_owner_spec,
+    stdin_tty_name,
+    subprocess_result,
+    system_uptime_seconds,
+)
 from aicoreutils.protocol._text import (
     count_words,
     decode_standard_escapes,
@@ -260,6 +273,8 @@ class TextUtilsTests(unittest.TestCase):
         self.assertEqual(result["lines"], 2)
         self.assertEqual(result["words"], 2)
 
+    # ── _system ──
+
     def test_split_fields_tab(self) -> None:
         self.assertEqual(split_fields("a\tb\tc", "\t"), ["a", "b", "c"])
 
@@ -328,6 +343,239 @@ class TextUtilsTests(unittest.TestCase):
     def test_selected_indexes_end_negative_raises(self) -> None:
         with self.assertRaises(AgentError):
             parse_ranges("1-0")
+
+
+class SystemProtocolTests(unittest.TestCase):
+    def test_resolve_user_id_numeric(self) -> None:
+        self.assertEqual(resolve_user_id("1000"), 1000)
+        self.assertIsNone(resolve_user_id(None))
+        self.assertIsNone(resolve_user_id(""))
+
+    def test_resolve_group_id_numeric(self) -> None:
+        self.assertEqual(resolve_group_id("1000"), 1000)
+        self.assertIsNone(resolve_group_id(None))
+        self.assertIsNone(resolve_group_id(""))
+
+    def test_split_owner_spec(self) -> None:
+        self.assertEqual(split_owner_spec("1000:1001"), ("1000", "1001"))
+        self.assertEqual(split_owner_spec("1000.1001"), ("1000", "1001"))
+        self.assertEqual(split_owner_spec("1000"), ("1000", None))
+        self.assertEqual(split_owner_spec(":1001"), (None, "1001"))
+
+    def test_split_owner_spec_empty_raises(self) -> None:
+        with self.assertRaises(AgentError):
+            split_owner_spec(":")
+
+    def test_parse_signal_numeric_and_named(self) -> None:
+        self.assertEqual(parse_signal("15"), 15)
+        self.assertEqual(parse_signal("TERM"), parse_signal("SIGTERM"))
+
+    def test_parse_signal_unknown_raises(self) -> None:
+        with self.assertRaises(AgentError):
+            parse_signal("not_a_signal")
+
+    def test_normalize_command_args(self) -> None:
+        self.assertEqual(normalize_command_args(["--", "python", "--version"]), ["python", "--version"])
+        self.assertEqual(normalize_command_args(["python"]), ["python"])
+
+    def test_normalize_command_args_empty_raises(self) -> None:
+        with self.assertRaises(AgentError):
+            normalize_command_args([])
+        with self.assertRaises(AgentError):
+            normalize_command_args(["--"])
+
+    def test_run_subprocess_capture_success(self) -> None:
+        import sys
+
+        completed, timed_out = run_subprocess_capture(
+            [sys.executable, "-c", "print('ok')"],
+            timeout=5,
+            max_output_bytes=100,
+        )
+        self.assertFalse(timed_out)
+        self.assertIsNotNone(completed)
+        self.assertEqual(completed.returncode, 0)
+        self.assertIn(b"ok", completed.stdout)
+
+    def test_run_subprocess_capture_empty_command_raises(self) -> None:
+        with self.assertRaises(AgentError):
+            run_subprocess_capture([], timeout=1, max_output_bytes=100)
+
+    def test_run_subprocess_capture_negative_output_limit_raises(self) -> None:
+        import sys
+
+        with self.assertRaises(AgentError):
+            run_subprocess_capture([sys.executable, "--version"], timeout=1, max_output_bytes=-1)
+
+    def test_subprocess_result_truncates_and_base64_encodes(self) -> None:
+        import subprocess
+
+        completed = subprocess.CompletedProcess(["cmd"], 0, b"abcdef", b"uvwxyz")
+        result = subprocess_result(["cmd"], completed, timed_out=False, max_output_bytes=3)
+        self.assertEqual(result["stdout_bytes"], 6)
+        self.assertEqual(result["stderr_bytes"], 6)
+        self.assertTrue(result["stdout_truncated"])
+        self.assertTrue(result["stderr_truncated"])
+        self.assertEqual(result["stdout_base64"], "YWJj")
+        self.assertEqual(result["stderr_base64"], "dXZ3")
+
+    def test_selected_environment(self) -> None:
+        import os
+
+        os.environ["AICOREUTILS_TEST_ENV"] = "value"
+        try:
+            self.assertEqual(selected_environment(["AICOREUTILS_TEST_ENV"]), {"AICOREUTILS_TEST_ENV": "value"})
+            self.assertIn("AICOREUTILS_TEST_ENV", selected_environment(None))
+        finally:
+            del os.environ["AICOREUTILS_TEST_ENV"]
+
+    def test_active_user_entries_shape(self) -> None:
+        entries = active_user_entries()
+        self.assertGreaterEqual(len(entries), 1)
+        self.assertIn("user", entries[0])
+        self.assertIn("terminal", entries[0])
+        self.assertEqual(entries[0]["source"], "current_process")
+
+    def test_resolve_user_id_name_success(self) -> None:
+        from types import SimpleNamespace
+        from unittest import mock
+
+        pwd_module = SimpleNamespace(getpwnam=lambda _: SimpleNamespace(pw_uid=501))
+        with mock.patch("aicoreutils.protocol._system.importlib.import_module", return_value=pwd_module):
+            self.assertEqual(resolve_user_id("alice"), 501)
+
+    def test_resolve_user_id_name_unavailable_raises(self) -> None:
+        from types import SimpleNamespace
+        from unittest import mock
+
+        with (
+            mock.patch(
+                "aicoreutils.protocol._system.importlib.import_module",
+                return_value=SimpleNamespace(getpwnam=None),
+            ),
+            self.assertRaises(AgentError),
+        ):
+            resolve_user_id("alice")
+
+    def test_resolve_user_id_name_missing_raises(self) -> None:
+        from unittest import mock
+
+        pwd_module = mock.Mock()
+        pwd_module.getpwnam.side_effect = KeyError("alice")
+        with (
+            mock.patch("aicoreutils.protocol._system.importlib.import_module", return_value=pwd_module),
+            self.assertRaises(AgentError),
+        ):
+            resolve_user_id("alice")
+
+    def test_resolve_group_id_name_success(self) -> None:
+        from types import SimpleNamespace
+        from unittest import mock
+
+        grp_module = SimpleNamespace(getgrnam=lambda _: SimpleNamespace(gr_gid=20))
+        with mock.patch("aicoreutils.protocol._system.importlib.import_module", return_value=grp_module):
+            self.assertEqual(resolve_group_id("staff"), 20)
+
+    def test_resolve_group_id_name_unavailable_raises(self) -> None:
+        from types import SimpleNamespace
+        from unittest import mock
+
+        with (
+            mock.patch(
+                "aicoreutils.protocol._system.importlib.import_module",
+                return_value=SimpleNamespace(getgrnam=None),
+            ),
+            self.assertRaises(AgentError),
+        ):
+            resolve_group_id("staff")
+
+    def test_resolve_group_id_name_missing_raises(self) -> None:
+        from unittest import mock
+
+        grp_module = mock.Mock()
+        grp_module.getgrnam.side_effect = KeyError("staff")
+        with (
+            mock.patch("aicoreutils.protocol._system.importlib.import_module", return_value=grp_module),
+            self.assertRaises(AgentError),
+        ):
+            resolve_group_id("staff")
+
+    def test_run_subprocess_capture_not_found_raises(self) -> None:
+        from unittest import mock
+
+        with (
+            mock.patch("aicoreutils.protocol._system.subprocess.run", side_effect=FileNotFoundError()),
+            self.assertRaises(AgentError) as ctx,
+        ):
+            run_subprocess_capture(["missing-command"], timeout=1, max_output_bytes=100)
+        self.assertEqual(ctx.exception.code, "not_found")
+
+    def test_run_subprocess_capture_permission_denied_raises(self) -> None:
+        from unittest import mock
+
+        with (
+            mock.patch("aicoreutils.protocol._system.subprocess.run", side_effect=PermissionError()),
+            self.assertRaises(AgentError) as ctx,
+        ):
+            run_subprocess_capture(["denied-command"], timeout=1, max_output_bytes=100)
+        self.assertEqual(ctx.exception.code, "permission_denied")
+
+    def test_run_subprocess_capture_timeout(self) -> None:
+        import subprocess
+        from unittest import mock
+
+        timeout = subprocess.TimeoutExpired(["slow"], timeout=1, output=b"partial-out", stderr=b"partial-err")
+        with mock.patch("aicoreutils.protocol._system.subprocess.run", side_effect=timeout):
+            completed, timed_out = run_subprocess_capture(["slow"], timeout=1, max_output_bytes=100)
+        self.assertTrue(timed_out)
+        self.assertIsNotNone(completed)
+        self.assertEqual(completed.stdout, b"partial-out")
+        self.assertEqual(completed.stderr, b"partial-err")
+
+    def test_system_uptime_seconds_reads_proc(self) -> None:
+        from unittest import mock
+
+        proc_uptime = mock.Mock()
+        proc_uptime.exists.return_value = True
+        proc_uptime.read_text.return_value = "123.5 456.0"
+        with mock.patch("aicoreutils.protocol._system.Path", return_value=proc_uptime):
+            self.assertEqual(system_uptime_seconds(), 123.5)
+
+    def test_system_uptime_seconds_returns_none_when_fallbacks_fail(self) -> None:
+        from unittest import mock
+
+        proc_uptime = mock.Mock()
+        proc_uptime.exists.return_value = False
+        with (
+            mock.patch("aicoreutils.protocol._system.Path", return_value=proc_uptime),
+            mock.patch("aicoreutils.protocol._system.sys.platform", "linux"),
+            mock.patch("aicoreutils.protocol._system.cast", side_effect=AttributeError()),
+        ):
+            self.assertIsNone(system_uptime_seconds())
+
+    def test_stdin_tty_name_non_tty(self) -> None:
+        from types import SimpleNamespace
+        from unittest import mock
+
+        stdin = SimpleNamespace(isatty=lambda: False)
+        with mock.patch("aicoreutils.protocol._system.sys.stdin", stdin):
+            self.assertIsNone(stdin_tty_name())
+
+    def test_stdin_tty_name_success_and_oserror(self) -> None:
+        from types import SimpleNamespace
+        from unittest import mock
+
+        stdin = SimpleNamespace(isatty=lambda: True, fileno=lambda: 9)
+        with (
+            mock.patch("aicoreutils.protocol._system.sys.stdin", stdin),
+            mock.patch("aicoreutils.protocol._system.os.ttyname", return_value="/dev/pts/1", create=True),
+        ):
+            self.assertEqual(stdin_tty_name(), "/dev/pts/1")
+        with (
+            mock.patch("aicoreutils.protocol._system.sys.stdin", stdin),
+            mock.patch("aicoreutils.protocol._system.os.ttyname", side_effect=OSError(), create=True),
+        ):
+            self.assertIsNone(stdin_tty_name())
 
 
 class DigestFileTests(unittest.TestCase):

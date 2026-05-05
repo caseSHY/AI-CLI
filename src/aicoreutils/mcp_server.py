@@ -4,11 +4,14 @@ Implements JSON-RPC 2.0 over stdio without external dependencies.
 Exposes all 114 aicoreutils commands as MCP tools for AI agents.
 
 Security modes:
+    --profile NAME     Apply a built-in security profile (readonly, workspace-write, explicit-danger)
     --read-only        Allow only read-only tools (no file writes/deletes)
     --allow-command X  Only allow specific commands (repeatable)
     --deny-command X   Block specific commands (repeatable)
 
 Usage:
+    python -m aicoreutils.mcp_server --profile readonly
+    python -m aicoreutils.mcp_server --profile workspace-write
     python -m aicoreutils.mcp_server --read-only
     python -m aicoreutils.mcp_server --allow-command ls --allow-command cat
     python -m aicoreutils.mcp_server --deny-command rm --deny-command shred
@@ -24,7 +27,55 @@ from typing import Any, cast
 
 from . import __version__
 from .parser._parser import build_parser
-from .tool_schema import _READ_ONLY_TOOLS, _command_tools
+from .tool_schema import _EXPLICIT_ALLOW_TOOLS, _READ_ONLY_TOOLS, _WORKSPACE_WRITE_TOOLS, _command_tools
+
+_PROFILE_CHOICES = ("readonly", "workspace-write", "explicit-danger")
+
+
+def _profile_allow_list(profile: str | None) -> set[str] | None:
+    """Return the allow-list implied by a named security profile."""
+    if profile is None:
+        return None
+    if profile == "readonly":
+        return set(_READ_ONLY_TOOLS)
+    if profile == "workspace-write":
+        return set(_READ_ONLY_TOOLS) | set(_WORKSPACE_WRITE_TOOLS)
+    if profile == "explicit-danger":
+        return None
+    raise ValueError(f"Unknown MCP security profile: {profile}")
+
+
+def _profile_deny_list(profile: str | None) -> set[str]:
+    """Return commands denied by a named security profile."""
+    if profile == "workspace-write":
+        return set(_EXPLICIT_ALLOW_TOOLS)
+    return set()
+
+
+def _merge_security_policy(
+    *,
+    profile: str | None = None,
+    read_only: bool = False,
+    allow_commands: set[str] | None = None,
+    deny_commands: set[str] | None = None,
+) -> tuple[bool, set[str] | None, set[str] | None]:
+    """Merge profile, legacy read-only, allow-list, and deny-list settings."""
+    profile_allow = _profile_allow_list(profile)
+    profile_deny = _profile_deny_list(profile)
+
+    merged_allow = set(profile_allow) if profile_allow is not None else None
+    if allow_commands:
+        if merged_allow is None:
+            merged_allow = set(allow_commands)
+        else:
+            merged_allow.update(allow_commands)
+
+    merged_deny = set(profile_deny)
+    if deny_commands:
+        merged_deny.update(deny_commands)
+
+    effective_read_only = read_only or profile == "readonly"
+    return effective_read_only, merged_allow, merged_deny or None
 
 
 def _check_tool_access(
@@ -177,6 +228,7 @@ def _read_request() -> dict[str, Any] | None:
 
 def server_loop(
     *,
+    profile: str | None = None,
     read_only: bool = False,
     allow_commands: set[str] | None = None,
     deny_commands: set[str] | None = None,
@@ -184,10 +236,18 @@ def server_loop(
     """Run the MCP JSON-RPC server loop on stdio with optional security controls.
 
     Args:
-        read_only: If True, only read-only tools are callable.
+        profile: Named security profile to apply before explicit allow/deny settings.
+        read_only: If True, only read-only tools are callable unless allow_commands permits more.
         allow_commands: If set, only these commands are callable (overrides read_only check).
         deny_commands: If set, these commands are blocked (applied first).
     """
+    effective_read_only, effective_allow_commands, effective_deny_commands = _merge_security_policy(
+        profile=profile,
+        read_only=read_only,
+        allow_commands=allow_commands,
+        deny_commands=deny_commands,
+    )
+
     while True:
         request = _read_request()
         if request is None:
@@ -225,9 +285,9 @@ def server_loop(
             # Security gate — check before execution
             access_denied = _check_tool_access(
                 tool_name,
-                read_only=read_only,
-                allow_commands=allow_commands,
-                deny_commands=deny_commands,
+                read_only=effective_read_only,
+                allow_commands=effective_allow_commands,
+                deny_commands=effective_deny_commands,
             )
             if access_denied is not None:
                 content = json.dumps(access_denied, ensure_ascii=False, sort_keys=True)
@@ -267,6 +327,12 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--read-only", action="store_true", help="Only allow read-only tools.")
     parser.add_argument(
+        "--profile",
+        choices=_PROFILE_CHOICES,
+        default=None,
+        help="Apply a built-in security profile: readonly, workspace-write, or explicit-danger.",
+    )
+    parser.add_argument(
         "--allow-command", action="append", default=None, metavar="CMD", help="Only allow this command (repeatable)."
     )
     parser.add_argument(
@@ -288,6 +354,7 @@ def main(argv: list[str] | None = None) -> None:
 
     try:
         server_loop(
+            profile=args.profile,
             read_only=args.read_only,
             allow_commands=allow_commands,
             deny_commands=deny_commands,
