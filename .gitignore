@@ -38,3 +38,10 @@ Thumbs.db
 # Keep the files locally, but do not publish the vendored tarball/source tree by default.
 /project/vendor/gnu-coreutils/coreutils-*/
 /project/vendor/gnu-coreutils/*.tar.*
+
+# Dev logs and temporary files
+*.log
+*.tmp
+
+# Pyenv version pin
+.python-version

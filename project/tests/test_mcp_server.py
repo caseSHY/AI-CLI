@@ -173,7 +173,7 @@ class McpServerTests(unittest.TestCase):
             proc.stdin.flush()
             resp = _mcp_request(proc, "tools/list")
             tools = resp["result"]["tools"]
-            self.assertEqual(len(tools), 114)  # allow plugin commands to increase total
+            self.assertGreaterEqual(len(tools), 114)  # allow plugin commands to increase total
         finally:
             proc.terminate()
 

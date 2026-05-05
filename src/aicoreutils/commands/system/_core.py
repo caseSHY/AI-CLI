@@ -46,6 +46,7 @@ from ...protocol import (
     parse_signal,
     path_issues,
     prime_factors,
+    require_inside_cwd,
     resolve_path,
     run_subprocess_capture,
     selected_environment,
@@ -539,8 +540,10 @@ def command_stty(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 def command_nohup(args: argparse.Namespace) -> dict[str, Any]:
+    cwd = Path.cwd().resolve()
     command = normalize_command_args(args.command_args)
     output_path = resolve_path(args.output)
+    require_inside_cwd(output_path, cwd, allow_outside_cwd=False)
     ensure_parent(output_path, create=args.parents, dry_run=args.dry_run)
     if output_path.exists() and not args.append and not args.allow_overwrite:
         raise AgentError(

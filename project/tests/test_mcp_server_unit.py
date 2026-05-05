@@ -8,7 +8,7 @@ import sys
 import unittest
 from unittest.mock import patch
 
-from aicoreutils.mcp_server import _call_tool, _read_request, _send, server_loop
+from aicoreutils.mcp_server import _call_tool, _check_tool_access, _read_request, _send, server_loop
 
 
 class CallToolTests(unittest.TestCase):
@@ -200,6 +200,59 @@ class ServerLoopTests(unittest.TestCase):
         self.assertEqual(data1["result"]["protocolVersion"], "2024-11-05")
         data2 = json.loads(lines[1])
         self.assertIn("tools", data2["result"])
+
+
+class SecurityCheckTests(unittest.TestCase):
+    """Unit tests for _check_tool_access (read-only, allow, deny)."""
+
+    def test_read_only_allows_safe_command(self) -> None:
+        result = _check_tool_access("pwd", read_only=True)
+        self.assertIsNone(result)
+
+    def test_read_only_blocks_destructive_command(self) -> None:
+        result = _check_tool_access("rm", read_only=True)
+        self.assertIsNotNone(result)
+        self.assertEqual(result["ok"], False)
+        self.assertEqual(result["error"]["code"], "SECURITY_DENIED")
+        self.assertIn("Read-only mode", result["error"]["reason"])
+
+    def test_allow_list_permits_command(self) -> None:
+        result = _check_tool_access("rm", allow_commands={"rm", "ls"})
+        self.assertIsNone(result)
+
+    def test_allow_list_blocks_unlisted(self) -> None:
+        result = _check_tool_access("pwd", allow_commands={"ls"})
+        self.assertIsNotNone(result)
+        self.assertEqual(result["error"]["code"], "SECURITY_DENIED")
+
+    def test_allow_list_overrides_read_only(self) -> None:
+        result = _check_tool_access("rm", read_only=True, allow_commands={"rm"})
+        self.assertIsNone(result)
+
+    def test_deny_list_blocks_specific(self) -> None:
+        result = _check_tool_access("rm", deny_commands={"rm", "shred"})
+        self.assertIsNotNone(result)
+        self.assertEqual(result["error"]["code"], "SECURITY_DENIED")
+
+    def test_deny_list_allows_others(self) -> None:
+        result = _check_tool_access("pwd", deny_commands={"rm"})
+        self.assertIsNone(result)
+
+    def test_deny_has_priority_over_allow(self) -> None:
+        result = _check_tool_access("rm", allow_commands={"rm"}, deny_commands={"rm"})
+        self.assertIsNotNone(result)
+        self.assertEqual(result["error"]["code"], "SECURITY_DENIED")
+
+    def test_no_restrictions_allows_all(self) -> None:
+        result = _check_tool_access("rm")
+        self.assertIsNone(result)
+
+    def test_error_response_has_command_and_reason(self) -> None:
+        result = _check_tool_access("shred", deny_commands={"shred"})
+        self.assertIsNotNone(result)
+        self.assertIn("command", result["error"])
+        self.assertEqual(result["error"]["command"], "shred")
+        self.assertIn("reason", result["error"])
 
 
 class MainEntrypointTests(unittest.TestCase):

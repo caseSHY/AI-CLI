@@ -3,9 +3,16 @@
 Implements JSON-RPC 2.0 over stdio without external dependencies.
 Exposes all 114 aicoreutils commands as MCP tools for AI agents.
 
+Security modes:
+    --read-only        Allow only read-only tools (no file writes/deletes)
+    --allow-command X  Only allow specific commands (repeatable)
+    --deny-command X   Block specific commands (repeatable)
+
 Usage:
-    python -m aicoreutils.mcp_server
-    # or: aicoreutils-mcp
+    python -m aicoreutils.mcp_server --read-only
+    python -m aicoreutils.mcp_server --allow-command ls --allow-command cat
+    python -m aicoreutils.mcp_server --deny-command rm --deny-command shred
+    # or: aicoreutils-mcp --read-only
 """
 
 from __future__ import annotations
@@ -17,11 +24,58 @@ from typing import Any, cast
 
 from . import __version__
 from .parser._parser import build_parser
-from .tool_schema import _command_tools
+from .tool_schema import _READ_ONLY_TOOLS, _command_tools
+
+
+def _check_tool_access(
+    name: str,
+    *,
+    read_only: bool = False,
+    allow_commands: set[str] | None = None,
+    deny_commands: set[str] | None = None,
+) -> dict[str, Any] | None:
+    """Check whether a tool can be accessed under the current security policy.
+
+    Returns None if access is granted, or a JSON error dict if denied.
+    """
+    if deny_commands and name in deny_commands:
+        return {
+            "ok": False,
+            "error": {
+                "code": "SECURITY_DENIED",
+                "command": name,
+                "reason": "Command is in the deny list.",
+            },
+        }
+    if allow_commands is not None:
+        if name in allow_commands:
+            return None  # allow list permits this command (overrides read-only)
+        return {
+            "ok": False,
+            "error": {
+                "code": "SECURITY_DENIED",
+                "command": name,
+                "reason": "Command is not in the allow list.",
+            },
+        }
+    if read_only and name not in _READ_ONLY_TOOLS:
+        return {
+            "ok": False,
+            "error": {
+                "code": "SECURITY_DENIED",
+                "command": name,
+                "reason": "Read-only mode is active; this command may modify files or state.",
+            },
+        }
+    return None
 
 
 def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
-    """Execute an aicoreutils command by name with the given arguments."""
+    """Execute an aicoreutils command by name with the given arguments.
+
+    Security checks (read-only, allow/deny) are performed by the caller
+    before this function is invoked.
+    """
     parser = build_parser()
 
     subparsers_action = None
@@ -80,7 +134,7 @@ def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         return {"ok": False, "error": f"Argument parsing failed: {json.dumps(args_list)}"}
 
     # Execute
-    from .parser._parser import dispatch
+    from .parser._parser import dispatch  # noqa: E402
 
     try:
         raw_result = dispatch(ns)
@@ -91,12 +145,13 @@ def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     if isinstance(raw_result, tuple):
         exit_code, result = raw_result
     else:
+        exit_code = 0
         result = raw_result
 
     if isinstance(result, bytes):
         result = {"raw_output": result.decode("utf-8", errors="replace")}
     elif isinstance(result, dict):
-        result["_exit_code"] = exit_code if isinstance(raw_result, tuple) else 0
+        result["_exit_code"] = exit_code
     return result
 
 
@@ -120,8 +175,19 @@ def _read_request() -> dict[str, Any] | None:
         return None
 
 
-def server_loop() -> None:
-    """Run the MCP JSON-RPC server loop on stdio."""
+def server_loop(
+    *,
+    read_only: bool = False,
+    allow_commands: set[str] | None = None,
+    deny_commands: set[str] | None = None,
+) -> None:
+    """Run the MCP JSON-RPC server loop on stdio with optional security controls.
+
+    Args:
+        read_only: If True, only read-only tools are callable.
+        allow_commands: If set, only these commands are callable (overrides read_only check).
+        deny_commands: If set, these commands are blocked (applied first).
+    """
     while True:
         request = _read_request()
         if request is None:
@@ -155,6 +221,28 @@ def server_loop() -> None:
         elif method == "tools/call":
             tool_name = params.get("name", "")
             tool_args = params.get("arguments", {})
+
+            # Security gate — check before execution
+            access_denied = _check_tool_access(
+                tool_name,
+                read_only=read_only,
+                allow_commands=allow_commands,
+                deny_commands=deny_commands,
+            )
+            if access_denied is not None:
+                content = json.dumps(access_denied, ensure_ascii=False, sort_keys=True)
+                _send(
+                    {
+                        "jsonrpc": "2.0",
+                        "id": req_id,
+                        "result": {
+                            "content": [{"type": "text", "text": content}],
+                            "isError": True,
+                        },
+                    }
+                )
+                continue
+
             result = _call_tool(tool_name, tool_args)
             content = json.dumps(result, ensure_ascii=False, sort_keys=True)
             _send(
@@ -171,10 +259,39 @@ def server_loop() -> None:
             _send({"jsonrpc": "2.0", "id": req_id, "error": {"code": -32601, "message": f"Unknown method: {method}"}})
 
 
-def main() -> None:
-    """Entry point for aicoreutils-mcp."""
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse command-line arguments for the MCP server."""
+    parser = argparse.ArgumentParser(
+        prog="aicoreutils-mcp",
+        description="AICoreUtils MCP server — exposes CLI commands as MCP tools.",
+    )
+    parser.add_argument("--read-only", action="store_true", help="Only allow read-only tools.")
+    parser.add_argument(
+        "--allow-command", action="append", default=None, metavar="CMD", help="Only allow this command (repeatable)."
+    )
+    parser.add_argument(
+        "--deny-command", action="append", default=None, metavar="CMD", help="Block this command (repeatable)."
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Entry point for aicoreutils-mcp.
+
+    When called programmatically, pass argv=None to avoid SystemExit from
+    test runner arguments appearing in sys.argv.
+    """
+    args = _parse_args(argv if argv is not None else [])
+
+    allow_commands = set(args.allow_command) if args.allow_command else None
+    deny_commands = set(args.deny_command) if args.deny_command else None
+
     try:
-        server_loop()
+        server_loop(
+            read_only=args.read_only,
+            allow_commands=allow_commands,
+            deny_commands=deny_commands,
+        )
     except KeyboardInterrupt:
         pass
     except BrokenPipeError:
@@ -182,4 +299,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

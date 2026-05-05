@@ -128,6 +128,64 @@ class PathTraversalSandboxedTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.outside.read_text(encoding="utf-8"), "outside-content")
 
+    # --- Newly sandboxed commands (1.0.3+) ---
+
+    def test_mkdir_outside_should_be_blocked(self) -> None:
+        result = run_cli("mkdir", str(self.outside.parent / "newdir"), cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_touch_outside_should_be_blocked(self) -> None:
+        result = run_cli("touch", str(self.outside.parent / "newfile.txt"), cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((self.outside.parent / "newfile.txt").exists())
+
+    def test_chmod_outside_should_be_blocked(self) -> None:
+        result = run_cli("chmod", "644", str(self.outside), cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_chown_outside_should_be_blocked(self) -> None:
+        result = run_cli("chown", "root", str(self.outside), "--dry-run", cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_chgrp_outside_should_be_blocked(self) -> None:
+        result = run_cli("chgrp", "root", str(self.outside), "--dry-run", cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_shred_outside_should_be_blocked(self) -> None:
+        result = run_cli("shred", str(self.outside), "--dry-run", cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_rmdir_outside_should_be_blocked(self) -> None:
+        result = run_cli("rmdir", str(self.outside.parent / "nonempty"), cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_unlink_outside_should_be_blocked(self) -> None:
+        result = run_cli("unlink", str(self.outside), cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(self.outside.exists())
+
+    def test_mktemp_outside_should_be_blocked(self) -> None:
+        result = run_cli("mktemp", "--tmpdir", str(self.outside.parent), cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_ln_outside_destination_should_be_blocked(self) -> None:
+        inside = self.sandbox / "target.txt"
+        inside.write_text("hello", encoding="utf-8")
+        result = run_cli("ln", "target.txt", str(self.outside), "--dry-run", cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_link_outside_destination_should_be_blocked(self) -> None:
+        inside = self.sandbox / "target.txt"
+        inside.write_text("hello", encoding="utf-8")
+        result = run_cli("link", "target.txt", str(self.outside), "--dry-run", cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_mv_outside_source_should_be_blocked(self) -> None:
+        inside = self.sandbox / "inside.txt"
+        inside.write_text("data", encoding="utf-8")
+        result = run_cli("mv", str(self.outside), "moved.txt", "--dry-run", cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
 
 # ── Symlink escape tests ─────────────────────────────────────────────
 

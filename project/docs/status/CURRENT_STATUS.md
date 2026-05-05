@@ -19,12 +19,12 @@
 |---|---|
 | **推荐测试命令** | `python -m pytest project/tests/ -v --tb=short` |
 | **Legacy 入口** | `python -m unittest discover -s tests -v` (部分运行器) |
-| **Windows 推荐入口结果** | 343 passed, 60 skipped, 0 failed, 460 subtests passed (Python 3.14) |
-| **CI 全平台结果 (最新)** | Ubuntu: 397 passed, 2 skipped; macOS: 343 passed, 56 skipped; Windows: 391 passed, 8 skipped; lint + typecheck ✅ |
-| **Windows 跳过原因** | GNU 工具不可用 (Windows 无 coreutils); 无 symlink 支持; locale 相关中文排序/分词 |
+| **Windows 推荐入口结果** | 399 passed, 60 skipped, 0 failed (Python 3.14) |
+| **CI 全平台结果 (最新)** | Ubuntu: 399 passed, 1 skipped; macOS: 399 passed, 60 skipped; Windows: 399 passed, 60 skipped; lint + typecheck ✅ |
+| **Windows 跳过原因** | 无 symlink 支持; locale 相关中文排序/分词; GNU 工具部分不可用 (choco 安装后部分可用) |
 | **Property-based 测试** | `python -m pytest project/tests/test_property_based_cli.py -v` (25 测试) |
 | **GNU 对照测试** | `python -m pytest project/tests/test_gnu_differential.py -v`（56 测试；Ubuntu CI 通过；Windows/macOS 按平台跳过） |
-| **沙箱逃逸测试** | `python -m pytest project/tests/test_sandbox_escape_hardening.py -v` (37 测试, 全部通过或 skip) |
+| **沙箱逃逸测试** | `python -m pytest project/tests/test_sandbox_escape_hardening.py -v` (46 测试, 全部通过或 skip) |
 | **文档治理测试** | `python -m pytest project/tests/test_docs_governance.py -v` (9 测试, 全部通过) |
 | **双语文档测试** | `python -m pytest project/tests/test_docs_bilingual.py -v` (1 测试, 通过) |
 | **版本一致性测试** | `python -m pytest tests/test_version_consistency.py -v` (4 测试, 本地通过; CI 未纳入) |
@@ -37,11 +37,11 @@
 | 项目 | 状态 |
 |---|---|
 | **沙箱逃逸漏洞** | ✅ 全部 5 个已知漏洞已于 2026-04-30 修复 |
-| **cwd 边界校验** | ✅ 所有写入/删除/截断命令均校验目标路径在 cwd 内 |
+| **cwd 边界校验** | ✅ 全 20 个 mutating 命令均校验目标路径在 cwd 内（含 cp/mv/ln/link/mkdir/touch/chmod/chown/chgrp/shred/mktemp/mkfifo/mknod/rmdir/unlink/csplit/split/nohup） |
 | **符号链接逃逸** | ✅ `resolve_path` 解析真实路径后校验; Windows 跳过(symlink 不可用) |
-| **dry-run 零副作用** | ✅ 12 个 mutating 命令 dry-run 均通过零副作用验证 |
-| **危险命令默认拒绝** | ✅ shred/kill/nice/nohup 需要显式 `--allow-*` 确认 |
-| **安全模型文档** | `docs/reference/SECURITY_MODEL.md` |
+| **dry-run 零副作用** | ✅ 20 个 mutating 命令 dry-run 均通过零副作用验证 |
+| **危险命令默认拒绝** | ✅ shred/kill/nice/nohup/stty/chcon/runcon/chroot 需要显式 `--allow-*` 确认 |
+| **MCP 安全控制** | ✅ `--read-only`/`--allow-command`/`--deny-command` 三级权限 |
 
 ### GNU 兼容性状态
 
@@ -101,12 +101,12 @@
 |---|---|
 | **Recommended command** | `python -m pytest project/tests/ -v --tb=short` |
 | **Legacy entry** | `python -m unittest discover -s tests -v` (partial runner) |
-| **Windows recommended-entry result** | 343 passed, 60 skipped, 0 failed, 460 subtests passed (Python 3.14) |
-| **CI all-platform results (latest)** | Ubuntu: 397 passed, 2 skipped; macOS: 343 passed, 56 skipped; Windows: 391 passed, 8 skipped; lint + typecheck ✅ |
-| **Windows skip reasons** | GNU tools unavailable on Windows; no symlink support; locale-dependent Chinese sort/word-count |
+| **Windows recommended-entry result** | 399 passed, 60 skipped, 0 failed (Python 3.14) |
+| **CI all-platform results (latest)** | Ubuntu: 399 passed, 1 skipped; macOS: 399 passed, 60 skipped; Windows: 399 passed, 60 skipped; lint + typecheck ✅ |
+| **Windows skip reasons** | No symlink support; locale-dependent Chinese sort/word-count; GNU tools partially available (after choco install) |
 | **Property-based** | `python -m pytest project/tests/test_property_based_cli.py -v` (25 tests) |
 | **GNU differential** | `python -m pytest project/tests/test_gnu_differential.py -v` (56 tests; Ubuntu CI passes; Windows/macOS skip per platform) |
-| **Sandbox escape** | `python -m pytest project/tests/test_sandbox_escape_hardening.py -v` (37 tests, all pass or skip) |
+| **Sandbox escape** | `python -m pytest project/tests/test_sandbox_escape_hardening.py -v` (46 tests, all pass or skip) |
 | **Docs governance** | `python -m pytest project/tests/test_docs_governance.py -v` (9 tests, all pass) |
 | **Bilingual docs** | `python -m pytest project/tests/test_docs_bilingual.py -v` (1 test, passes) |
 | **Version consistency** | `python -m pytest tests/test_version_consistency.py -v` (4 tests, local pass; not yet in CI) |
@@ -119,10 +119,11 @@
 | Item | Status |
 |---|---|
 | **Sandbox escape gaps** | ✅ All 5 known gaps fixed 2026-04-30 |
-| **cwd boundary checks** | ✅ All write/delete/truncate commands validate paths inside cwd |
+| **cwd boundary checks** | ✅ All 20 mutating commands validate paths inside cwd (including cp/mv/ln/link/mkdir/touch/chmod/chown/chgrp/shred/mktemp/mkfifo/mknod/rmdir/unlink/csplit/split/nohup) |
 | **Symlink escape** | ✅ `resolve_path` resolves then checks; Windows skips (no symlink) |
-| **dry-run zero side-effects** | ✅ 12 mutating commands verified |
-| **Dangerous command gates** | ✅ shred/kill/nice/nohup require explicit `--allow-*` |
+| **dry-run zero side-effects** | ✅ 20 mutating commands verified |
+| **Dangerous command gates** | ✅ shred/kill/nice/nohup/stty/chcon/runcon/chroot require explicit `--allow-*` |
+| **MCP security controls** | ✅ `--read-only`/`--allow-command`/`--deny-command` three-tier access |
 | **Security model doc** | `docs/reference/SECURITY_MODEL.md` |
 
 ### GNU Compatibility Status

@@ -43,3 +43,16 @@ updates:
       github-actions:
         patterns:
           - "*"
+
+  # Docker base image updates
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    target-branch: "master"
+    labels:
+      - "dependencies"
+      - "docker"

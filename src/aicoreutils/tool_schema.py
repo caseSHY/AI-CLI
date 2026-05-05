@@ -228,7 +228,6 @@ _READ_ONLY_TOOLS: set[str] = {
     "nproc",
     "df",
     "du",
-    "sync",
     "dircolors",
     "seq",
     "printf",
@@ -238,11 +237,6 @@ _READ_ONLY_TOOLS: set[str] = {
     "expr",
     "true",
     "false",
-    "sleep",
-    "timeout",
-    "stdbuf",
-    "stty",
-    "nice",
     "yes",
 }
 
@@ -274,6 +268,14 @@ _DESTRUCTIVE_TOOLS: set[str] = {
     "unlink",
     "rm",
     "shred",
+    "csplit",
+    "split",
+    "sync",
+    "sleep",
+    "timeout",
+    "stdbuf",
+    "stty",
+    "nice",
 }
 
 

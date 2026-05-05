@@ -396,9 +396,11 @@ def command_sum(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 def command_mkdir(args: argparse.Namespace) -> dict[str, Any]:
+    cwd = Path.cwd().resolve()
     operations = []
     for raw in args.paths:
         path = resolve_path(raw)
+        require_inside_cwd(path, cwd, allow_outside_cwd=False)
         exists = path.exists()
         if exists and not (args.exist_ok or args.parents):
             raise AgentError(
@@ -418,9 +420,11 @@ def command_mkdir(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def command_touch(args: argparse.Namespace) -> dict[str, Any]:
+    cwd = Path.cwd().resolve()
     operations = []
     for raw in args.paths:
         path = resolve_path(raw)
+        require_inside_cwd(path, cwd, allow_outside_cwd=False)
         existed = path.exists()
         ensure_parent(path, create=args.parents, dry_run=args.dry_run)
         operations.append({"operation": "touch", "path": str(path), "created": not existed, "dry_run": args.dry_run})
@@ -433,9 +437,11 @@ def command_touch(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def command_cp(args: argparse.Namespace) -> dict[str, Any]:
+    cwd = Path.cwd().resolve()
     source = resolve_path(args.source, strict=True)
     requested_destination = resolve_path(args.destination)
     destination = destination_inside_directory(source, requested_destination)
+    require_inside_cwd(destination, cwd, allow_outside_cwd=False)
     ensure_parent(destination, create=args.parents, dry_run=args.dry_run)
     if source.is_dir():
         if not args.recursive:
@@ -471,9 +477,12 @@ def command_cp(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def command_mv(args: argparse.Namespace) -> dict[str, Any]:
+    cwd = Path.cwd().resolve()
     source = resolve_path(args.source, strict=True)
     requested_destination = resolve_path(args.destination)
     destination = destination_inside_directory(source, requested_destination)
+    require_inside_cwd(source, cwd, allow_outside_cwd=False)
+    require_inside_cwd(destination, cwd, allow_outside_cwd=False)
     ensure_parent(destination, create=args.parents, dry_run=args.dry_run)
     refuse_overwrite(destination, args.allow_overwrite)
     operation = {
@@ -492,9 +501,11 @@ def command_mv(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def command_ln(args: argparse.Namespace) -> dict[str, Any]:
+    cwd = Path.cwd().resolve()
     source = Path(args.source).expanduser()
     requested_destination = resolve_path(args.destination)
     destination = destination_inside_directory(source, requested_destination)
+    require_inside_cwd(destination, cwd, allow_outside_cwd=False)
     ensure_parent(destination, create=args.parents, dry_run=args.dry_run)
     if destination.exists() or destination.is_symlink():
         if not args.allow_overwrite:
@@ -536,10 +547,12 @@ def command_ln(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def command_link(args: argparse.Namespace) -> dict[str, Any]:
+    cwd = Path.cwd().resolve()
     source = resolve_path(args.source, strict=True)
     if source.is_dir():
         raise AgentError("invalid_input", "Hard-linking directories is not supported.", path=str(source))
     destination = resolve_path(args.destination)
+    require_inside_cwd(destination, cwd, allow_outside_cwd=False)
     ensure_parent(destination, create=args.parents, dry_run=args.dry_run)
     if destination.exists() or destination.is_symlink():
         if not args.allow_overwrite:
@@ -578,9 +591,11 @@ def command_chmod(args: argparse.Namespace) -> dict[str, Any]:
     import stat as statmod
 
     new_mode = parse_octal_mode(args.mode)
+    cwd = Path.cwd().resolve()
     operations = []
     for raw in args.paths:
         path = resolve_path(raw, strict=True)
+        require_inside_cwd(path, cwd, allow_outside_cwd=False)
         old_mode = statmod.S_IMODE(path.lstat().st_mode)
         operations.append(
             {
@@ -607,11 +622,13 @@ def command_chown(args: argparse.Namespace) -> dict[str, Any]:
     gid = resolve_group_id(group_raw)
     if uid is None and gid is None:
         raise AgentError("invalid_input", "chown requires an owner, group, or both.")
+    cwd = Path.cwd().resolve()
     operations = []
     chown = getattr(os, "chown", None)
     supported = callable(chown)
     for raw in args.paths:
         path = resolve_path(raw, strict=True)
+        require_inside_cwd(path, cwd, allow_outside_cwd=False)
         st = path.lstat()
         operation = {
             "operation": "chown",
@@ -645,11 +662,13 @@ def command_chgrp(args: argparse.Namespace) -> dict[str, Any]:
     gid = resolve_group_id(args.group)
     if gid is None:
         raise AgentError("invalid_input", "A group is required.")
+    cwd = Path.cwd().resolve()
     operations = []
     chown = getattr(os, "chown", None)
     supported = callable(chown)
     for raw in args.paths:
         path = resolve_path(raw, strict=True)
+        require_inside_cwd(path, cwd, allow_outside_cwd=False)
         st = path.lstat()
         operation = {
             "operation": "chgrp",
@@ -716,7 +735,9 @@ def command_truncate(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def command_mktemp(args: argparse.Namespace) -> dict[str, Any]:
+    cwd = Path.cwd().resolve()
     tmpdir = resolve_path(args.tmpdir or ".", strict=True)
+    require_inside_cwd(tmpdir, cwd, allow_outside_cwd=False)
     if not tmpdir.is_dir():
         raise AgentError("invalid_input", "--tmpdir must be a directory.", path=str(tmpdir))
     if args.dry_run:
@@ -751,11 +772,13 @@ def command_mktemp(args: argparse.Namespace) -> dict[str, Any]:
 
 def command_mkfifo(args: argparse.Namespace) -> dict[str, Any]:
     mode = parse_octal_mode(args.mode)
+    cwd = Path.cwd().resolve()
     operations = []
     mkfifo = getattr(os, "mkfifo", None)
     supported = callable(mkfifo)
     for raw in args.paths:
         path = resolve_path(raw)
+        require_inside_cwd(path, cwd, allow_outside_cwd=False)
         if path.exists() or path.is_symlink():
             raise AgentError("conflict", "Destination exists.", path=str(path))
         ensure_parent(path, create=args.parents, dry_run=args.dry_run)
@@ -787,9 +810,11 @@ def command_mkfifo(args: argparse.Namespace) -> dict[str, Any]:
 
 def command_mknod(args: argparse.Namespace) -> dict[str, Any]:
     mode = parse_octal_mode(args.mode)
+    cwd = Path.cwd().resolve()
     operations = []
     for raw in args.paths:
         path = resolve_path(raw)
+        require_inside_cwd(path, cwd, allow_outside_cwd=False)
         if path.exists() or path.is_symlink():
             raise AgentError("conflict", "Destination exists.", path=str(path))
         ensure_parent(path, create=args.parents, dry_run=args.dry_run)
@@ -935,9 +960,11 @@ def command_tee(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 def command_rmdir(args: argparse.Namespace) -> dict[str, Any]:
+    cwd = Path.cwd().resolve()
     operations = []
     for raw in args.paths:
         path = resolve_path(raw, strict=True)
+        require_inside_cwd(path, cwd, allow_outside_cwd=False)
         if not path.is_dir() or path.is_symlink():
             raise AgentError("invalid_input", "Path is not a directory.", path=str(path))
         operations.append({"operation": "rmdir", "path": str(path), "dry_run": args.dry_run})
@@ -955,9 +982,11 @@ def command_rmdir(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def command_unlink(args: argparse.Namespace) -> dict[str, Any]:
+    cwd = Path.cwd().resolve()
     operations = []
     for raw in args.paths:
         path = resolve_path(raw)
+        require_inside_cwd(path, cwd, allow_outside_cwd=False)
         if not path.exists() and not path.is_symlink():
             if args.force:
                 operations.append(
@@ -1011,9 +1040,11 @@ def command_rm(args: argparse.Namespace) -> dict[str, Any]:
 def command_shred(args: argparse.Namespace) -> dict[str, Any]:
     if args.passes < 1:
         raise AgentError("invalid_input", "--passes must be >= 1.")
+    cwd = Path.cwd().resolve()
     operations = []
     for raw in args.paths:
         path = resolve_path(raw, strict=True)
+        require_inside_cwd(path, cwd, allow_outside_cwd=False)
         if path.is_dir():
             raise AgentError("invalid_input", "shred refuses directories.", path=str(path))
         size = path.stat().st_size

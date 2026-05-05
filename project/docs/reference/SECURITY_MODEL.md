@@ -199,7 +199,55 @@ aicoreutils 对所有写入、删除、截断、安装类命令强制执行 **cw
 
 ---
 
-## 7. 已知限制 / Known Limitations
+## 7. MCP 安全控制 / MCP Security Controls
+
+### 7.1 服务器启动参数 / Server Start Flags
+
+MCP server (`aicoreutils-mcp`) 支持以下安全启动参数：
+
+| 参数 | 说明 |
+|---|---|
+| `--read-only` | 只允许只读工具（拒绝写入/删除/修改操作） |
+| `--allow-command CMD` | 仅允许指定命令（可重复，覆盖 read-only 限制） |
+| `--deny-command CMD` | 拒绝指定命令（可重复，优先级最高） |
+
+### 7.2 安全检查优先级 / Check Priority
+
+deny list → allow list → read-only mode
+
+1. **deny list 优先**：被 `--deny-command` 列出的命令始终被拒绝。
+2. **allow list 覆盖 read-only**：如果命令在 `--allow-command` 中，可绕过 read-only 限制。
+3. **read-only 兜底**：若未设 allow list 且开启 `--read-only`，只读工具外的所有命令被拒绝。
+
+### 7.3 安全拒绝格式 / Security Denied Response
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "SECURITY_DENIED",
+    "command": "rm",
+    "reason": "Read-only mode is active; this command may modify files or state."
+  }
+}
+```
+
+### 7.4 推荐生产配置 / Recommended Production Config
+
+```bash
+# 最小权限：只读模式
+aicoreutils-mcp --read-only
+
+# 允许特定写命令
+aicoreutils-mcp --read-only --allow-command mkdir --allow-command touch
+
+# 禁止危险命令（即使不在 read-only 模式）
+aicoreutils-mcp --deny-command rm --deny-command shred --deny-command kill
+```
+
+---
+
+## 8. 已知限制 / Known Limitations
 
 | 限制 | 说明 |
 |---|---|

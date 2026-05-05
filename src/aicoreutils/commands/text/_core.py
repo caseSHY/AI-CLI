@@ -27,6 +27,7 @@ import binascii
 import random
 import re
 import textwrap
+from pathlib import Path
 from typing import Any, TypedDict
 
 from ...protocol import (
@@ -43,6 +44,7 @@ from ...protocol import (
     parse_ranges,
     read_input_bytes,
     read_input_texts,
+    require_inside_cwd,
     resolve_path,
     selected_indexes,
     split_fields,
@@ -406,6 +408,7 @@ def command_fmt(args: argparse.Namespace) -> dict[str, Any] | bytes:
 def command_csplit(args: argparse.Namespace) -> dict[str, Any]:
     if args.pattern == "":
         raise AgentError("invalid_input", "--pattern cannot be empty.")
+    cwd = Path.cwd().resolve()
     label, data = read_input_bytes(args.path)
     text = data.decode(args.encoding, errors="replace").replace("\r\n", "\n").replace("\r", "\n")
     try:
@@ -422,6 +425,7 @@ def command_csplit(args: argparse.Namespace) -> dict[str, Any]:
     boundaries = [0] + [match.start() for match in matches] + [len(text)]
     chunks = [text[boundaries[index] : boundaries[index + 1]] for index in range(len(boundaries) - 1)]
     output_dir = resolve_path(args.output_dir, strict=True)
+    require_inside_cwd(output_dir, cwd, allow_outside_cwd=False)
     if not output_dir.is_dir():
         raise AgentError("invalid_input", "--output-dir must be a directory.", path=str(output_dir))
     operations = []
@@ -488,8 +492,10 @@ def split_chunks_by_bytes(data: bytes, bytes_per_file: int) -> list[tuple[bytes,
 def command_split(args: argparse.Namespace) -> dict[str, Any]:
     if args.lines is None and args.bytes is None:
         args.lines = 1000
+    cwd = Path.cwd().resolve()
     label, data = read_input_bytes(args.path)
     output_dir = resolve_path(args.output_dir, strict=True)
+    require_inside_cwd(output_dir, cwd, allow_outside_cwd=False)
     if not output_dir.is_dir():
         raise AgentError("invalid_input", "--output-dir must be a directory.", path=str(output_dir))
     if args.lines is not None:

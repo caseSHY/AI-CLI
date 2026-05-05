@@ -64,6 +64,13 @@ Claude 自动调用 `aicoreutils ls` + `aicoreutils wc`，全程 JSON 交互。
 
 更多集成方式：`aicoreutils tool-list --format openai` 输出 OpenAI Function Calling 格式，可直接用于任意 Agent 框架。
 
+> ⚠️ **安全提示**：生产环境建议以最低权限运行。
+> ```bash
+> aicoreutils-mcp --read-only                           # 只读模式
+> aicoreutils-mcp --deny-command rm --deny-command shred  # 禁止危险命令
+> ```
+> 详见 [生产安全部署指南 →](project/docs/guides/PRODUCTION_SECURITY.md)
+
 ### 🤖 AI IDE 集成
 
 在 Cursor / Windsurf / Continue.dev 中直接使用 aicoreutils：[AI IDE 集成指南 →](project/docs/guides/INTEGRATION_AI_IDE.md)
@@ -183,6 +190,13 @@ Restart Claude Desktop, then ask:
 Claude calls `aicoreutils ls` + `aicoreutils wc` automatically.
 
 For other frameworks: `aicoreutils tool-list --format openai` outputs OpenAI Function Calling format directly.
+
+> ⚠️ **Security**: Run with least privilege in production.
+> ```bash
+> aicoreutils-mcp --read-only                           # Read-only mode
+> aicoreutils-mcp --deny-command rm --deny-command shred  # Block dangerous commands
+> ```
+> See [Production Security Guide →](project/docs/guides/PRODUCTION_SECURITY.md)
 
 ### Run tests
 
