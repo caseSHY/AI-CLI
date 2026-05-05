@@ -11,7 +11,7 @@
 | **验证对象** | 本地工作区（`5c8d941`，已推送并通过 CI 全平台验证 11/11） |
 | **Python 版本** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
 | **操作系统** | Windows 11 (开发) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
-| **项目版本** | 1.0.3 |
+| **项目版本** | 1.1.0 |
 
 ### 测试
 
@@ -93,7 +93,7 @@
 | **Verified target** | local working tree (`5c8d941`, pushed and verified by CI 11/11 on all platforms) |
 | **Python version** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
 | **OS** | Windows 11 (dev) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
-| **Project version** | 1.0.3 |
+| **Project version** | 1.1.0 |
 
 ### Tests
 

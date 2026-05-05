@@ -2,6 +2,28 @@
 
 All notable changes to AICoreUtils.
 
+## [1.1.0] - 2026-05-05
+
+### Added
+- MCP server: `--read-only`, `--allow-command`, `--deny-command` three-tier access control
+- CWD sandbox: `require_inside_cwd()` now enforced on all 20 mutating commands (was 5)
+- PRODUCTION_SECURITY.md: deployment security guide
+- `scripts/generate_status.py`: auto-sync tool for CURRENT_STATUS.md
+- 33 new tests (10 MCP security integration + 13 cwd escape + 10 security unit)
+- Pre-commit hooks: check-yaml, check-toml, check-json, detect-private-key, end-of-file-fixer, trailing-whitespace
+- CI: concurrency group, pip cache on all 3 platforms, Windows choco coreutils
+- Dependabot: Docker ecosystem monitoring
+- Dockerfile: non-root user
+
+### Changed
+- `_READ_ONLY_TOOLS`: sync, sleep, timeout, stdbuf, stty, nice, csplit, split reclassified to destructive
+- `.gitignore`: added *.log, *.tmp, .python-version
+
+### Security
+- MCP server: deny list takes priority over allow list; allow list overrides read-only mode
+- SECURITY_MODEL.md: MCP security controls section with recommended production configs
+- All security denials return structured JSON `{"error":{"code":"SECURITY_DENIED",...}}`
+
 ## [1.0.3] - 2026-05-05
 
 ### Fixed
