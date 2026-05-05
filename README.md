@@ -4,7 +4,8 @@
 [![Glama Score](https://glama.ai/mcp/servers/caseSHY/AI-CLI/badges/score.svg)](https://glama.ai/mcp/servers/caseSHY/AI-CLI/score)
 [![PyPI](https://img.shields.io/pypi/v/aicoreutils)](https://pypi.org/project/aicoreutils/)
 
-> **Glama 92%** | TDQS A 级 (均值 4.6) | 114 工具全部 A 级 | CI 12/12 全平台
+[![CI](https://github.com/caseSHY/AI-CLI/actions/workflows/ci.yml/badge.svg)](https://github.com/caseSHY/AI-CLI/actions/workflows/ci.yml)
+> **Glama 92%** | TDQS A 级 (均值 4.6) | 114 工具全部 A 级 | CI 全平台通过
 
 > ⚠️ **Stability**: This project is actively evolving. While the JSON output schema and MCP tool interface are stable, internal CLI argument parsing and per-command flags may change. 阅读 [稳定性说明](#稳定性和-semver) 了解详情。
 

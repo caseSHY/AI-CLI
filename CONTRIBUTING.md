@@ -15,7 +15,7 @@ python -m pip install -e ".[dev]"
 PYTHONPATH=src python -m pytest project/tests/ -v --tb=short
 
 # 含覆盖率
-PYTHONPATH=src python -m pytest project/tests/ --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=35
+PYTHONPATH=src python -m pytest project/tests/ --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=45
 
 # 版本一致性
 PYTHONPATH=src python -m pytest tests/test_version_consistency.py -v
@@ -42,7 +42,7 @@ mypy src/aicoreutils/ --strict
 
 1. 所有测试通过 (`pytest project/tests/`)
 2. Lint + typecheck 通过 (`ruff` + `mypy`)
-3. 覆盖率 ≥ 35%
+3. 覆盖率 ≥ 45%
 4. 修改文档后需同步 `project/docs/status/CURRENT_STATUS.md`
 5. 双语文档（中文 + English）同次更新
 

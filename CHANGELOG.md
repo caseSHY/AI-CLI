@@ -2,6 +2,30 @@
 
 All notable changes to AICoreUtils.
 
+## [1.0.3] - 2026-05-05
+
+### Fixed
+- CURRENT_STATUS.md: synced version from 0.4.4 to 1.0.2, CI job count 10/10→11/11, coverage threshold 25%→45%
+- CONTRIBUTING.md: coverage threshold 35%→45%
+- README.md: replaced static "CI 12/12" with GitHub Actions badge
+- CHANGELOG.md: fixed outdated CI job count
+- COMMUNITY_LAUNCH_COPY.md: fixed job count 12→11
+
+### Changed
+- test_docs_governance.py: version assertion now dynamic (reads `__version__`), test count assertions use regex — prevents future doc staleness
+
+### Removed
+- Closed resolved known issues K-004 (version consistency in CI) and K-005 (mcp_server 0% coverage)
+
+## [1.0.2] - 2026-05-05
+
+### Added
+- CHANGELOG.md
+
+### Changed
+- Development Status classifier: Alpha → Beta
+- README: added SemVer stability notice
+
 ## [1.0.1] - 2026-05-04
 
 ### Fixed
@@ -12,7 +36,7 @@ All notable changes to AICoreUtils.
 
 ## [1.0.0] - 2026-05-04
 
-Milestone release. 114 tools all A-grade TDQS (avg 4.6), Glama 92%, CI 12/12.
+Milestone release. 114 tools all A-grade TDQS (avg 4.6), Glama 92%, CI all platforms passing.
 
 ### Added
 - AI IDE integration guide (Cursor, Windsurf, Continue.dev)

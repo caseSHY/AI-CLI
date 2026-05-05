@@ -7,11 +7,11 @@
 
 | 属性 | 值 |
 |---|---|
-| **最后验证日期** | 2026-05-04 |
-| **验证对象** | 本地工作区（`be9e11f`，已推送并通过 CI 全平台验证 10/10） |
+| **最后验证日期** | 2026-05-05 |
+| **验证对象** | 本地工作区（`5c8d941`，已推送并通过 CI 全平台验证 11/11） |
 | **Python 版本** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
 | **操作系统** | Windows 11 (开发) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
-| **项目版本** | 0.4.4 |
+| **项目版本** | 1.0.3 |
 
 ### 测试
 
@@ -28,7 +28,7 @@
 | **文档治理测试** | `python -m pytest project/tests/test_docs_governance.py -v` (9 测试, 全部通过) |
 | **双语文档测试** | `python -m pytest project/tests/test_docs_bilingual.py -v` (1 测试, 通过) |
 | **版本一致性测试** | `python -m pytest tests/test_version_consistency.py -v` (4 测试, 本地通过; CI 未纳入) |
-| **覆盖率** | `python -m pytest project/tests/ --cov=src/aicoreutils` (需要 pytest-cov; 阈值 25%) |
+| **覆盖率** | `python -m pytest project/tests/ --cov=src/aicoreutils` (需要 pytest-cov; 阈值 45%) |
 | **静态检查** | `ruff check src/ project/tests/`; `ruff format --check src/ project/tests/`; `mypy src/aicoreutils/ --strict` 全部通过 |
 | **CI 平台** | GitHub Actions: ubuntu-latest (3.11/3.12/3.13), macos-latest (3.12/3.13), windows-latest (3.11/3.12/3.13) |
 
@@ -63,9 +63,9 @@
 | **macOS runner** | macos-latest, Python 3.12/3.13 |
 | **Windows runner** | windows-latest, Python 3.11/3.12/3.13 |
 | **Lint + Typecheck** | ruff check + ruff format --check + mypy --strict, Python 3.13 |
-| **CI 测试命令** | `python -m pytest project/tests/ -v --tb=short --cov=src/aicoreutils --cov-fail-under=25` |
+| **CI 测试命令** | `python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-fail-under=45` |
 | **GNU coreutils** | ✅ Ubuntu job 已安装（`apt-get update && apt-get install coreutils`）; macOS: `brew install coreutils` |
-| **最新 CI 结果** | ✅ 10/10 全平台通过 (commit `be9e11f`): lint, typecheck, test-ubuntu, test-macos, test-windows |
+| **最新 CI 结果** | ✅ 11/11 全平台通过 (commit `5c8d941`): lint, typecheck, test-ubuntu (3×Python), test-macos (3×Python), test-windows (3×Python) |
 | **本地 WSL CI 入口** | ✅ `.github/scripts/run-ci-wsl.ps1` + `.github/scripts/wsl-ci.sh` |
 
 ### 已知未解决问题
@@ -73,15 +73,12 @@
 | 编号 | 问题 | 优先级 |
 |---|---|---|
 | K-003 | CI Node.js 20 deprecation 警告 — 需等 GitHub Actions 发布 Node.js 24 版本的 checkout/setup-python | P4 |
-| K-004 | `tests/test_version_consistency.py` 未纳入 CI（不在 `project/tests/` 下） | P2 |
-| K-005 | `mcp_server.py` 0% 测试覆盖率 — 缺少 `_call_tool` 和 `server_loop` 单元测试 | P1 |
 
 ### 建议下一步
 
-1. **补充 MCP server 单元测试**：为 `mcp_server.py` 的 `_call_tool` 和协议解析添加测试
-2. **纳入版本一致性测试**：将 `tests/test_version_consistency.py` 加入 CI pipeline
-3. **补充测试覆盖**：为 `async_interface`、`plugins`、`stream` 模块添加单元测试
-4. **提升覆盖率门槛**：当前 `--cov-fail-under=25` 偏低，目标提升到 35%
+1. **补充测试覆盖**：为 `async_interface`、`plugins`、`stream` 模块添加单元测试
+2. **MCP 安全默认模式**：添加 `--read-only`、`--deny` 禁用列表、tool annotations
+3. **状态文档自动化**：让 CI 自动同步动态数字（版本号、测试通过数等）到 CURRENT_STATUS.md
 
 ---
 
@@ -92,11 +89,11 @@
 
 | Property | Value |
 |---|---|
-| **Last verified** | 2026-05-04 |
-| **Verified target** | local working tree (`be9e11f`, pushed and verified by CI 10/10 on all platforms) |
+| **Last verified** | 2026-05-05 |
+| **Verified target** | local working tree (`5c8d941`, pushed and verified by CI 11/11 on all platforms) |
 | **Python version** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
 | **OS** | Windows 11 (dev) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
-| **Project version** | 0.4.4 |
+| **Project version** | 1.0.3 |
 
 ### Tests
 
@@ -113,7 +110,7 @@
 | **Docs governance** | `python -m pytest project/tests/test_docs_governance.py -v` (9 tests, all pass) |
 | **Bilingual docs** | `python -m pytest project/tests/test_docs_bilingual.py -v` (1 test, passes) |
 | **Version consistency** | `python -m pytest tests/test_version_consistency.py -v` (4 tests, local pass; not yet in CI) |
-| **Coverage** | `python -m pytest project/tests/ --cov=src/aicoreutils` (requires pytest-cov; threshold 25%) |
+| **Coverage** | `python -m pytest project/tests/ --cov=src/aicoreutils` (requires pytest-cov; threshold 45%) |
 | **Static checks** | `ruff check src/ project/tests/`; `ruff format --check src/ project/tests/`; `mypy src/aicoreutils/ --strict` all pass |
 | **CI platform** | GitHub Actions: ubuntu-latest (3.11/3.12/3.13), macos-latest (3.12/3.13), windows-latest (3.11/3.12/3.13) |
 
@@ -148,9 +145,9 @@
 | **macOS runner** | macos-latest, Python 3.12/3.13 |
 | **Windows runner** | windows-latest, Python 3.11/3.12/3.13 |
 | **Lint + Typecheck** | ruff check + ruff format --check + mypy --strict, Python 3.13 |
-| **CI test command** | `python -m pytest project/tests/ -v --tb=short --cov=src/aicoreutils --cov-fail-under=25` |
+| **CI test command** | `python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-fail-under=45` |
 | **GNU coreutils** | ✅ Ubuntu: `apt-get update && apt-get install coreutils`; macOS: `brew install coreutils` |
-| **Latest CI result** | ✅ 10/10 all platforms pass (commit `be9e11f`): lint, typecheck, test-ubuntu, test-macos, test-windows |
+| **Latest CI result** | ✅ 11/11 all platforms pass (commit `5c8d941`): lint, typecheck, test-ubuntu (3×Python), test-macos (3×Python), test-windows (3×Python) |
 | **Local WSL CI entry** | ✅ `.github/scripts/run-ci-wsl.ps1` + `.github/scripts/wsl-ci.sh` |
 
 ### Known Open Issues
@@ -158,12 +155,9 @@
 | # | Issue | Priority |
 |---|---|---|
 | K-003 | CI Node.js 20 deprecation warnings — awaiting GitHub Actions Node.js 24 checkout/setup-python releases | P4 |
-| K-004 | `tests/test_version_consistency.py` not in CI (located outside `project/tests/`) | P2 |
-| K-005 | `mcp_server.py` 0% test coverage — missing `_call_tool` and `server_loop` unit tests | P1 |
 
 ### Next Required Actions
 
-1. **Add MCP server unit tests**: Test `_call_tool` and protocol parsing in `mcp_server.py`
-2. **Include version consistency in CI**: Add `tests/test_version_consistency.py` to CI pipeline
-3. **Add test coverage**: Unit tests for `async_interface`, `plugins`, `stream` modules
-4. **Raise coverage threshold**: Current `--cov-fail-under=25` is low; target 35%
+1. **Add test coverage**: Unit tests for `async_interface`, `plugins`, `stream` modules
+2. **MCP security defaults**: Add `--read-only` mode, `--deny` block list, tool annotations
+3. **Status doc automation**: Have CI auto-sync dynamic numbers (version, test counts, etc.) to CURRENT_STATUS.md

@@ -112,7 +112,7 @@ Agent 拿到这个，`json.loads()` 一下就能用。不用 grep 不用 sed 不
 
 **质量：** Glama 评分 92%，每个工具描述都通过了 TDQS 学术评估（均值 4.6/5，114 个全部 A 级）。
 
-**CI：** 12 个 job 全平台（Linux/macOS/Windows × 3 个 Python 版本），覆盖率门禁 45%。
+**CI：** 11 个 job 全平台（Linux/macOS/Windows × 3 个 Python 版本），覆盖率门禁 45%。
 
 开源：https://github.com/caseSHY/AI-CLI
 安装：`pip install aicoreutils`
