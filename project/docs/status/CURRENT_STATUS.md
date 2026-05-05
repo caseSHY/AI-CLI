@@ -30,7 +30,7 @@
 | **版本一致性测试** | `python -m pytest tests/test_version_consistency.py -v` (4 测试; 已在 CI pipeline 中) |
 | **覆盖率** | `python -m pytest project/tests/ --cov=src/aicoreutils` (需要 pytest-cov; 阈值 45%) |
 | **静态检查** | `ruff check src/ project/tests/`; `ruff format --check src/ project/tests/`; `mypy src/aicoreutils/ --strict` 全部通过 |
-| **CI 平台** | GitHub Actions: ubuntu-latest (3.11/3.12/3.13), macos-latest (3.12/3.13), windows-latest (3.11/3.12/3.13) |
+| **CI 平台** | GitHub Actions: ubuntu-latest (3.11/3.12/3.13), macos-latest (3.11/3.12/3.13), windows-latest (3.11/3.12/3.13) |
 
 ### 安全状态
 

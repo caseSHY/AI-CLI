@@ -168,6 +168,39 @@ class PathTraversalSandboxedTests(unittest.TestCase):
         result = run_cli("mktemp", "--tmpdir", str(self.outside.parent), cwd=self.sandbox)
         self.assertNotEqual(result.returncode, 0)
 
+    def test_mkfifo_outside_should_be_blocked(self) -> None:
+        result = run_cli("mkfifo", str(self.outside.parent / "fifo"), "--dry-run", cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_mknod_outside_should_be_blocked(self) -> None:
+        result = run_cli("mknod", str(self.outside.parent / "node"), "--dry-run", cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_csplit_outside_output_should_be_blocked(self) -> None:
+        inside = self.sandbox / "data.txt"
+        inside.write_text("one\ntwo\nthree\n", encoding="utf-8")
+        result = run_cli(
+            "csplit",
+            "data.txt",
+            "--output-dir",
+            str(self.outside.parent),
+            "--pattern",
+            r"^",
+            "--dry-run",
+            cwd=self.sandbox,
+        )
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_split_outside_output_should_be_blocked(self) -> None:
+        inside = self.sandbox / "data.txt"
+        inside.write_text("line\n" * 5, encoding="utf-8")
+        result = run_cli("split", "data.txt", "--output-dir", str(self.outside.parent), "--dry-run", cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_nohup_outside_output_should_be_blocked(self) -> None:
+        result = run_cli("nohup", "--output", str(self.outside), "--dry-run", cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
     def test_ln_outside_destination_should_be_blocked(self) -> None:
         inside = self.sandbox / "target.txt"
         inside.write_text("hello", encoding="utf-8")

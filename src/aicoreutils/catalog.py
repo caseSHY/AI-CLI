@@ -10,8 +10,8 @@
   P1（高）：安全修改文件系统 → cp/mv/rm/mkdir...（带 dry-run）
   P2（中）：文本转换与管道组合 → sort/uniq/cut/tr...
   P3（正常）：系统上下文与有界执行 → date/env/kill...
-- 元命令（catalog/schema/coreutils/tool-list/hash）不在 CATALOG 中，
-  由 parser.py 单独管理。
+- 元命令（catalog/schema/tool-list）不在 CATALOG 中，由 parser.py 单独管理。
+- coreutils/hash 在 CATALOG 的 P2/P3 组中以提供命令发现和优先级信息。
 
 注意：plugins.py 中的 register_plugin_command() 会修改 CATALOG。
 这是已知的技术债务（可变全局状态），已在 Phase 3 中通过 PluginRegistry 修复。
@@ -175,7 +175,6 @@ CATALOG: list[CatalogEntry] = [
             "expr",
             "factor",
             "pathchk",
-            "mknod",
             "chcon",
             "runcon",
         ],

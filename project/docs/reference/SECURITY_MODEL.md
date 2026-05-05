@@ -17,7 +17,7 @@ aicoreutils 对所有写入、删除、截断、安装类命令强制执行 **cw
 **例外**：用户通过 `--allow-outside-cwd` 显式授权可以绕过此限制。
 
 **覆盖的命令**：
-`rm`, `tee`, `truncate`, `install`, `ginstall`, `dd`, `cp`, `mv`, `shred`, `mkdir`, `touch`, `ln`, `link`, `chmod`, `chown`, `chgrp`, `mktemp`, `mkfifo`, `mknod`, `rmdir`, `unlink`
+`rm`, `tee`, `truncate`, `install`, `ginstall`, `dd`, `cp`, `mv`, `shred`, `mkdir`, `touch`, `ln`, `link`, `chmod`, `chown`, `chgrp`, `mktemp`, `mkfifo`, `mknod`, `rmdir`, `unlink`, `csplit`, `split`, `nohup`
 
 ### 2. 路径安全策略
 
@@ -111,7 +111,7 @@ aicoreutils 对所有写入、删除、截断、安装类命令强制执行 **cw
 **例外**：用户通过 `--allow-outside-cwd` 显式授权可以绕过此限制。
 
 **覆盖的命令**：
-`rm`, `tee`, `truncate`, `install`, `ginstall`, `dd`, `cp`, `mv`, `shred`, `mkdir`, `touch`, `ln`, `link`, `chmod`, `chown`, `chgrp`, `mktemp`, `mkfifo`, `mknod`, `rmdir`, `unlink`
+`rm`, `tee`, `truncate`, `install`, `ginstall`, `dd`, `cp`, `mv`, `shred`, `mkdir`, `touch`, `ln`, `link`, `chmod`, `chown`, `chgrp`, `mktemp`, `mkfifo`, `mknod`, `rmdir`, `unlink`, `csplit`, `split`, `nohup`
 
 ---
 

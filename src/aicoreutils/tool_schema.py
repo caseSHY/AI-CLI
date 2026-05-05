@@ -194,8 +194,6 @@ _READ_ONLY_TOOLS: set[str] = {
     "nl",
     "fold",
     "fmt",
-    "csplit",
-    "split",
     "od",
     "numfmt",
     "tsort",
