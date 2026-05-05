@@ -1,6 +1,32 @@
 # Changelog
 
 All notable changes to AICoreUtils.
+
+## [1.1.2] - 2026-05-06
+
+### Added
+- Release governance documentation and executable release gate.
+- Command risk/test matrix and parser-derived command spec audit.
+- Supply-chain audit for CI, publishing, Dependabot, and Docker controls.
+- `tool-list --include-risk` risk metadata export for AICoreUtils, OpenAI, and Anthropic formats.
+- Additional protocol unit tests for `_system` helpers.
+
+### Changed
+- MCP server now supports profile-first security modes: `readonly`, `workspace-write`, and `explicit-danger`.
+- Docker MCP default command now starts with `--profile readonly`.
+- CI now runs governance and supply-chain checks.
+- Production security and integration docs now recommend profile-first MCP deployment.
+
+### Fixed
+- Status document automation now checks more dynamic facts and avoids stale release metadata.
+- Command specification and command matrix drift are now blocked by tests.
+
+### Security
+- Added MCP risk annotations for tool schemas, including `riskLevel`, `riskCategory`, and `requiresExplicitAllow`.
+- Added supply-chain release checks for trusted publishing posture and non-root Docker defaults.
+- External audit was canceled as a release blocker; release readiness now depends on the automated release gate and CI governance gate.
+
+
 ## [1.1.1] - 2026-05-05
 
 ### Security (Critical)
