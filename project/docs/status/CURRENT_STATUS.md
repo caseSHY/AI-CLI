@@ -8,10 +8,10 @@
 | 属性 | 值 |
 |---|---|
 | **最后验证日期** | 2026-05-05 |
-| **验证对象** | 本地工作区（`16d46ba`，已推送至 GitHub，GitHub Actions CI 运行中） |
+| **验证对象** | 本地工作区（`102dec4`，已推送至 GitHub，GitHub Actions CI 运行中） |
 | **Python 版本** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
 | **操作系统** | Windows 11 (开发) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
-| **项目版本** | 1.1.0 |
+| **项目版本** | 1.1.1 |
 
 ### 测试
 
@@ -24,7 +24,7 @@
 | **Windows 跳过原因** | 无 symlink 支持; locale 相关中文排序/分词; GNU 工具部分不可用 (choco 安装后部分可用) |
 | **Property-based 测试** | `python -m pytest project/tests/test_property_based_cli.py -v` (25 测试) |
 | **GNU 对照测试** | `python -m pytest project/tests/test_gnu_differential.py -v`（56 测试；Ubuntu CI 通过；Windows/macOS 按平台跳过） |
-| **沙箱逃逸测试** | `python -m pytest project/tests/test_sandbox_escape_hardening.py -v` (46 测试, 全部通过或 skip) |
+| **沙箱逃逸测试** | `python -m pytest project/tests/test_sandbox_escape_hardening.py -v` (58 测试, 全部通过或 skip) |
 | **文档治理测试** | `python -m pytest project/tests/test_docs_governance.py -v` (9 测试, 全部通过) |
 | **双语文档测试** | `python -m pytest project/tests/test_docs_bilingual.py -v` (1 测试, 通过) |
 | **版本一致性测试** | `python -m pytest tests/test_version_consistency.py -v` (4 测试; 已在 CI pipeline 中) |
@@ -93,7 +93,7 @@
 | **Verified target** | local working tree (`16d46ba`, pushed to GitHub, GitHub Actions CI in progress) |
 | **Python version** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
 | **OS** | Windows 11 (dev) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
-| **Project version** | 1.1.0 |
+| **Project version** | 1.1.1 |
 
 ### Tests
 
@@ -106,7 +106,7 @@
 | **Windows skip reasons** | No symlink support; locale-dependent Chinese sort/word-count; GNU tools partially available (after choco install) |
 | **Property-based** | `python -m pytest project/tests/test_property_based_cli.py -v` (25 tests) |
 | **GNU differential** | `python -m pytest project/tests/test_gnu_differential.py -v` (56 tests; Ubuntu CI passes; Windows/macOS skip per platform) |
-| **Sandbox escape** | `python -m pytest project/tests/test_sandbox_escape_hardening.py -v` (46 tests, all pass or skip) |
+| **Sandbox escape** | `python -m pytest project/tests/test_sandbox_escape_hardening.py -v` (58 tests, all pass or skip) |
 | **Docs governance** | `python -m pytest project/tests/test_docs_governance.py -v` (9 tests, all pass) |
 | **Bilingual docs** | `python -m pytest project/tests/test_docs_bilingual.py -v` (1 test, passes) |
 | **Version consistency** | `python -m pytest tests/test_version_consistency.py -v` (4 tests; in CI pipeline) |

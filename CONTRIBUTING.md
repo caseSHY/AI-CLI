@@ -49,16 +49,26 @@ mypy src/aicoreutils/ --strict
 ## 版本发布
 
 ```bash
-# 1. bump 版本号
-# pyproject.toml: version = "x.y.z"
-# src/aicoreutils/__init__.py: __version__ = "x.y.z"
-# server.json: "version": "x.y.z"
+# 1. bump 版本号（自动修改 5 个文件 + CHANGELOG 模板）
+python scripts/bump_version.py x.y.z
+# 预览：python scripts/bump_version.py x.y.z --dry-run
 
-# 2. 提交并打 tag
-git add pyproject.toml src/aicoreutils/__init__.py server.json
+# 2. 编辑 CHANGELOG.md 填写实际变更内容
+
+# 3. 更新 CURRENT_STATUS.md 动态字段
+python scripts/generate_status.py --write
+
+# 4. 运行版本一致性测试
+PYTHONPATH=src python -m pytest tests/test_version_consistency.py tests/test_project_consistency.py -v
+
+# 5. 提交并打 tag
+git add pyproject.toml src/aicoreutils/__init__.py server.json CHANGELOG.md project/docs/status/CURRENT_STATUS.md
 git commit -m "release: bump to x.y.z"
 git tag vx.y.z
 git push && git push origin vx.y.z
 
-# 3. GitHub Actions 自动发布到 PyPI
+# 6. GitHub Actions 自动：
+#    - 构建 wheel/sdist
+#    - 发布到 TestPyPI → PyPI (Trusted Publishing)
+#    - 创建 GitHub Release（notes 从 CHANGELOG 自动提取）
 ```

@@ -1,6 +1,39 @@
 # Changelog
 
 All notable changes to AICoreUtils.
+## [1.1.1] - 2026-05-05
+
+### Security (Critical)
+- Fix csplit/split bypass: commands were in both _READ_ONLY_TOOLS and _DESTRUCTIVE_TOOLS,
+  allowing file writes under MCP --read-only mode
+
+### Added
+- 5 cwd boundary escape tests (mkfifo, mknod, csplit, split, nohup)
+- 4 overwrite protection tests (cp, mv, ln, link)
+- test_project_consistency.py: classification overlap, catalog duplicates, all-classified checks
+- scripts/bump_version.py: semi-automated version bump for all 5 version files + CHANGELOG
+
+### Changed
+- scripts/generate_status.py: robust --write mode with auto-update for CURRENT_STATUS.md
+- CONTRIBUTING.md: updated release process with bump_version.py + generate_status.py
+
+### Fixed
+- README production pin: 1.0.1 → 1.1.0
+- CURRENT_STATUS.md: commit hash, macOS Python matrix (3.12/3.13 → 3.11/3.12/3.13)
+- CURRENT_STATUS.md: self-contradiction (version consistency "CI未纳入" while in CI cmd)
+- SECURITY_MODEL.md: add csplit/split/nohup to CN+EN cwd coverage list
+- catalog.py: remove duplicate mknod from P3 group; fix stale comment
+- Pre-commit hooks: check-yaml, check-toml, check-json, detect-private-key, end-of-file-fixer, trailing-whitespace
+
+### CI
+- New status-check job verifies CURRENT_STATUS.md consistency
+- publish.yml: automatic GitHub Release creation from CHANGELOG on tag push
+
+### Testing
+- test_version_consistency.py: +3 tests (CURRENT_STATUS version, README pin, CI pipeline claim)
+- test_project_consistency.py: 4 classification integrity tests
+- Sandbox escape tests: 46 → 58 (+12 new tests)
+
 
 ## [1.1.0] - 2026-05-05
 

@@ -201,6 +201,42 @@ class PathTraversalSandboxedTests(unittest.TestCase):
         result = run_cli("nohup", "--output", str(self.outside), "--dry-run", cwd=self.sandbox)
         self.assertNotEqual(result.returncode, 0)
 
+    # --- Overwrite protection tests ---
+
+    def test_cp_overwrite_refused(self) -> None:
+        src = self.sandbox / "src.txt"
+        src.write_text("original", encoding="utf-8")
+        dst = self.sandbox / "dst.txt"
+        dst.write_text("existing", encoding="utf-8")
+        result = run_cli("cp", "src.txt", "dst.txt", cwd=self.sandbox)
+        self.assertEqual(result.returncode, 6)
+        self.assertEqual(dst.read_text(encoding="utf-8"), "existing")
+
+    def test_mv_overwrite_refused(self) -> None:
+        src = self.sandbox / "src2.txt"
+        src.write_text("original", encoding="utf-8")
+        dst = self.sandbox / "dst2.txt"
+        dst.write_text("existing", encoding="utf-8")
+        result = run_cli("mv", "src2.txt", "dst2.txt", cwd=self.sandbox)
+        self.assertEqual(result.returncode, 6)
+        self.assertEqual(dst.read_text(encoding="utf-8"), "existing")
+
+    def test_ln_overwrite_refused(self) -> None:
+        src = self.sandbox / "src3.txt"
+        src.write_text("original", encoding="utf-8")
+        dst = self.sandbox / "dst3.txt"
+        dst.write_text("existing", encoding="utf-8")
+        result = run_cli("ln", "src3.txt", "dst3.txt", cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_link_overwrite_refused(self) -> None:
+        src = self.sandbox / "src4.txt"
+        src.write_text("original", encoding="utf-8")
+        dst = self.sandbox / "dst4.txt"
+        dst.write_text("existing", encoding="utf-8")
+        result = run_cli("link", "src4.txt", "dst4.txt", cwd=self.sandbox)
+        self.assertNotEqual(result.returncode, 0)
+
     def test_ln_outside_destination_should_be_blocked(self) -> None:
         inside = self.sandbox / "target.txt"
         inside.write_text("hello", encoding="utf-8")
