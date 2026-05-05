@@ -78,6 +78,27 @@ class ToolSchemaTests(unittest.TestCase):
         empty = [t["name"] for t in self.tools if not t["description"]]
         self.assertEqual(empty, [], f"Tools with empty descriptions: {empty}")
 
+    def test_tools_have_risk_annotations(self) -> None:
+        for tool in self.tools:
+            with self.subTest(name=tool["name"]):
+                annotations = tool.get("annotations", {})
+                self.assertIn("riskLevel", annotations)
+                self.assertIn("riskCategory", annotations)
+                self.assertIn("requiresExplicitAllow", annotations)
+                self.assertIsInstance(annotations["riskCategory"], list)
+
+        pwd = next(t for t in self.tools if t["name"] == "pwd")
+        self.assertEqual(pwd["annotations"]["riskLevel"], "read-only")
+        self.assertTrue(pwd["annotations"]["readOnlyHint"])
+
+        timeout = next(t for t in self.tools if t["name"] == "timeout")
+        self.assertEqual(timeout["annotations"]["riskLevel"], "process-exec")
+        self.assertIn("process-exec", timeout["annotations"]["riskCategory"])
+
+        rm = next(t for t in self.tools if t["name"] == "rm")
+        self.assertEqual(rm["annotations"]["riskLevel"], "destructive")
+        self.assertTrue(rm["annotations"]["requiresExplicitAllow"])
+
     def test_openai_format(self) -> None:
         result = tools_openai(self.tools)
         self.assertGreaterEqual(len(result), 114)  # plugin commands may increase total
@@ -85,6 +106,15 @@ class ToolSchemaTests(unittest.TestCase):
         self.assertIn("name", result[0]["function"])
         self.assertIn("description", result[0]["function"])
         self.assertIn("parameters", result[0]["function"])
+        self.assertNotIn("x-aicoreutils-risk", result[0])
+
+    def test_openai_format_with_risk_metadata(self) -> None:
+        result = tools_openai(self.tools, include_risk=True)
+        rm = next(item for item in result if item["function"]["name"] == "rm")
+        risk = rm["x-aicoreutils-risk"]
+        self.assertEqual(risk["riskLevel"], "destructive")
+        self.assertIn("destructive", risk["riskCategory"])
+        self.assertTrue(risk["requiresExplicitAllow"])
 
     def test_anthropic_format(self) -> None:
         result = tools_anthropic(self.tools)
@@ -92,6 +122,15 @@ class ToolSchemaTests(unittest.TestCase):
         self.assertIn("name", result[0])
         self.assertIn("description", result[0])
         self.assertIn("input_schema", result[0])
+        self.assertNotIn("x-aicoreutils-risk", result[0])
+
+    def test_anthropic_format_with_risk_metadata(self) -> None:
+        result = tools_anthropic(self.tools, include_risk=True)
+        rm = next(item for item in result if item["name"] == "rm")
+        risk = rm["x-aicoreutils-risk"]
+        self.assertEqual(risk["riskLevel"], "destructive")
+        self.assertIn("destructive", risk["riskCategory"])
+        self.assertTrue(risk["requiresExplicitAllow"])
 
     def _run_cli(self, *args: str) -> subprocess.CompletedProcess[str]:
         env = {**dict(subprocess.os.environ), "PYTHONPATH": str(SRC), "PYTHONIOENCODING": "utf-8"}
@@ -111,6 +150,14 @@ class ToolSchemaTests(unittest.TestCase):
         data = json.loads(cp.stdout)
         self.assertGreaterEqual(len(data), 114)  # allow plugin commands to increase total
         self.assertEqual(data[0]["type"], "function")
+        self.assertNotIn("x-aicoreutils-risk", data[0])
+
+    def test_tool_list_openai_cli_include_risk(self) -> None:
+        cp = self._run_cli("tool-list", "--format", "openai", "--include-risk", "--raw")
+        self.assertEqual(cp.returncode, 0, cp.stderr)
+        data = json.loads(cp.stdout)
+        rm = next(item for item in data if item["function"]["name"] == "rm")
+        self.assertEqual(rm["x-aicoreutils-risk"]["riskLevel"], "destructive")
 
     def test_tool_list_anthropic_cli(self) -> None:
         cp = self._run_cli("tool-list", "--format", "anthropic", "--raw")
@@ -118,6 +165,7 @@ class ToolSchemaTests(unittest.TestCase):
         data = json.loads(cp.stdout)
         self.assertGreaterEqual(len(data), 114)  # allow plugin commands to increase total
         self.assertIn("input_schema", data[0])
+        self.assertNotIn("x-aicoreutils-risk", data[0])
 
     def test_tool_list_default_format(self) -> None:
         cp = self._run_cli("tool-list", "--raw")
@@ -125,6 +173,16 @@ class ToolSchemaTests(unittest.TestCase):
         data = json.loads(cp.stdout)
         self.assertIn("tools", data)
         self.assertIn("count", data)
+        self.assertNotIn("includeRisk", data)
+
+    def test_tool_list_default_format_include_risk(self) -> None:
+        cp = self._run_cli("tool-list", "--include-risk", "--raw")
+        self.assertEqual(cp.returncode, 0, cp.stderr)
+        data = json.loads(cp.stdout)
+        rm = next(item for item in data["tools"] if item["name"] == "rm")
+        self.assertTrue(data["includeRisk"])
+        self.assertEqual(rm["riskLevel"], "destructive")
+        self.assertIn("destructive", rm["riskCategory"])
 
 
 # ── mcp_server ──

@@ -7,14 +7,14 @@ AICoreUtils 设计为 AI Agent 用工具箱，接入 Claude Desktop、Cursor、W
 
 ### 推荐配置
 
-#### 最小权限：只读模式
+#### 最小权限：readonly profile
 
 ```json
 {
   "mcpServers": {
     "aicoreutils": {
       "command": "python",
-      "args": ["-m", "aicoreutils.mcp_server", "--read-only"]
+      "args": ["-m", "aicoreutils.mcp_server", "--profile", "readonly"]
     }
   }
 }
@@ -22,7 +22,24 @@ AICoreUtils 设计为 AI Agent 用工具箱，接入 Claude Desktop、Cursor、W
 
 只读模式下，Agent 可读取文件、列表目录、统计行数，但**无法写入、删除或修改任何文件**。
 
-#### 部分写权限
+#### 低风险工作区写入：workspace-write profile
+
+```json
+{
+  "mcpServers": {
+    "aicoreutils": {
+      "command": "python",
+      "args": ["-m", "aicoreutils.mcp_server", "--profile", "workspace-write"]
+    }
+  }
+}
+```
+
+`workspace-write` 只允许 cwd 内的低风险写入命令，例如 `mkdir`、`touch`、`cp`、`tee`。它仍拒绝 `rm`、`shred`、`kill`、`timeout`、`nohup` 等 destructive 或 process-exec 命令。
+
+#### 显式 allow-list
+
+如果需要更窄的权限面，优先使用 allow-list，而不是全量暴露后再 deny：
 
 ```json
 {
@@ -31,33 +48,16 @@ AICoreUtils 设计为 AI Agent 用工具箱，接入 Claude Desktop、Cursor、W
       "command": "python",
       "args": [
         "-m", "aicoreutils.mcp_server",
-        "--read-only",
-        "--allow-command", "mkdir",
-        "--allow-command", "touch",
-        "--allow-command", "cp"
+        "--allow-command", "ls",
+        "--allow-command", "cat",
+        "--allow-command", "wc"
       ]
     }
   }
 }
 ```
 
-#### 禁止危险命令
-
-```json
-{
-  "mcpServers": {
-    "aicoreutils": {
-      "command": "python",
-      "args": [
-        "-m", "aicoreutils.mcp_server",
-        "--deny-command", "rm",
-        "--deny-command", "shred",
-        "--deny-command", "kill"
-      ]
-    }
-  }
-}
-```
+`--deny-command` 仍可作为额外防线；deny list 优先级高于 allow-list。
 
 ### 工作目录选择
 
@@ -76,8 +76,8 @@ aicoreutils 的 cwd sandbox 会拒绝所有 cwd 外的写入操作（exit code 8
 # 构建
 docker build -t aicoreutils .
 
-# 只读模式运行
-docker run --rm -v $(pwd):/workspace -w /workspace aicoreutils-mcp --read-only
+# 只读 profile 运行
+docker run --rm -v $(pwd):/workspace -w /workspace aicoreutils aicoreutils-mcp --profile readonly
 ```
 
 ### OS 级安全加强
@@ -97,9 +97,11 @@ Windsurf, or similar environments, it **must** run with least privilege.
 ### Recommended Configs
 
 See the JSON examples above for:
-- **Read-only mode** (`--read-only`)
-- **Partial write access** (`--read-only --allow-command mkdir --allow-command touch`)
-- **Dangerous command block list** (`--deny-command rm --deny-command shred`)
+- **Read-only profile** (`--profile readonly`)
+- **Low-risk workspace writes** (`--profile workspace-write`)
+- **Narrow allow-list** (`--allow-command ls --allow-command cat`)
+
+Use allow-lists as the primary production control. `--deny-command` remains an additional defense and always takes priority.
 
 ### Working Directory
 
@@ -110,7 +112,7 @@ rejects all writes outside the working directory with exit code 8.
 
 ```bash
 docker build -t aicoreutils .
-docker run --rm -v $(pwd):/workspace -w /workspace aicoreutils-mcp --read-only
+docker run --rm -v $(pwd):/workspace -w /workspace aicoreutils aicoreutils-mcp --profile readonly
 ```
 
 ### OS-Level Hardening

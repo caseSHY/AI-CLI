@@ -27,7 +27,7 @@ pip install aicoreutils
   "mcpServers": {
     "aicoreutils": {
       "command": "python",
-      "args": ["-m", "aicoreutils.mcp_server"]
+      "args": ["-m", "aicoreutils.mcp_server", "--profile", "readonly"]
     }
   }
 }
@@ -39,9 +39,12 @@ pip install aicoreutils
 
 Claude 会自动调用 `aicoreutils ls` + `aicoreutils wc`，输出结构化 JSON。
 
+如果确实需要让 Claude 在工作区内创建文件或目录，把 profile 改成 `workspace-write`。不要在生产环境中无 profile 暴露全量工具。
+
 ### 安全特性
 
 - 所有修改命令默认 dry-run，需显式确认
+- 推荐 `--profile readonly`；需要低风险写入时使用 `--profile workspace-write`
 - 沙箱保护：无法操作工作目录外的文件
 - 危险命令（shred, kill, chroot 等）需 `--allow-*` 授权
 
@@ -74,7 +77,7 @@ Add the following:
   "mcpServers": {
     "aicoreutils": {
       "command": "python",
-      "args": ["-m", "aicoreutils.mcp_server"]
+      "args": ["-m", "aicoreutils.mcp_server", "--profile", "readonly"]
     }
   }
 }
@@ -86,8 +89,11 @@ Add the following:
 
 Claude calls `aicoreutils ls` + `aicoreutils wc` automatically.
 
+If Claude must create files or directories inside the workspace, switch the profile to `workspace-write`. Do not expose the full tool surface without a profile in production.
+
 ### Safety
 
 - All mutation commands default to dry-run
+- Recommended profile is `--profile readonly`; use `--profile workspace-write` only for low-risk writes
 - Sandbox: cannot operate outside working directory
 - Dangerous commands require explicit `--allow-*` flags

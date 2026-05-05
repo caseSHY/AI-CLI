@@ -63,11 +63,12 @@ aicoreutils rm build --recursive --dry-run
 Claude 自动调用 `aicoreutils ls` + `aicoreutils wc`，全程 JSON 交互。
 
 更多集成方式：`aicoreutils tool-list --format openai` 输出 OpenAI Function Calling 格式，可直接用于任意 Agent 框架。
+如需给调度器或审计系统保留风险标签，可追加 `--include-risk`。
 
 > ⚠️ **安全提示**：生产环境建议以最低权限运行。
 > ```bash
-> aicoreutils-mcp --read-only                           # 只读模式
-> aicoreutils-mcp --deny-command rm --deny-command shred  # 禁止危险命令
+> aicoreutils-mcp --profile readonly         # 推荐：只读工具
+> aicoreutils-mcp --profile workspace-write  # 仅允许低风险 cwd 内写入
 > ```
 > 详见 [生产安全部署指南 →](project/docs/guides/PRODUCTION_SECURITY.md)
 
@@ -190,11 +191,12 @@ Restart Claude Desktop, then ask:
 Claude calls `aicoreutils ls` + `aicoreutils wc` automatically.
 
 For other frameworks: `aicoreutils tool-list --format openai` outputs OpenAI Function Calling format directly.
+Add `--include-risk` when an orchestrator or audit system needs machine-readable risk metadata.
 
 > ⚠️ **Security**: Run with least privilege in production.
 > ```bash
-> aicoreutils-mcp --read-only                           # Read-only mode
-> aicoreutils-mcp --deny-command rm --deny-command shred  # Block dangerous commands
+> aicoreutils-mcp --profile readonly         # Recommended: read-only tools
+> aicoreutils-mcp --profile workspace-write  # Low-risk cwd-local writes only
 > ```
 > See [Production Security Guide →](project/docs/guides/PRODUCTION_SECURITY.md)
 

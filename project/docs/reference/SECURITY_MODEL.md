@@ -208,12 +208,15 @@ MCP server (`aicoreutils-mcp`) 支持以下安全启动参数：
 | 参数 | 说明 |
 |---|---|
 | `--read-only` | 只允许只读工具（拒绝写入/删除/修改操作） |
+| `--profile readonly` | 内置只读 profile，等价于只允许只读工具 |
+| `--profile workspace-write` | 允许只读工具和低风险 cwd 内写入工具，拒绝 destructive/process-exec |
+| `--profile explicit-danger` | 不主动限制命令；仅适合外部 sandbox/allow-list 已经约束的环境 |
 | `--allow-command CMD` | 仅允许指定命令（可重复，覆盖 read-only 限制） |
 | `--deny-command CMD` | 拒绝指定命令（可重复，优先级最高） |
 
 ### 7.2 安全检查优先级 / Check Priority
 
-deny list → allow list → read-only mode
+profile → deny list → allow list → read-only mode
 
 1. **deny list 优先**：被 `--deny-command` 列出的命令始终被拒绝。
 2. **allow list 覆盖 read-only**：如果命令在 `--allow-command` 中，可绕过 read-only 限制。
@@ -235,14 +238,14 @@ deny list → allow list → read-only mode
 ### 7.4 推荐生产配置 / Recommended Production Config
 
 ```bash
-# 最小权限：只读模式
-aicoreutils-mcp --read-only
+# 最小权限：只读 profile
+aicoreutils-mcp --profile readonly
 
-# 允许特定写命令
-aicoreutils-mcp --read-only --allow-command mkdir --allow-command touch
+# 低风险工作区写入
+aicoreutils-mcp --profile workspace-write
 
-# 禁止危险命令（即使不在 read-only 模式）
-aicoreutils-mcp --deny-command rm --deny-command shred --deny-command kill
+# 最窄 allow-list
+aicoreutils-mcp --allow-command ls --allow-command cat --allow-command wc
 ```
 
 ---
