@@ -30,7 +30,7 @@ from typing import Any
 
 from ...core.constants import DD_DEFAULT_BLOCK_SIZE
 from ...core.stream import StreamWriter, is_stream_mode
-from ...protocol import (
+from ...utils import (
     EXIT,
     AgentError,
     dangerous_delete_target,
@@ -367,7 +367,7 @@ def command_cksum(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 def command_sum(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    from ...protocol import simple_sum16
+    from ...utils import simple_sum16
 
     if args.block_size < 1:
         raise AgentError("invalid_input", "--block-size must be >= 1.")
@@ -1093,7 +1093,7 @@ def command_shred(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def command_test(args: argparse.Namespace) -> dict[str, Any]:
-    from ...protocol import evaluate_test_predicates
+    from ...utils import evaluate_test_predicates
 
     path = Path(args.path).expanduser()
     predicates = []

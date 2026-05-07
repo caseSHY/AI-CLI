@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ..core import EXIT
-from ..protocol import AgentArgumentParser, AgentError
+from ..utils import AgentArgumentParser, AgentError
 from ._parser import (
     build_parser,
     command_catalog,

@@ -171,7 +171,7 @@ def command_specs_from_parser(parser: argparse.ArgumentParser) -> tuple[CommandS
 
 def all_command_specs() -> tuple[CommandSpec, ...]:
     """Return parser-derived specs for all registered commands."""
-    from .parser._parser import build_parser
+    from ..parser._parser import build_parser
 
     return command_specs_from_parser(build_parser())
 

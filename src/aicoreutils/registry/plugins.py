@@ -22,7 +22,7 @@ Phase 3 架构：
 
 from __future__ import annotations
 
-from .core.plugin_registry import CommandFunc, PluginRegistry
+from ..core.plugin_registry import CommandFunc, PluginRegistry
 
 # 模块级注册表单例。初始为空，可通过 discover() 或 register() 修改。
 # 返回新实例的模式确保了旧引用不受影响。

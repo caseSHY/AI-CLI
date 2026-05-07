@@ -1,0 +1,73 @@
+"""Command registry: catalog, plugins, specs, and tool schemas."""
+
+from .catalog import (
+    CATALOG,
+    CatalogEntry,
+    catalog_with_plugins,
+    get_all_commands,
+    get_commands_by_priority,
+    get_priority,
+    implemented_catalog,
+    merge_plugin_commands,
+    priority_catalog,
+)
+from .command_specs import (
+    PILOT_COMMAND_SPECS,
+    CommandSpec,
+    all_command_specs,
+    command_specs_from_parser,
+    specs_by_name,
+)
+from .plugins import (
+    discover_plugins,
+    get_plugin_commands,
+    get_registry,
+    has_plugins,
+    register_plugin_command,
+    reset_plugins,
+)
+from .tool_schema import (
+    _DESTRUCTIVE_TOOLS,
+    _EXPLICIT_ALLOW_TOOLS,
+    _READ_ONLY_TOOLS,
+    _WORKSPACE_WRITE_TOOLS,
+    _command_tools,
+    tool_risk_categories,
+    tool_risk_level,
+    tool_risk_metadata,
+    tools_anthropic,
+    tools_openai,
+)
+
+__all__ = [
+    "CATALOG",
+    "CatalogEntry",
+    "CommandSpec",
+    "_DESTRUCTIVE_TOOLS",
+    "_EXPLICIT_ALLOW_TOOLS",
+    "_READ_ONLY_TOOLS",
+    "_WORKSPACE_WRITE_TOOLS",
+    "_command_tools",
+    "all_command_specs",
+    "catalog_with_plugins",
+    "command_specs_from_parser",
+    "discover_plugins",
+    "get_all_commands",
+    "get_commands_by_priority",
+    "get_plugin_commands",
+    "get_priority",
+    "get_registry",
+    "has_plugins",
+    "implemented_catalog",
+    "merge_plugin_commands",
+    "PILOT_COMMAND_SPECS",
+    "priority_catalog",
+    "register_plugin_command",
+    "reset_plugins",
+    "specs_by_name",
+    "tool_risk_categories",
+    "tool_risk_level",
+    "tool_risk_metadata",
+    "tools_anthropic",
+    "tools_openai",
+]

@@ -30,7 +30,7 @@ import textwrap
 from pathlib import Path
 from typing import Any, TypedDict
 
-from ...protocol import (
+from ...utils import (
     AgentError,
     alpha_suffix,
     bounded_lines,

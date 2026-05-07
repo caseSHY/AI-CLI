@@ -35,7 +35,7 @@ import time as timemod
 from pathlib import Path
 from typing import Any, cast
 
-from ...protocol import (
+from ...utils import (
     EXIT,
     AgentError,
     active_user_entries,

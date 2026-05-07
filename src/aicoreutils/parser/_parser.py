@@ -7,7 +7,6 @@ import sys
 from typing import Any
 
 from .. import __version__
-from ..catalog import get_commands_by_priority, get_priority, priority_catalog
 from ..commands.fs import (
     command_basename,
     command_bracket,
@@ -126,8 +125,9 @@ from ..core.constants import (
     DEFAULT_TAB_SIZE,
     FACTOR_MAX,
 )
-from ..plugins import get_registry
-from ..protocol import (
+from ..registry.catalog import get_commands_by_priority, get_priority, priority_catalog
+from ..registry.plugins import get_registry
+from ..utils import (
     EXIT,
     HASH_ALGORITHMS,
     AgentArgumentParser,
@@ -213,7 +213,7 @@ def command_tool_list(args: argparse.Namespace) -> dict[str, Any] | bytes:
     """
     include_risk = bool(getattr(args, "include_risk", False))
     if getattr(args, "format", "aicoreutils") in ("openai", "anthropic"):
-        from ..tool_schema import _command_tools, tools_anthropic, tools_openai
+        from ..registry.tool_schema import _command_tools, tools_anthropic, tools_openai
         from ._parser import build_parser as _build
 
         tools = _command_tools(_build())
@@ -232,7 +232,7 @@ def command_tool_list(args: argparse.Namespace) -> dict[str, Any] | bytes:
         return payload
 
     # Default format: name + priority
-    from ..tool_schema import tool_risk_metadata
+    from ..registry.tool_schema import tool_risk_metadata
 
     implemented = schema_command_names(args)
     prioritized = get_commands_by_priority()

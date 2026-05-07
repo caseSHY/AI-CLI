@@ -27,10 +27,10 @@ from .core import StreamWriter, is_stream_mode
 from .parser import build_parser, command_catalog, command_schema, command_tool_list, dispatch, main
 
 # 插件系统（0.2.0 新增）：自动发现 aicoreutils_* 命名空间包
-from .plugins import discover_plugins, get_plugin_commands, register_plugin_command
+from .registry.plugins import discover_plugins, get_plugin_commands, register_plugin_command
 
-# Protocol：核心协议类型和工具函数（向后兼容导出）
-from .protocol import (
+# Utils：核心工具函数和协议类型
+from .utils import (
     EXIT,
     HASH_ALGORITHMS,
     AgentArgumentParser,

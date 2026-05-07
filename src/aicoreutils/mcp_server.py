@@ -27,7 +27,7 @@ from typing import Any, cast
 
 from . import __version__
 from .parser._parser import build_parser
-from .tool_schema import _EXPLICIT_ALLOW_TOOLS, _READ_ONLY_TOOLS, _WORKSPACE_WRITE_TOOLS, _command_tools
+from .registry.tool_schema import _EXPLICIT_ALLOW_TOOLS, _READ_ONLY_TOOLS, _WORKSPACE_WRITE_TOOLS, _command_tools
 
 _PROFILE_CHOICES = ("readonly", "workspace-write", "explicit-danger")
 
