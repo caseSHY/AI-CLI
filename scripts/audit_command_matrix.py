@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from aicoreutils.parser._parser import build_parser  # noqa: E402
-from aicoreutils.tool_schema import (  # noqa: E402
+from aicoreutils.registry.tool_schema import (  # noqa: E402
     _DESTRUCTIVE_TOOLS,
     _READ_ONLY_TOOLS,
     _WORKSPACE_WRITE_TOOLS,
@@ -23,28 +23,28 @@ from aicoreutils.tool_schema import (  # noqa: E402
 
 TEST_LANES: dict[str, list[str]] = {
     "read-only": [
-        "project/tests/test_cli_black_box.py",
-        "project/tests/test_golden_outputs.py",
-        "project/tests/test_property_based_cli.py",
+        "tests/test_cli_black_box.py",
+        "tests/test_golden_outputs.py",
+        "tests/test_property_based_cli.py",
     ],
     "write": [
-        "project/tests/test_sandbox_and_side_effects.py",
-        "project/tests/test_sandbox_escape_hardening.py",
-        "project/tests/test_file_admin_commands.py",
+        "tests/test_sandbox_and_side_effects.py",
+        "tests/test_sandbox_escape_hardening.py",
+        "tests/test_file_admin_commands.py",
     ],
     "destructive": [
-        "project/tests/test_sandbox_escape_hardening.py",
-        "project/tests/test_error_exit_codes.py",
+        "tests/test_sandbox_escape_hardening.py",
+        "tests/test_error_exit_codes.py",
     ],
     "process-exec": [
-        "project/tests/test_execution_and_page_commands.py",
-        "project/tests/test_remaining_coreutils_commands.py",
-        "project/tests/test_mcp_security.py",
+        "tests/test_execution_and_page_commands.py",
+        "tests/test_remaining_coreutils_commands.py",
+        "tests/test_mcp_security.py",
     ],
     "platform-sensitive": [
-        "project/tests/test_remaining_coreutils_commands.py",
-        "project/tests/test_system_alias_and_encoding_commands.py",
-        "project/tests/test_gnu_differential.py",
+        "tests/test_remaining_coreutils_commands.py",
+        "tests/test_system_alias_and_encoding_commands.py",
+        "tests/test_gnu_differential.py",
     ],
 }
 

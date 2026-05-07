@@ -10,9 +10,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from aicoreutils.command_specs import PILOT_COMMAND_SPECS, all_command_specs, specs_by_name  # noqa: E402
 from aicoreutils.parser._parser import build_parser  # noqa: E402
-from aicoreutils.tool_schema import tool_risk_level  # noqa: E402
+from aicoreutils.registry.command_specs import PILOT_COMMAND_SPECS, all_command_specs, specs_by_name  # noqa: E402
+from aicoreutils.registry.tool_schema import tool_risk_level  # noqa: E402
 
 
 def parser_subcommands() -> dict[str, argparse.ArgumentParser]:

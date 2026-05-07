@@ -37,7 +37,7 @@ aicoreutils rm build --recursive --dry-run
 
 一行配置，让 Claude 直接操作你的文件系统：
 
-编辑 Claude Desktop 配置文件（[详细说明 →](project/docs/guides/INTEGRATION_CLAUDE_DESKTOP.md)）：
+编辑 Claude Desktop 配置文件（[详细说明 →](docs/guides/INTEGRATION_CLAUDE_DESKTOP.md)）：
 
 | 系统 | 配置文件 |
 |------|---------|
@@ -70,27 +70,27 @@ Claude 自动调用 `aicoreutils ls` + `aicoreutils wc`，全程 JSON 交互。
 > aicoreutils-mcp --profile readonly         # 推荐：只读工具
 > aicoreutils-mcp --profile workspace-write  # 仅允许低风险 cwd 内写入
 > ```
-> 详见 [生产安全部署指南 →](project/docs/guides/PRODUCTION_SECURITY.md)
+> 详见 [生产安全部署指南 →](docs/guides/PRODUCTION_SECURITY.md)
 
 ### 🤖 AI IDE 集成
 
-在 Cursor / Windsurf / Continue.dev 中直接使用 aicoreutils：[AI IDE 集成指南 →](project/docs/guides/INTEGRATION_AI_IDE.md)
+在 Cursor / Windsurf / Continue.dev 中直接使用 aicoreutils：[AI IDE 集成指南 →](docs/guides/INTEGRATION_AI_IDE.md)
 
 ```json
 // ~/.cursor/mcp.json
 { "mcpServers": { "aicoreutils": { "command": "python", "args": ["-m", "aicoreutils.mcp_server"] } } }
 ```
 
-🔗 更多：Claude Desktop 集成 | [AI IDE 集成](project/docs/guides/INTEGRATION_AI_IDE.md) | [Agent 任务示例](project/examples/AGENT_TASKS.md) | [LangChain 包装器](project/examples/langchain_wrapper.py)
+🔗 更多：Claude Desktop 集成 | [AI IDE 集成](docs/guides/INTEGRATION_AI_IDE.md) | [Agent 任务示例](examples/AGENT_TASKS.md) | [LangChain 包装器](examples/langchain_wrapper.py)
 
 ### 运行测试
 
 ```powershell
 # 推荐主入口（pytest，含 Hypothesis property-based 测试和 GNU 对照测试）
-python -m pytest project/tests/ -v --tb=short
+python -m pytest tests/ -v --tb=short
 
 # Legacy 入口（unittest，部分运行器）
-python -m unittest discover -s project/tests -v
+python -m unittest discover -s tests -v
 ```
 
 ### 项目结构
@@ -98,36 +98,34 @@ python -m unittest discover -s project/tests -v
 ```text
 .
 |-- src/aicoreutils/        # Python 包源码
-|-- .github/               # CI、Copilot 指令和开发脚本
-|-- pyproject.toml         # 包元数据和构建配置
-|-- README.md              # 项目入口
-`-- project/               # 项目附属资源
-    |-- tests/             # 子进程级行为测试
-    |-- docs/              # 文档入口和分类文档目录
-    |   |-- reference/     # 协议、命令面和安全生产契约
-    |   |-- guides/        # 使用指南
-    |   |-- audits/        # 兼容性和质量审计
-    |   |-- development/   # 测试和开发说明
-    |   |-- status/        # 当前项目状态（唯一权威来源）
-    |   |-- analysis/      # 项目分析日志（历史归档）
-    |   |-- agent-guides/  # AI 辅助编码与文档治理规则
-    |   `-- reports/       # 测试报告等生成/归档文档
-    |-- vendor/gnu-coreutils/  # 本地上游源码缓存，默认被 Git 忽略
-    `-- AGENTS.md          # 仓库级 Agent 入口规则
+|-- docs/                   # 文档入口
+|   |-- reference/          # 协议、命令面和安全生产契约
+|   |-- guides/             # 使用指南
+|   |-- architecture/       # 架构决策记录 (ADR) 和 AI 代理规则
+|   |-- development/        # 测试和开发说明
+|   |-- status/             # 当前项目状态（唯一权威来源）
+|   |-- audits/             # 兼容性和质量审计
+|   |-- analysis/           # 项目分析日志（历史归档）
+|   `-- reports/            # 测试报告等生成/归档文档
+|-- tests/                  # 测试套件
+|-- examples/               # 示例
+|-- scripts/                # CI/审计/发布脚本
+|-- .github/                # CI workflows 和 Copilot 指令
+`-- vendor/                 # 本地上游源码缓存
 ```
 
 ### 文档
 
-- [文档索引](project/docs/README.md)
-- [当前项目状态](project/docs/status/CURRENT_STATUS.md) ← 权威状态来源
-- [Agent 协议与示例](project/docs/reference/AGENTUTILS.md)
-- [安全模型](project/docs/reference/SECURITY_MODEL.md)
-- [中英文使用说明](project/docs/guides/USAGE.zh-CN.en.md)
-- [GNU Coreutils 兼容性审计](project/docs/audits/GNU_COMPATIBILITY_AUDIT.md)
-- [测试说明](project/docs/development/TESTING.md)
-- [WSL 本地 CI](project/docs/development/WSL_CI.md)
-- [文档治理规则](project/docs/agent-guides/DOC_GOVERNANCE_RULES.md)
-- [事实传播矩阵](project/docs/agent-guides/FACT_PROPAGATION_MATRIX.md)
+- [文档索引](docs/README.md)
+- [当前项目状态](docs/status/CURRENT_STATUS.md) ← 权威状态来源
+- [Agent 协议与示例](docs/reference/AGENTUTILS.md)
+- [安全模型](docs/reference/SECURITY_MODEL.md)
+- [中英文使用说明](docs/guides/USAGE.zh-CN.en.md)
+- [GNU Coreutils 兼容性审计](docs/audits/GNU_COMPATIBILITY_AUDIT.md)
+- [测试说明](docs/development/TESTING.md)
+- [WSL 本地 CI](docs/development/WSL_CI.md)
+- [文档治理规则](docs/architecture/DOC_GOVERNANCE_RULES.md)
+- [事实传播矩阵](docs/architecture/FACT_PROPAGATION_MATRIX.md)
 
 ### 发布状态
 
@@ -165,7 +163,7 @@ aicoreutils rm build --recursive --dry-run
 
 One config line to let Claude operate your filesystem:
 
-Edit Claude Desktop config ([full guide →](project/docs/guides/INTEGRATION_CLAUDE_DESKTOP.md)):
+Edit Claude Desktop config ([full guide →](docs/guides/INTEGRATION_CLAUDE_DESKTOP.md)):
 
 | OS | Config File |
 |----|------------|
@@ -198,16 +196,16 @@ Add `--include-risk` when an orchestrator or audit system needs machine-readable
 > aicoreutils-mcp --profile readonly         # Recommended: read-only tools
 > aicoreutils-mcp --profile workspace-write  # Low-risk cwd-local writes only
 > ```
-> See [Production Security Guide →](project/docs/guides/PRODUCTION_SECURITY.md)
+> See [Production Security Guide →](docs/guides/PRODUCTION_SECURITY.md)
 
 ### Run tests
 
 ```powershell
 # Recommended primary entry (pytest, includes Hypothesis property-based and GNU differential tests)
-python -m pytest project/tests/ -v --tb=short
+python -m pytest tests/ -v --tb=short
 
 # Legacy entry (unittest, partial runner)
-python -m unittest discover -s project/tests -v
+python -m unittest discover -s tests -v
 ```
 
 ### Project Layout
@@ -215,36 +213,34 @@ python -m unittest discover -s project/tests -v
 ```text
 .
 |-- src/aicoreutils/        # Python package
-|-- .github/               # CI, Copilot instructions and development scripts
-|-- pyproject.toml         # package metadata and build config
-|-- README.md              # project entry point
-`-- project/               # project collateral
-    |-- tests/             # subprocess-level behavior tests
-    |-- docs/              # documentation index and categorized docs
-    |   |-- reference/     # protocol, command-surface and security contracts
-    |   |-- guides/        # usage guides
-    |   |-- audits/        # compatibility and quality audits
-    |   |-- development/   # testing and development notes
-    |   |-- status/        # current project status (single authoritative source)
-    |   |-- analysis/      # project analysis logs (historical archive)
-    |   |-- agent-guides/  # AI coding assistant and docs governance rules
-    |   `-- reports/       # test reports and archived generated docs
-    |-- vendor/gnu-coreutils/  # local upstream source cache, ignored by Git by default
-    `-- AGENTS.md          # repository-level agent entry rules
+|-- docs/                   # documentation index
+|   |-- reference/          # protocol, command-surface and security contracts
+|   |-- guides/             # usage guides
+|   |-- architecture/       # ADRs and AI agent governance rules
+|   |-- development/        # testing and development notes
+|   |-- status/             # current project status (single authoritative source)
+|   |-- audits/             # compatibility and quality audits
+|   |-- analysis/           # project analysis logs (historical archive)
+|   `-- reports/            # test reports and archived generated docs
+|-- tests/                  # test suite
+|-- examples/               # examples
+|-- scripts/                # CI/audit/release scripts
+|-- .github/                # CI workflows and Copilot instructions
+`-- vendor/                 # local upstream source cache
 ```
 
 ### Documentation
 
-- [Documentation index](project/docs/README.md)
-- [Current project status](project/docs/status/CURRENT_STATUS.md) ← authoritative status source
-- [Agent protocol and examples](project/docs/reference/AGENTUTILS.md)
-- [Security model](project/docs/reference/SECURITY_MODEL.md)
-- [Chinese/English user guide](project/docs/guides/USAGE.zh-CN.en.md)
-- [GNU Coreutils compatibility audit](project/docs/audits/GNU_COMPATIBILITY_AUDIT.md)
-- [Testing guide](project/docs/development/TESTING.md)
-- [WSL local CI](project/docs/development/WSL_CI.md)
-- [Documentation governance rules](project/docs/agent-guides/DOC_GOVERNANCE_RULES.md)
-- [Fact propagation matrix](project/docs/agent-guides/FACT_PROPAGATION_MATRIX.md)
+- [Documentation index](docs/README.md)
+- [Current project status](docs/status/CURRENT_STATUS.md) ← authoritative status source
+- [Agent protocol and examples](docs/reference/AGENTUTILS.md)
+- [Security model](docs/reference/SECURITY_MODEL.md)
+- [Chinese/English user guide](docs/guides/USAGE.zh-CN.en.md)
+- [GNU Coreutils compatibility audit](docs/audits/GNU_COMPATIBILITY_AUDIT.md)
+- [Testing guide](docs/development/TESTING.md)
+- [WSL local CI](docs/development/WSL_CI.md)
+- [Documentation governance rules](docs/architecture/DOC_GOVERNANCE_RULES.md)
+- [Fact propagation matrix](docs/architecture/FACT_PROPAGATION_MATRIX.md)
 
 ### Release Status
 

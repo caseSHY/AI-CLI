@@ -1,0 +1,1 @@
+{"command":"stat","ok":true,"result":{"count":1,"entries":[{"created_at":"2026-05-07T16:40:07.720190Z","is_symlink":false,"mode_octal":"0o644","modified_at":"2026-05-07T16:40:07.720190Z","name":"README.md","path":"/home/caseshy/ClaudeCodeWorkSpace/AI-CLI/docs/README.md","size_bytes":5111,"type":"file"}]},"tool":"aicoreutils","version":"1.1.2","warnings":[]}

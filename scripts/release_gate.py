@@ -44,14 +44,14 @@ def main(argv: list[str] | None = None) -> int:
                 "--tb=short",
             ],
         ),
-        ("ruff check", [sys.executable, "-m", "ruff", "check", "src/", "project/tests/", "tests/", "scripts/"]),
+        ("ruff check", [sys.executable, "-m", "ruff", "check", "src/", "tests/", "tests/", "scripts/"]),
         ("mypy strict", [sys.executable, "-m", "mypy", "src/aicoreutils/", "--strict"]),
     ]
     if args.full:
         checks.append(
             (
                 "full tests",
-                [sys.executable, "-m", "pytest", "project/tests/", "tests/", "-q", "--tb=short"],
+                [sys.executable, "-m", "pytest", "tests/", "tests/", "-q", "--tb=short"],
             )
         )
 

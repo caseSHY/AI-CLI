@@ -1,0 +1,1 @@
+{"command":"base64","ok":true,"result":{"codec":"base64","content":"aGVsbG8=","input_bytes":5,"operation":"encode","output_bytes":8,"returned_bytes":8,"source_paths":["-"],"truncated":false},"tool":"aicoreutils","version":"1.1.2","warnings":[]}

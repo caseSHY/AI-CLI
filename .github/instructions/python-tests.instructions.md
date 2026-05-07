@@ -6,7 +6,7 @@ applyTo: "**/*.py"
 
 # Python Test Rules
 
-- Use `python -m pytest project/tests/ -v --tb=short` as the main verification command.
+- Use `python -m pytest tests/ -v --tb=short` as the main verification command.
 - Set `PYTHONPATH=src` when running tests from a source checkout without an
   editable install.
 - Do not update documented test counts unless the relevant test command was

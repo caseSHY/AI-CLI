@@ -86,11 +86,11 @@ command -v sort || true
 sort --version | head -n 1 || true
 
 echo "== Ruff =="
-ruff check src/ project/tests/
-ruff format --check src/ project/tests/
+ruff check src/ tests/
+ruff format --check src/ tests/
 
 echo "== Mypy =="
 mypy src/aicoreutils/ --strict
 
 echo "== Pytest with coverage =="
-PYTHONPATH=src python -m pytest project/tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing
+PYTHONPATH=src python -m pytest tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing

@@ -9,9 +9,9 @@ applyTo: "**"
 When changing CI, tests, test counts, security status, command counts, or
 governance status:
 
-- Read `project/docs/status/CURRENT_STATUS.md` first.
-- Read `project/docs/agent-guides/DOC_GOVERNANCE_RULES.md`.
-- Read `project/docs/agent-guides/FACT_PROPAGATION_MATRIX.md`.
+- Read `docs/status/CURRENT_STATUS.md` first.
+- Read `docs/architecture/DOC_GOVERNANCE_RULES.md`.
+- Read `docs/architecture/FACT_PROPAGATION_MATRIX.md`.
 - Update Chinese and English mirror sections together.
 - Search stale facts with numeric and natural-language forms:
   - `99`, `120`, `126`, `132`, `54 skipped`
@@ -24,4 +24,4 @@ governance status:
   - CI verified: GitHub Actions completed.
 - Never mark CI-only behavior as verified until CI has actually run.
 - If `.github/workflows/ci.yml` changes, check `CURRENT_STATUS.md`,
-  `project/docs/development/TESTING.md`, and governance reports.
+  `docs/development/TESTING.md`, and governance reports.

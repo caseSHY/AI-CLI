@@ -81,7 +81,7 @@ def count_test_results() -> tuple[int, int]:
     """Run pytest --collect-only to count tests (fast, no execution)."""
     env = {**subprocess.os.environ, "PYTHONPATH": str(ROOT / "src")}
     result = subprocess.run(
-        [sys.executable, "-m", "pytest", "project/tests/", "--collect-only", "-q", "--no-header"],
+        [sys.executable, "-m", "pytest", "tests/", "--collect-only", "-q", "--no-header"],
         capture_output=True,
         text=True,
         cwd=str(ROOT),

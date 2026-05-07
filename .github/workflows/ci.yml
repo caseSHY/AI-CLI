@@ -36,7 +36,7 @@ jobs:
       - name: Run tests with coverage
         env:
           PYTHONPATH: src
-        run: python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-report=xml --cov-fail-under=45
+        run: python -m pytest tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-report=xml --cov-fail-under=45
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v7
@@ -66,7 +66,7 @@ jobs:
       - name: Run tests with coverage
         env:
           PYTHONPATH: src
-        run: python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=45
+        run: python -m pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=45
 
   test-windows:
     runs-on: windows-latest
@@ -92,7 +92,7 @@ jobs:
         env:
           PYTHONPATH: src
           PYTHONIOENCODING: utf-8
-        run: python -m pytest project/tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=45
+        run: python -m pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=45
 
   lint:
     runs-on: ubuntu-latest
@@ -104,9 +104,9 @@ jobs:
       - name: Install package and dev deps
         run: python -m pip install -e ".[dev]"
       - name: Ruff check
-        run: ruff check src/ project/tests/ tests/ scripts/
+        run: ruff check src/ tests/ tests/ scripts/
       - name: Ruff format check
-        run: ruff format --check src/ project/tests/ tests/ scripts/
+        run: ruff format --check src/ tests/ tests/ scripts/
 
   typecheck:
     runs-on: ubuntu-latest

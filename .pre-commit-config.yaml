@@ -13,9 +13,9 @@ repos:
     rev: v0.15.12
     hooks:
       - id: ruff
-        args: [src/, project/tests/]
+        args: [src/, tests/, scripts/]
       - id: ruff-format
-        args: [src/, project/tests/]
+        args: [src/, tests/, scripts/]
 
   - repo: local
     hooks:

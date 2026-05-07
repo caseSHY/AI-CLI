@@ -26,21 +26,21 @@ def _get_parser_commands() -> set[str]:
 
 def _get_read_only_tools() -> set[str]:
     sys.path.insert(0, str(SRC))
-    from aicoreutils.tool_schema import _READ_ONLY_TOOLS  # noqa: E402
+    from aicoreutils.registry.tool_schema import _READ_ONLY_TOOLS  # noqa: E402
 
     return _READ_ONLY_TOOLS
 
 
 def _get_destructive_tools() -> set[str]:
     sys.path.insert(0, str(SRC))
-    from aicoreutils.tool_schema import _DESTRUCTIVE_TOOLS  # noqa: E402
+    from aicoreutils.registry.tool_schema import _DESTRUCTIVE_TOOLS  # noqa: E402
 
     return _DESTRUCTIVE_TOOLS
 
 
 def _get_catalog_commands() -> list[str]:
     sys.path.insert(0, str(SRC))
-    from aicoreutils.catalog import CATALOG  # noqa: E402
+    from aicoreutils.registry.catalog import CATALOG  # noqa: E402
 
     all_cmds: list[str] = []
     for entry in CATALOG:

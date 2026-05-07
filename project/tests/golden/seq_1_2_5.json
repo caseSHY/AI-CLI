@@ -1,1 +1,0 @@
-{"command":"seq","ok":true,"result":{"count":3,"first":1.0,"increment":2.0,"last":5.0,"lines":["1","3","5"],"truncated":false,"values":[1.0,3.0,5.0]},"tool":"agentutils","version":"0.2.0","warnings":[]}

@@ -48,7 +48,7 @@ def test_server_json_version():
 
 def test_current_status_version():
     """CURRENT_STATUS.md version must match __version__."""
-    status = (ROOT / "project" / "docs" / "status" / "CURRENT_STATUS.md").read_text(encoding="utf-8")
+    status = (ROOT / "docs" / "status" / "CURRENT_STATUS.md").read_text(encoding="utf-8")
     m_cn = re.search(r"\|\s*\*\*项目版本\*\*\s*\|\s*([0-9.]+)", status)
     m_en = re.search(r"\|\s*\*\*Project version\*\*\s*\|\s*([0-9.]+)", status)
     assert m_cn, "Chinese version field not found in CURRENT_STATUS.md"
@@ -74,7 +74,7 @@ def test_readme_pin_version():
 
 def test_current_status_ci_includes_version_consistency():
     """CURRENT_STATUS.md must report that version consistency is in CI pipeline."""
-    status = (ROOT / "project" / "docs" / "status" / "CURRENT_STATUS.md").read_text(encoding="utf-8")
+    status = (ROOT / "docs" / "status" / "CURRENT_STATUS.md").read_text(encoding="utf-8")
     assert "CI 未纳入" not in status, (
         "CURRENT_STATUS.md still says version consistency 'CI 未纳入' but it is in CI pipeline"
     )
