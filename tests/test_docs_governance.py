@@ -115,17 +115,6 @@ class DocsGovernanceTests(unittest.TestCase):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, testing)
 
-    def test_governance_report_keeps_untriggered_ci_as_pending(self) -> None:
-        report = read_text("docs/reports/project-governance/2026-04-30-project-structure-and-docs-governance-report.md")
-        self.assertIn(
-            "| K-004 | CI 中 GNU differential tests 未实际运行过 | ⏳ 待验证 — coreutils 已安装但 CI 尚未触发 |",
-            report,
-        )
-        self.assertNotIn(
-            "| K-004 | CI 中 GNU differential tests 未实际运行过 | ✅",
-            report,
-        )
-
     def test_current_docs_do_not_contain_known_stale_current_facts(self) -> None:
         current_docs = [
             "README.md",

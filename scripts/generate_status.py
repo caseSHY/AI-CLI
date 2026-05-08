@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-STATUS_FILE = ROOT / "project" / "docs" / "status" / "CURRENT_STATUS.md"
+STATUS_FILE = ROOT / "docs" / "status" / "CURRENT_STATUS.md"
 CHANGELOG_FILE = ROOT / "CHANGELOG.md"
 README_FILE = ROOT / "README.md"
 SERVER_JSON_FILE = ROOT / "server.json"
@@ -115,7 +115,7 @@ def get_sandbox_test_count() -> int:
     """Count test methods in the sandbox escape hardening file."""
     import ast
 
-    f = ROOT / "project" / "tests" / "test_sandbox_escape_hardening.py"
+    f = ROOT / "tests" / "test_sandbox_escape_hardening.py"
     if not f.exists():
         return 0
     tree = ast.parse(f.read_text(encoding="utf-8"))

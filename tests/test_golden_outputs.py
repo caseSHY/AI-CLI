@@ -7,15 +7,13 @@ from typing import Any
 
 from support import ROOT, run_cli
 
-# Pattern to detect any absolute path prefix up to and including the project root.
-# Matches any drive-letter or /-prefixed path; strips everything before the relative part.
 _PATH_PREFIX_RE = re.compile(
     r"^([A-Za-z]:[/\\])"  # Drive letter (Windows)
-    r".*?([/\\]src[/\\])"  # Up to src/ directory
+    r".*?[/\\]AI-CLI[/\\]"  # Up to repo root
 )
 _UNIX_PATH_PREFIX_RE = re.compile(
     r"^/"
-    r".*?([/\\]src[/\\])"  # Up to src/ directory
+    r".*?/AI-CLI/"  # Up to repo root
 )
 
 
