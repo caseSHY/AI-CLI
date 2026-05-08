@@ -21,7 +21,7 @@ repos:
     hooks:
       - id: mypy
         name: mypy
-        entry: python -m mypy src/aicoreutils/ --strict
+        entry: uv run mypy src/aicoreutils/ --strict
         language: system
         types: [python]
         pass_filenames: false
