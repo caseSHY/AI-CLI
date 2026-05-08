@@ -1,6 +1,9 @@
 # Tool cache (all caches consolidated here)
 .cache/
 
+# Local Claude Code config (personal, not shared)
+CLAUDE.local.md
+
 # Global tool artifacts (from user environment, not project deps)
 .benchmarks/
 

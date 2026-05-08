@@ -9,38 +9,38 @@ AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Core
 ## Commands
 
 ```bash
-# Install in dev mode
-pip install -e ".[dev]"
+# Install dev environment
+uv sync --extra dev
 
 # Run all tests
-python -m pytest tests/ -v --tb=short
+uv run pytest tests/ -v --tb=short
 
 # Run a single test file
-python -m pytest tests/test_cli_black_box.py -v --tb=short
+uv run pytest tests/test_cli_black_box.py -v --tb=short
 
 # Run specific test subsets
-python -m pytest tests/test_property_based_cli.py -v      # Hypothesis property-based
-python -m pytest tests/test_gnu_differential.py -v        # GNU differential (needs GNU coreutils)
-python -m pytest tests/test_sandbox_escape_hardening.py -v # Sandbox escape hardening
-python -m pytest tests/test_docs_governance.py -v         # Docs governance checks
-python -m pytest tests/test_docs_bilingual.py -v          # Bilingual docs check
-python -m pytest tests/test_version_consistency.py -v     # Version consistency
-python -m pytest tests/test_project_consistency.py -v     # Project consistency
+uv run pytest tests/test_property_based_cli.py -v      # Hypothesis property-based
+uv run pytest tests/test_gnu_differential.py -v        # GNU differential (needs GNU coreutils)
+uv run pytest tests/test_sandbox_escape_hardening.py -v # Sandbox escape hardening
+uv run pytest tests/test_docs_governance.py -v         # Docs governance checks
+uv run pytest tests/test_docs_bilingual.py -v          # Bilingual docs check
+uv run pytest tests/test_version_consistency.py -v     # Version consistency
+uv run pytest tests/test_project_consistency.py -v     # Project consistency
 
 # Coverage (threshold: 45%)
-python -m pytest tests/ --cov=src/aicoreutils --cov-fail-under=45
+uv run pytest tests/ --cov=src/aicoreutils --cov-fail-under=45
 
 # Lint and typecheck (match CI scope)
-ruff check src/ tests/ scripts/
-ruff format --check src/ tests/ scripts/
-mypy src/aicoreutils/ --strict
+uv run ruff check src/ tests/ scripts/
+uv run ruff format --check src/ tests/ scripts/
+uv run mypy src/aicoreutils/ --strict
 
 # Run a single test
-python -m pytest tests/test_cli_black_box.py::test_ls_basic -v --tb=short
+uv run pytest tests/test_cli_black_box.py::test_ls_basic -v --tb=short
 
 # Run the CLI from source
-PYTHONPATH=src python -m aicoreutils ls . --limit 20
-PYTHONPATH=src python -m aicoreutils schema --pretty
+uv run aicoreutils ls . --limit 20
+uv run aicoreutils schema --pretty
 ```
 
 ## Architecture
@@ -48,12 +48,13 @@ PYTHONPATH=src python -m aicoreutils schema --pretty
 ### Layer stack (bottom -> top)
 
 ```
-core/          Foundation: exit codes, exceptions, JSON envelope, path utils, sandbox, streaming, constants
+core/          Foundation: exit codes, exceptions, JSON envelope, path utils, sandbox, streaming, config, constants
 utils/         Domain utilities: argparse wrapper, I/O, hashing, text processing, ranges, printf, numfmt, system, path
-commands/      Command handlers organized by category: fs/, system/, text/
-parser/        CLI entry point: builds argparse tree, dispatches to handlers
+commands/      Command handlers (fs/_core.py, system/_core.py, text/_core.py — one file per category)
+parser/        CLI entry point: single _parser.py builds argparse tree, dispatches to handlers
 registry/      Command registry: catalog (111 commands P0-P3), plugins, command_specs, tool_schema
 mcp_server.py  MCP server: JSON-RPC 2.0 over stdio, no external deps
+async_interface.py  Async wrapper: asyncio subprocess pool for concurrent command execution
 ```
 
 ### Project layout
@@ -61,7 +62,7 @@ mcp_server.py  MCP server: JSON-RPC 2.0 over stdio, no external deps
 ```
 src/aicoreutils/    Python package (core -> utils -> commands -> parser, with registry/)
 docs/               Documentation (reference, guides, architecture, development, status, audits, reports)
-tests/              Test suite (22+ test files, conftest, support, golden/)
+tests/              Test suite (27 test files, conftest, support, golden/)
 examples/           Examples and agent tasks
 scripts/            CI audit, release gate, bump version, generate status
 vendor/             Local upstream GNU coreutils cache
