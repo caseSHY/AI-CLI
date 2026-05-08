@@ -19,24 +19,17 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/cache@v5
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
-          restore-keys: ${{ runner.os }}-pip-
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y coreutils
       - name: Install package and test deps
-        run: python -m pip install -e ".[test,dev]"
+        run: uv sync --extra dev
       - name: Run tests with coverage
-        env:
-          PYTHONPATH: src
-        run: python -m pytest tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-report=xml --cov-fail-under=45
+        run: uv run pytest tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-report=xml --cov-fail-under=45
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v7
@@ -51,22 +44,15 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/cache@v5
-        with:
-          path: ~/Library/Caches/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
-          restore-keys: ${{ runner.os }}-pip-
       - name: Install system dependencies
         run: brew install coreutils
       - name: Install package and test deps
-        run: python -m pip install -e ".[test,dev]"
+        run: uv sync --extra dev
       - name: Run tests with coverage
-        env:
-          PYTHONPATH: src
-        run: python -m pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=45
+        run: uv run pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=45
 
   test-windows:
     runs-on: windows-latest
@@ -75,79 +61,71 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: actions/cache@v5
-        with:
-          path: ~\AppData\Local\pip\Cache
-          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
-          restore-keys: ${{ runner.os }}-pip-
       - name: Install GNU coreutils (for differential tests)
         run: choco install gnuwin32-coreutils.portable --no-progress -y
         continue-on-error: true
       - name: Install package and test deps
-        run: python -m pip install -e ".[test,dev]"
+        run: uv sync --extra dev
       - name: Run tests with coverage
         env:
-          PYTHONPATH: src
           PYTHONIOENCODING: utf-8
-        run: python -m pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=45
+        run: uv run pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=45
 
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
       - name: Install package and dev deps
-        run: python -m pip install -e ".[dev]"
+        run: uv sync --extra dev
       - name: Ruff check
-        run: ruff check src/ tests/ tests/ scripts/
+        run: uv run ruff check src/ tests/ scripts/
       - name: Ruff format check
-        run: ruff format --check src/ tests/ tests/ scripts/
+        run: uv run ruff format --check src/ tests/ scripts/
 
   typecheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
       - name: Install package and dev deps
-        run: python -m pip install -e ".[dev]"
+        run: uv sync --extra dev
       - name: Mypy type check
-        run: mypy src/aicoreutils/ --strict
+        run: uv run mypy src/aicoreutils/ --strict
 
   status-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
       - name: Install package
-        run: python -m pip install -e ".[test,dev]"
+        run: uv sync --extra dev
       - name: Verify CURRENT_STATUS.md consistency
-        run: python scripts/generate_status.py
+        run: uv run python scripts/generate_status.py
       - name: Verify command risk/test matrix
-        run: python scripts/audit_command_matrix.py
+        run: uv run python scripts/audit_command_matrix.py
       - name: Verify command spec registry
-        run: python scripts/audit_command_specs.py
+        run: uv run python scripts/audit_command_specs.py
       - name: Verify supply-chain posture
-        run: python scripts/audit_supply_chain.py
+        run: uv run python scripts/audit_supply_chain.py
 
   governance-gate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
       - name: Install package and dev deps
-        run: python -m pip install -e ".[test,dev]"
+        run: uv sync --extra dev
       - name: Run release gate
-        env:
-          PYTHONPATH: src
-        run: python scripts/release_gate.py
+        run: uv run python scripts/release_gate.py

@@ -9,11 +9,11 @@ from support import ROOT, run_cli
 
 _PATH_PREFIX_RE = re.compile(
     r"^([A-Za-z]:[/\\])"  # Drive letter (Windows)
-    r".*?[/\\]AI-CLI[/\\]"  # Up to repo root
+    r".*[/\\]AI-CLI[/\\]"  # Greedy — matches last AI-CLI/ in path
 )
 _UNIX_PATH_PREFIX_RE = re.compile(
     r"^/"
-    r".*?/AI-CLI/"  # Up to repo root
+    r".*/AI-CLI/"  # Greedy — matches last AI-CLI/ in path
 )
 
 

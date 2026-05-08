@@ -67,7 +67,7 @@ if [[ "${INSTALL_SYSTEM_DEPS}" -eq 1 ]]; then
     exit 2
   fi
   sudo apt-get update
-  sudo apt-get install -y coreutils python3-venv python3-pip
+  sudo apt-get install -y coreutils
 fi
 
 "${PYTHON_BIN}" -m venv "${VENV_DIR}"
@@ -76,7 +76,8 @@ source "${VENV_DIR}/bin/activate"
 
 if [[ "${SKIP_INSTALL}" -eq 0 ]]; then
   python -m pip install --upgrade pip
-  python -m pip install -e ".[test,dev]"
+  pip install uv
+  uv sync --extra dev
 fi
 
 echo "== Environment =="
@@ -86,11 +87,11 @@ command -v sort || true
 sort --version | head -n 1 || true
 
 echo "== Ruff =="
-ruff check src/ tests/
-ruff format --check src/ tests/
+uv run ruff check src/ tests/
+uv run ruff format --check src/ tests/
 
 echo "== Mypy =="
-mypy src/aicoreutils/ --strict
+uv run mypy src/aicoreutils/ --strict
 
 echo "== Pytest with coverage =="
-PYTHONPATH=src python -m pytest tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing
+uv run pytest tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing

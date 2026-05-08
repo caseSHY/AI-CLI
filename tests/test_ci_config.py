@@ -10,8 +10,8 @@ class CiConfigTests(unittest.TestCase):
         workflow = ROOT / ".github" / "workflows" / "ci.yml"
         self.assertTrue(workflow.exists(), "missing .github/workflows/ci.yml")
         text = workflow.read_text(encoding="utf-8")
-        self.assertTrue("python -m unittest discover -s tests" in text or "python -m pytest tests/" in text)
-        self.assertIn("PYTHONPATH", text)
+        self.assertIn("uv run pytest tests/", text)
+        self.assertIn("uv sync", text)
 
     def test_wsl_local_ci_scripts_mirror_ubuntu_job(self) -> None:
         powershell_wrapper = ROOT / ".github" / "scripts" / "run-ci-wsl.ps1"
@@ -25,12 +25,12 @@ class CiConfigTests(unittest.TestCase):
 
         script_text = wsl_script.read_text(encoding="utf-8")
         for required in [
-            "apt-get install -y coreutils python3-venv python3-pip",
-            'python -m pip install -e ".[test,dev]"',
+            "apt-get install -y coreutils",
+            "uv sync --extra dev",
             "ruff check src/ tests/",
             "ruff format --check src/ tests/",
             "mypy src/aicoreutils/ --strict",
-            "python -m pytest tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing",
+            "uv run pytest tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing",
         ]:
             with self.subTest(required=required):
                 self.assertIn(required, script_text)
