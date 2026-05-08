@@ -14,7 +14,7 @@
 | 安全状态 | `docs/reference/SECURITY_MODEL.md` + sandbox tests | `docs/status/CURRENT_STATUS.md`, security reports, stale archive notes |
 | 命令数量 | `python -m agentutils schema` | `README.md`, `docs/status/CURRENT_STATUS.md`, `docs/audits/GNU_COMPATIBILITY_AUDIT.md`, `docs/development/TESTING.md`, `docs/reference/AGENTUTILS.md` |
 | 文档目录结构 | `docs/README.md` | `README.md` Project Layout, governance report, agent guidance links |
-| Agent/Copilot 规则 | `docs/architecture/CLAUDE.md` (行为准则权威来源), `.github/instructions/*.instructions.md` (项目特定规则) | `AGENTS.md`, `.github/copilot-instructions.md`, `docs/README.md`, `docs/architecture/` |
+| Agent/Copilot 规则 | `docs/architecture/CLAUDE.md` (行为准则权威来源), `.github/instructions/*.instructions.md` (项目特定规则) | `.github/copilot-instructions.md`, `docs/README.md`, `docs/architecture/` |
 
 ### CI 事实传播
 
@@ -64,7 +64,7 @@ corresponding propagation targets.
 | Security status | `docs/reference/SECURITY_MODEL.md` + sandbox tests | `docs/status/CURRENT_STATUS.md`, security reports, stale archive notes |
 | Command count | `python -m agentutils schema` | `README.md`, `docs/status/CURRENT_STATUS.md`, `docs/audits/GNU_COMPATIBILITY_AUDIT.md`, `docs/development/TESTING.md`, `docs/reference/AGENTUTILS.md` |
 | Documentation structure | `docs/README.md` | `README.md` Project Layout, governance report, agent guidance links |
-| Agent/Copilot rules | `docs/architecture/CLAUDE.md` (authoritative behavioral guidelines), `.github/instructions/*.instructions.md` (project-specific rules) | `AGENTS.md`, `.github/copilot-instructions.md`, `docs/README.md`, `docs/architecture/` |
+| Agent/Copilot rules | `docs/architecture/CLAUDE.md` (authoritative behavioral guidelines), `.github/instructions/*.instructions.md` (project-specific rules) | `.github/copilot-instructions.md`, `docs/README.md`, `docs/architecture/` |
 
 ### CI Fact Propagation
 

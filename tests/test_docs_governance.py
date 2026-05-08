@@ -29,7 +29,6 @@ def _aicoreutils_output(*args: str) -> dict:
 class DocsGovernanceTests(unittest.TestCase):
     def test_copilot_and_agent_instruction_entry_points_exist(self) -> None:
         required_files = [
-            "AGENTS.md",
             ".github/copilot-instructions.md",
             ".github/instructions/docs-governance.instructions.md",
             ".github/instructions/python-tests.instructions.md",
@@ -118,7 +117,6 @@ class DocsGovernanceTests(unittest.TestCase):
     def test_current_docs_do_not_contain_known_stale_current_facts(self) -> None:
         current_docs = [
             "README.md",
-            "AGENTS.md",
             "docs/README.md",
             "docs/development/TESTING.md",
             "docs/status/CURRENT_STATUS.md",

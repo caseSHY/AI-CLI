@@ -21,7 +21,6 @@ class DocsBilingualTests(unittest.TestCase):
                 "CLAUDE.md",
                 "CLAUDE.local.md",
                 "CHANGELOG.md",
-                "CONTRIBUTING.md",
                 "AGENT_TASKS.md",
                 "COMMUNITY_LAUNCH_COPY.md",
             }

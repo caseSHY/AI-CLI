@@ -1,5 +1,4 @@
 include README.md LICENSE
-include AGENTS.md
 recursive-include docs *.md
 recursive-include vendor *.md
 recursive-include .github *.md *.yml *.instructions.md

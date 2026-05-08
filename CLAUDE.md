@@ -134,7 +134,7 @@ CI also runs these audit scripts (all must pass before merge):
 
 ## Behavioral guidelines
 
-The four behavioral principles (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) are defined in the user-level `~/.claude/CLAUDE.md` and take precedence. The project root `AGENTS.md` and `docs/architecture/` contain project-specific governance and architecture rules.
+The four behavioral principles (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven Execution) are defined in the user-level `~/.claude/CLAUDE.md` and take precedence. `docs/architecture/` contains project-specific governance and architecture rules.
 
 ## Directory governance
 
