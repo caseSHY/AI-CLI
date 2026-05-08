@@ -1,0 +1,4 @@
+# Force LF line endings for golden test JSON files.
+# Windows git clients may otherwise check them out with CRLF, which
+# causes wc char/byte counts to differ from the expected golden values.
+tests/golden/*.json text eol=lf
