@@ -1,0 +1,79 @@
+name: Stress Test
+
+on:
+  schedule:
+    - cron: "0 2 * * 0" # Weekly: Sunday 02:00 UTC
+  workflow_dispatch:
+    inputs:
+      duration-hours:
+        description: "Stress test duration in hours"
+        required: false
+        default: "1"
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  stress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1500 # 25 hours max for the job
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run stress test
+        id: stress
+        run: |
+          DURATION="${{ inputs.duration-hours || '24' }}"
+          uv run python tests/stress/stress_runner.py \
+            --duration-hours "$DURATION" \
+            --checkpoint-minutes 15
+
+      - name: Upload metrics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: stress-metrics
+          path: metrics.json
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            let metrics = {};
+            try {
+              metrics = JSON.parse(fs.readFileSync("metrics.json", "utf8"));
+            } catch (_) {}
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[stress-test-failure] ${metrics.elapsed_hours || "?"}h test at ${new Date().toISOString().slice(0, 10)}`,
+              body: [
+                "## Stress Test Failure",
+                "",
+                "| Metric | Value |",
+                "|--------|-------|",
+                `| Duration | ${metrics.elapsed_hours || "?"}h |`,
+                `| CLI runs | ${metrics.stats?.cli_runs || "?"} |`,
+                `| CLI crashes | ${metrics.stats?.cli_crashes || "?"} |`,
+                `| MCP requests | ${metrics.stats?.mcp_requests || "?"} |`,
+                `| MCP errors | ${metrics.stats?.mcp_errors || "?"} |`,
+                `| RSS growth | ${metrics.resources?.rss_growth_mb || "?"}MB |`,
+                `| FD growth | ${metrics.resources?.fd_growth || "?"} |`,
+                `| Zombies | ${metrics.zombie_count || "?"} |`,
+                "",
+                `[Workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+              ].join("\n"),
+              labels: ["stress-test-failure", "bug"],
+            });

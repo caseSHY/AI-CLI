@@ -10,12 +10,17 @@ aicoreutils 是一个面向 LLM Agent 的 JSON 优先命令行工具包。
 - 危险操作需要显式 --allow-* 授权
 - 输出确定性、有界、无颜色/进度条噪音
 
-版本号在 pyproject.toml 和本文件的 __version__ 中同时维护。
+版本号单一来源为 pyproject.toml，通过 importlib.metadata 读取。
 """
 
 from __future__ import annotations
 
-__version__ = "1.1.2"
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("aicoreutils")
+except PackageNotFoundError:
+    __version__ = "0.0.0"  # fallback for uninstalled development
 
 # 异步接口（0.2.0 新增）：支持在 asyncio 事件循环中并发调用
 from .async_interface import run_async, run_async_many

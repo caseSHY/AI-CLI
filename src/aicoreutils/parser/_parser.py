@@ -158,7 +158,30 @@ def schema_command_names(args: argparse.Namespace) -> list[str]:
 
 
 def command_catalog(args: argparse.Namespace) -> dict[str, Any]:
-    return priority_catalog()
+    data: dict[str, Any] = priority_catalog()
+    categories_raw: Any = data.get("categories", [])
+    categories: list[dict[str, Any]] = list(categories_raw)
+    if args.category:
+        cat_filter = args.category.lower()
+        categories = [c for c in categories if cat_filter in str(c.get("category", "")).lower()]
+    if args.search:
+        keyword = args.search.lower()
+        matched: list[dict[str, Any]] = []
+        for cat in categories:
+            cat_tools: Any = cat.get("tools", [])
+            tools: list[str] = list(cat_tools)
+            matching_tools = [t for t in tools if keyword in t.lower()]
+            if (
+                matching_tools
+                or keyword in str(cat.get("category", "")).lower()
+                or keyword in str(cat.get("why", "")).lower()
+            ):
+                cat_copy = dict(cat)
+                cat_copy["tools"] = matching_tools if matching_tools else tools
+                matched.append(cat_copy)
+        categories = matched
+    data["categories"] = categories
+    return data
 
 
 def command_schema(args: argparse.Namespace) -> dict[str, Any]:
@@ -292,6 +315,10 @@ def build_parser() -> AgentArgumentParser:
         return sub.add_parser(name, **kwargs)
 
     p = add_subparser("catalog", help="List prioritized GNU Coreutils categories for agents.")
+    p.add_argument("--category", type=str, default=None, help="Filter by category name (fuzzy match).")
+    p.add_argument(
+        "--search", type=str, default=None, help="Search commands by keyword (fuzzy match on name/category/why)."
+    )
     p.set_defaults(func=command_catalog)
 
     p = add_subparser("schema", help="Print the aicoreutils JSON protocol and exit codes.")
@@ -412,7 +439,8 @@ def build_parser() -> AgentArgumentParser:
         p.set_defaults(func=line_func)
 
     p = add_subparser("wc", help="Count bytes, chars, lines, and words as JSON.")
-    p.add_argument("paths", nargs="+", help="Files to count, or '-' for stdin.")
+    p.add_argument("paths", nargs="*", help="Files to count, or '-' for stdin.")
+    p.add_argument("--files0-from", type=str, default=None, help="Read NUL-separated file list from FILE.")
     p.add_argument("--encoding", default="utf-8", help="Text encoding for char/word counts.")
     p.add_argument("--raw", action="store_true", help="Write GNU-style count lines without a JSON envelope.")
     p.set_defaults(func=command_wc)
@@ -428,12 +456,14 @@ def build_parser() -> AgentArgumentParser:
     }
     for command_name, algorithm in hash_commands.items():
         p = add_subparser(command_name, help=f"Hash files as JSON using {algorithm}.")
-        p.add_argument("paths", nargs="+", help="Files to hash, or '-' for stdin.")
+        p.add_argument("paths", nargs="*", help="Files to hash, or '-' for stdin (omit with --check).")
+        p.add_argument("--check", "-c", action="store_true", help="Read checksums from FILE(s) and verify them.")
         p.set_defaults(func=command_hash, algorithm=algorithm)
 
     p = add_subparser("hash", help="Hash files as JSON.")
-    p.add_argument("paths", nargs="+", help="Files to hash, or '-' for stdin.")
+    p.add_argument("paths", nargs="*", help="Files to hash, or '-' for stdin (omit with --check).")
     p.add_argument("--algorithm", default="sha256", choices=sorted(HASH_ALGORITHMS), help="Hash algorithm.")
+    p.add_argument("--check", "-c", action="store_true", help="Read checksums from FILE(s) and verify them.")
     p.set_defaults(func=command_hash)
 
     p = add_subparser("cksum", help="Return CRC32 checksums for files or stdin.")
@@ -454,6 +484,8 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--unique", "-u", action="store_true", help="Emit only the first of equal sorted lines.")
     p.add_argument("--numeric", "-n", action="store_true", help="Sort by the first numeric token.")
     p.add_argument("--ignore-case", "-f", action="store_true", help="Compare case-insensitively.")
+    p.add_argument("--stable", "-s", action="store_true", help="Stable sort: preserve relative order of equal keys.")
+    p.add_argument("--check", "-c", action="store_true", help="Check whether input is sorted; exit non-zero if not.")
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON lines to emit.")
     p.add_argument("--raw", action="store_true", help="Write plain transformed text to stdout.")
     p.set_defaults(func=command_sort)
@@ -772,6 +804,7 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--count", type=int, help="Number of input blocks to copy.")
     p.add_argument("--skip", type=int, default=0, help="Input blocks to skip.")
     p.add_argument("--seek", type=int, default=0, help="Output blocks to seek before writing.")
+    p.add_argument("--conv", type=str, default=None, help="Comma-separated conversions: notrunc, noerror, fsync, sync.")
     p.add_argument("--parents", action="store_true", help="Create missing output parent directories.")
     p.add_argument("--allow-overwrite", action="store_true", help="Allow replacing an existing output file.")
     p.add_argument(
@@ -1006,22 +1039,33 @@ def build_parser() -> AgentArgumentParser:
     p.set_defaults(func=command_link)
 
     p = add_subparser("chmod", help="Change file modes using octal modes with dry-run support.")
-    p.add_argument("mode", help="Octal mode such as 644, 755, or 0644.")
+    p.add_argument("mode", nargs="?", help="Octal mode such as 644, 755, or 0644 (omit when using --reference).")
     p.add_argument("paths", nargs="+", help="Paths whose mode should change.")
+    p.add_argument(
+        "--reference", type=str, default=None, help="Copy mode from reference file instead of a literal mode."
+    )
     p.add_argument("--no-follow", action="store_true", help="Do not follow symlinks where supported.")
     p.add_argument("--dry-run", action="store_true", help="Report operations without changing files.")
     p.set_defaults(func=command_chmod)
 
     p = add_subparser("chown", help="Change file owner/group using numeric ids or platform lookups.")
-    p.add_argument("owner", help="Owner spec such as UID, USER, UID:GID, or USER:GROUP.")
+    p.add_argument(
+        "owner", nargs="?", help="Owner spec such as UID, USER, UID:GID, or USER:GROUP (omit when using --reference)."
+    )
     p.add_argument("paths", nargs="+", help="Paths whose owner/group should change.")
+    p.add_argument(
+        "--reference", type=str, default=None, help="Copy owner/group from reference file instead of a literal spec."
+    )
     p.add_argument("--no-follow", action="store_true", help="Do not follow symlinks where supported.")
     p.add_argument("--dry-run", action="store_true", help="Report operations without changing files.")
     p.set_defaults(func=command_chown)
 
     p = add_subparser("chgrp", help="Change file group using a numeric gid or platform lookup.")
-    p.add_argument("group", help="Group name or numeric gid.")
+    p.add_argument("group", nargs="?", help="Group name or numeric gid (omit when using --reference).")
     p.add_argument("paths", nargs="+", help="Paths whose group should change.")
+    p.add_argument(
+        "--reference", type=str, default=None, help="Copy group from reference file instead of a literal group name."
+    )
     p.add_argument("--no-follow", action="store_true", help="Do not follow symlinks where supported.")
     p.add_argument("--dry-run", action="store_true", help="Report operations without changing files.")
     p.set_defaults(func=command_chgrp)

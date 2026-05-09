@@ -66,7 +66,7 @@
 | **macOS runner** | macos-latest, Python 3.11/3.12/3.13 |
 | **Windows runner** | windows-latest, Python 3.11/3.12/3.13 |
 | **Lint + Typecheck** | ruff check + ruff format --check + mypy --strict, Python 3.13 |
-| **CI 测试命令** | `python -m pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-fail-under=45` |
+| **CI 测试命令** | `python -m pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-fail-under=50` |
 | **GNU coreutils** | ✅ Ubuntu job 已安装（`apt-get update && apt-get install coreutils`）; macOS: `brew install coreutils` |
 | **最新 CI 结果** | ✅ 11/11 全平台通过 (commit `16d46ba`): lint, typecheck, test-ubuntu (3×Python), test-macos (3×Python), test-windows (3×Python) |
 | **本地 WSL CI 入口** | ✅ `.github/scripts/run-ci-wsl.ps1` + `.github/scripts/wsl-ci.sh` |
@@ -152,7 +152,7 @@
 | **macOS runner** | macos-latest, Python 3.11/3.12/3.13 |
 | **Windows runner** | windows-latest, Python 3.11/3.12/3.13 |
 | **Lint + Typecheck** | ruff check + ruff format --check + mypy --strict, Python 3.13 |
-| **CI test command** | `python -m pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-fail-under=45` |
+| **CI test command** | `python -m pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-fail-under=50` |
 | **GNU coreutils** | ✅ Ubuntu: `apt-get update && apt-get install coreutils`; macOS: `brew install coreutils` |
 | **Latest CI result** | ✅ 11/11 all platforms pass (commit `16d46ba`): lint, typecheck, test-ubuntu (3×Python), test-macos (3×Python), test-windows (3×Python) |
 | **Local WSL CI entry** | ✅ `.github/scripts/run-ci-wsl.ps1` + `.github/scripts/wsl-ci.sh` |

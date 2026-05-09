@@ -290,7 +290,13 @@ def command_tail(args: argparse.Namespace) -> dict[str, Any] | bytes:
 def command_wc(args: argparse.Namespace) -> dict[str, Any] | bytes:
     entries = []
     totals = {"bytes": 0, "chars": 0, "lines": 0, "words": 0}
-    for raw in args.paths:
+    paths: list[str] = list(args.paths) if args.paths else []
+    if args.files0_from:
+        with open(args.files0_from, "rb") as fh:
+            paths += [p for p in fh.read().decode("utf-8", errors="replace").split("\0") if p]
+    if not paths:
+        paths = ["-"]  # default to stdin
+    for raw in paths:
         if raw == "-":
             data = read_stdin_bytes()
             path_label = "-"
@@ -320,28 +326,90 @@ def command_wc(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 def command_hash(args: argparse.Namespace) -> dict[str, Any]:
+    # --check mode: verify checksums from checksum files
+    if getattr(args, "check", False):
+        entries = []
+        ok_count = 0
+        fail_count = 0
+        for raw in args.paths or ["-"]:
+            if raw == "-":
+                content = read_stdin_bytes().decode("utf-8", errors="replace")
+                source = "-"
+            else:
+                path = resolve_path(raw, strict=True)
+                content = path.read_text(encoding="utf-8", errors="replace")
+                source = str(path)
+            for line in content.splitlines():
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                parts = line.split(None, 1)
+                if len(parts) < 2:
+                    entries.append({"line": line, "error": "Invalid checksum line format", "status": "FAILED"})
+                    fail_count += 1
+                    continue
+                expected, target_path = parts[0], parts[1]
+                target_path = target_path.lstrip("*")  # GNU uses * for binary, ' ' for text
+                try:
+                    actual = digest_file(Path(target_path), args.algorithm)
+                except (FileNotFoundError, OSError) as exc:
+                    missing_entry: dict[str, Any] = {
+                        "path": target_path,
+                        "expected": expected,
+                        "actual": None,
+                        "error": str(exc),
+                        "status": "MISSING",
+                    }
+                    entries.append(missing_entry)
+                    fail_count += 1
+                    continue
+                ok = actual == expected
+                if ok:
+                    ok_count += 1
+                else:
+                    fail_count += 1
+                entries.append(
+                    {
+                        "path": target_path,
+                        "expected": expected,
+                        "actual": actual,
+                        "status": "OK" if ok else "FAILED",
+                    }
+                )
+        check_source: str = source if len(args.paths or []) == 1 else "multiple"
+        result: dict[str, Any] = {
+            "source": check_source,
+            "algorithm": args.algorithm,
+            "count": len(entries),
+            "ok": ok_count,
+            "failed": fail_count,
+            "entries": entries,
+        }
+        if fail_count > 0:
+            result["_exit_code"] = 1
+        return result
+
+    # Normal hashing mode
     entries = []
-    for raw in args.paths:
+    for raw in args.paths if args.paths else ["-"]:
         if raw == "-":
             data = read_stdin_bytes()
-            entries.append(
-                {
-                    "path": "-",
-                    "algorithm": args.algorithm,
-                    "digest": digest_bytes(data, args.algorithm),
-                    "size_bytes": len(data),
-                }
-            )
+            entry_data: dict[str, Any] = {
+                "path": "-",
+                "algorithm": args.algorithm,
+                "digest": digest_bytes(data, args.algorithm),
+                "size_bytes": len(data),
+            }
+            entries.append(entry_data)
             continue
         path = resolve_path(raw, strict=True)
-        entries.append(
-            {
-                "path": str(path),
-                "algorithm": args.algorithm,
-                "digest": digest_file(path, args.algorithm),
-                "size_bytes": path.stat().st_size,
-            }
-        )
+        entry_data = {
+            "path": str(path),
+            "algorithm": args.algorithm,
+            "digest": digest_file(path, args.algorithm),
+            "size_bytes": path.stat().st_size,
+        }
+        entries.append(entry_data)
     return {"count": len(entries), "entries": entries}
 
 
@@ -590,7 +658,14 @@ def command_link(args: argparse.Namespace) -> dict[str, Any]:
 def command_chmod(args: argparse.Namespace) -> dict[str, Any]:
     import stat as statmod
 
-    new_mode = parse_octal_mode(args.mode)
+    if args.reference:
+        ref_path = resolve_path(args.reference, strict=True)
+        ref_mode = statmod.S_IMODE(ref_path.lstat().st_mode)
+        new_mode = ref_mode
+    elif args.mode:
+        new_mode = parse_octal_mode(args.mode)
+    else:
+        raise AgentError("invalid_input", "chmod requires either a mode argument or --reference.")
     cwd = Path.cwd().resolve()
     operations = []
     for raw in args.paths:
@@ -617,7 +692,15 @@ def command_chmod(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def command_chown(args: argparse.Namespace) -> dict[str, Any]:
-    owner_raw, group_raw = split_owner_spec(args.owner)
+    if args.reference:
+        ref_path = resolve_path(args.reference, strict=True)
+        ref_st = ref_path.lstat()
+        owner_raw: str = str(getattr(ref_st, "st_uid", ""))
+        group_raw: str = str(getattr(ref_st, "st_gid", ""))
+    elif args.owner:
+        owner_raw, group_raw = split_owner_spec(args.owner)  # type: ignore[assignment]
+    else:
+        raise AgentError("invalid_input", "chown requires either an owner spec or --reference.")
     uid = resolve_user_id(owner_raw)
     gid = resolve_group_id(group_raw)
     if uid is None and gid is None:
@@ -659,7 +742,14 @@ def command_chown(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def command_chgrp(args: argparse.Namespace) -> dict[str, Any]:
-    gid = resolve_group_id(args.group)
+    if args.reference:
+        ref_path = resolve_path(args.reference, strict=True)
+        ref_st = ref_path.lstat()
+        gid = getattr(ref_st, "st_gid", None)
+    elif args.group:
+        gid = resolve_group_id(args.group)
+    else:
+        raise AgentError("invalid_input", "chgrp requires either a group argument or --reference.")
     if gid is None:
         raise AgentError("invalid_input", "A group is required.")
     cwd = Path.cwd().resolve()
@@ -1242,12 +1332,21 @@ def command_dd(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.count is not None:
         selected = selected[: args.count * args.bs]
 
+    conv_options = set(args.conv.split(",")) if args.conv else set()
+    # conv=sync: pad each input block to bs with NULs
+    if "sync" in conv_options and args.count is not None:
+        expected = args.count * args.bs
+        if len(selected) < expected:
+            selected += b"\x00" * (expected - len(selected))
+
     output_path = None if args.output == "-" else resolve_path(args.output)
     if output_path is not None:
         cwd = Path.cwd().resolve()
         require_inside_cwd(output_path, cwd, allow_outside_cwd=False)
         ensure_parent(output_path, create=args.parents, dry_run=args.dry_run)
-        if output_path.exists() and not args.allow_overwrite and args.seek == 0:
+        # conv=notrunc: do not truncate existing output file on seek>0
+        notrunc = "notrunc" in conv_options
+        if output_path.exists() and not args.allow_overwrite and args.seek == 0 and not notrunc:
             raise AgentError(
                 "conflict",
                 "Output file exists.",
@@ -1256,16 +1355,22 @@ def command_dd(args: argparse.Namespace) -> dict[str, Any] | bytes:
             )
         if not args.dry_run:
             try:
-                mode = "r+b" if output_path.exists() and args.seek > 0 else "wb"
+                mode = "r+b" if output_path.exists() and (args.seek > 0 or notrunc) else "wb"
                 with output_path.open(mode) as handle:
                     handle.seek(args.seek * args.bs)
                     handle.write(selected)
+                    if "fsync" in conv_options:
+                        handle.flush()
+                        os.fsync(handle.fileno())
             except PermissionError as exc:
                 raise AgentError(
                     "permission_denied", "Permission denied while writing output.", path=str(output_path)
                 ) from exc
             except OSError as exc:
-                raise AgentError("io_error", str(exc), path=str(output_path)) from exc
+                if "noerror" in conv_options:
+                    pass  # conv=noerror: skip write errors
+                else:
+                    raise AgentError("io_error", str(exc), path=str(output_path)) from exc
 
     if args.raw:
         return selected
@@ -1279,6 +1384,7 @@ def command_dd(args: argparse.Namespace) -> dict[str, Any] | bytes:
         "count": args.count,
         "skip_blocks": args.skip,
         "seek_blocks": args.seek,
+        "conv": sorted(conv_options) if conv_options else None,
         "dry_run": args.dry_run,
         "content_base64": base64.b64encode(preview).decode("ascii"),
         "returned_preview_bytes": len(preview),

@@ -351,6 +351,122 @@ class EchoPropertyTests(unittest.TestCase):
 # ── JSON envelope properties ─────────────────────────────────────────
 
 
+# ── Shuf properties (stdin-based) ─────────────────────────────────────
+
+
+class ShufPropertyTests(unittest.TestCase):
+    @given(lines_list)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
+    def test_shuf_preserves_all_lines(self, lines: list[str]) -> None:
+        text = "".join(lines)
+        result = run_cli("shuf", "--raw", "-", input_text=text)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(sorted(_line_values(lines)), sorted(_lines(result)))
+
+    @given(lines_list)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
+    def test_shuf_never_crashes(self, lines: list[str]) -> None:
+        text = "".join(lines)
+        result = run_cli("shuf", "--raw", "-", input_text=text)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+
+# ── Tac properties (stdin-based) ───────────────────────────────────────
+
+
+class TacPropertyTests(unittest.TestCase):
+    @given(lines_list)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
+    def test_tac_reverses_line_order(self, lines: list[str]) -> None:
+        text = "".join(lines)
+        result = run_cli("tac", "--raw", "-", input_text=text)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(_line_values(lines), list(reversed(_lines(result))))
+
+    @given(lines_list)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
+    def test_tac_twice_is_identity(self, lines: list[str]) -> None:
+        text = "".join(lines)
+        r1 = run_cli("tac", "--raw", "-", input_text=text)
+        self.assertEqual(r1.returncode, 0, r1.stderr)
+        r2 = run_cli("tac", "--raw", "-", input_text=r1.stdout)
+        self.assertEqual(r2.returncode, 0, r2.stderr)
+        self.assertEqual(r2.stdout, text)
+
+
+# ── Nl properties (stdin-based) ────────────────────────────────────────
+
+
+class NlPropertyTests(unittest.TestCase):
+    @given(lines_list)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
+    def test_nl_never_crashes(self, lines: list[str]) -> None:
+        text = "".join(lines)
+        result = run_cli("nl", "--raw", "-", input_text=text)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+
+# ── Fold properties (stdin-based) ──────────────────────────────────────
+
+
+class FoldPropertyTests(unittest.TestCase):
+    @given(flat_text)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
+    def test_fold_never_crashes(self, text: str) -> None:
+        result = run_cli("fold", "--raw", "-", input_text=text)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    @given(flat_text)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
+    def test_fold_output_lines_no_longer_than_width(self, text: str) -> None:
+        width = 80
+        result = run_cli("fold", "--width", str(width), "--raw", "-", input_text=text)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for line in _lines(result):
+            self.assertLessEqual(len(line.rstrip("\r")), width)
+
+
+# ── Join properties (file-based) ───────────────────────────────────────
+
+
+class JoinPropertyTests(unittest.TestCase):
+    @given(lines_list)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
+    def test_join_sorted_identical_files_never_crashes(self, lines: list[str]) -> None:
+        with TemporaryDirectory() as raw:
+            cwd = Path(raw)
+            text = "".join(sorted(lines))
+            (cwd / "a.txt").write_text(text, encoding="utf-8")
+            (cwd / "b.txt").write_text(text, encoding="utf-8")
+            result = run_cli("join", "a.txt", "b.txt", cwd=cwd)
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+
+# ── Paste properties (file-based) ──────────────────────────────────────
+
+
+class PastePropertyTests(unittest.TestCase):
+    @given(lines_list)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
+    def test_paste_never_crashes(self, lines: list[str]) -> None:
+        with TemporaryDirectory() as raw:
+            cwd = Path(raw)
+            text = "".join(lines)
+            (cwd / "f.txt").write_text(text, encoding="utf-8")
+            result = run_cli("paste", "f.txt", cwd=cwd)
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    @given(lines_list, lines_list)
+    @settings(max_examples=PROPERTY_EXAMPLES, deadline=None)
+    def test_paste_two_files_never_crashes(self, a: list[str], b: list[str]) -> None:
+        with TemporaryDirectory() as raw:
+            cwd = Path(raw)
+            (cwd / "a.txt").write_text("".join(a), encoding="utf-8")
+            (cwd / "b.txt").write_text("".join(b), encoding="utf-8")
+            result = run_cli("paste", "a.txt", "b.txt", cwd=cwd)
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+
 class JsonEnvelopePropertyTests(unittest.TestCase):
     @given(flat_text)
     @settings(max_examples=ENVELOPE_EXAMPLES, deadline=None)

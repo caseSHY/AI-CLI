@@ -22,7 +22,6 @@ class DocsBilingualTests(unittest.TestCase):
                 "CLAUDE.local.md",
                 "CHANGELOG.md",
                 "AGENT_TASKS.md",
-                "COMMUNITY_LAUNCH_COPY.md",
             }
             and not path.name.startswith("GPTCodex-vs-DeepSeekCopilot-")
         ]

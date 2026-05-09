@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Coreutils but not a full clone. It exposes 114 commands (109 in the priority catalog + 5 meta-commands: catalog, schema, coreutils, tool-list, hash) via CLI and an MCP server, with deterministic JSON envelopes so agents can parse output reliably. Package name: `aicoreutils` (v1.1.2), requires Python >= 3.11, zero runtime dependencies.
+AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Coreutils but not a full clone. It exposes 116 commands (111 in the priority catalog + 5 meta-commands: catalog, schema, coreutils, tool-list, hash) via CLI and an MCP server, with deterministic JSON envelopes so agents can parse output reliably. Package name: `aicoreutils` (v1.1.2), requires Python >= 3.11, zero runtime dependencies. Version is single-sourced from pyproject.toml via `importlib.metadata`.
 
 ## Commands
 
@@ -26,9 +26,16 @@ uv run pytest tests/test_docs_governance.py -v         # Docs governance checks
 uv run pytest tests/test_docs_bilingual.py -v          # Bilingual docs check
 uv run pytest tests/test_version_consistency.py -v     # Version consistency
 uv run pytest tests/test_project_consistency.py -v     # Project consistency
+uv run pytest tests/test_unit_utils_path.py -v         # Path utilities unit tests
+uv run pytest tests/test_concurrency.py -v             # Async + MCP concurrency
+uv run pytest tests/test_large_input.py -v             # Large-input behavior (slow, 100 MB)
+uv run pytest tests/test_unit_commands_text.py -v      # Text command handlers (direct call)
+uv run pytest tests/test_unit_commands_system.py -v    # System command handlers
+uv run pytest tests/test_unit_commands_fs.py -v        # FS command handlers
+uv run pytest tests/test_error_recovery.py -v          # Disk full, permission, signal tests
 
-# Coverage (threshold: 45%)
-uv run pytest tests/ --cov=src/aicoreutils --cov-fail-under=45
+# Coverage (threshold: 50%)
+uv run pytest tests/ --cov=src/aicoreutils --cov-fail-under=50
 
 # Lint and typecheck (match CI scope)
 uv run ruff check src/ tests/ scripts/
@@ -41,6 +48,8 @@ uv run pytest tests/test_cli_black_box.py::test_ls_basic -v --tb=short
 # Run the CLI from source
 uv run aicoreutils ls . --limit 20
 uv run aicoreutils schema --pretty
+uv run aicoreutils catalog --category fs       # Filter catalog by domain
+uv run aicoreutils catalog --search "sort"     # Fuzzy-search commands
 
 # Run the MCP server
 uv run aicoreutils-mcp --read-only
@@ -48,6 +57,11 @@ uv run aicoreutils-mcp --profile workspace-write
 
 # Run pre-commit checks (same as CI lint gate)
 uv run pre-commit run --all-files
+
+# Generate shell completions
+uv run python scripts/generate_completions.py bash > aicoreutils-complete.bash
+uv run python scripts/generate_completions.py zsh > _aicoreutils
+uv run python scripts/generate_completions.py fish > aicoreutils.fish
 ```
 
 ## Architecture
@@ -68,11 +82,12 @@ async_interface.py  Async wrapper: asyncio subprocess pool for concurrent comman
 
 ```
 src/aicoreutils/    Python package (core -> utils -> commands -> parser, with registry/)
-docs/               Documentation (reference, guides, architecture, development, status)
-tests/              Test suite (27 test files, conftest, support, golden/)
+docs/               Documentation (reference, guides, architecture, development, status, audits; QUICKSTART.md, COMPATIBILITY.md)
+tests/              Test suite (35 test files, stress/, conftest, support, golden/)
 examples/           Examples and agent tasks
 scripts/            CI audit, release gate, bump version, generate status
 .github/scripts/    WSL CI helpers and golden output updater
+.github/workflows/  CI (tests, publish) + stress-test.yml (weekly 24h)
 vendor/             Local upstream GNU coreutils cache
 Dockerfile          Containerized MCP server deployment
 ```
@@ -84,6 +99,8 @@ Every command outputs:
 - **Failure** (stderr): `{"ok":false, "tool":"aicoreutils", "version":"...", "command":"...", "error":{"code":"...", "message":"..."}}`
 
 Pass `--raw` to bypass the envelope for pipeline composition.
+
+The `warnings` list may contain deprecation notices (via `deprecation_warning()` in `core/envelope.py`). See `docs/COMPATIBILITY.md` for the deprecation policy and stability commitments.
 
 ### Semantic exit codes
 
@@ -111,6 +128,25 @@ See `docs/reference/SECURITY_MODEL.md` for the full security model.
 
 Third-party packages named `aicoreutils_*` are auto-discovered via `registry/plugins.py`. `PluginRegistry` (in `core/plugin_registry.py`) provides an immutable, thread-safe registry.
 
+### Testing command handlers directly
+
+Command unit tests use the real parser to build proper `argparse.Namespace` objects, then call handlers directly — no subprocess overhead:
+
+```python
+from aicoreutils.parser._parser import build_parser
+_parser = build_parser()
+args = _parser.parse_args(["sort", "--reverse", "file.txt"])
+result = args.func(args)  # calls command_sort directly, coverage counts
+```
+
+### Recent GNU compatibility additions
+
+- `sort --stable` / `sort --check` — Python sort is already stable; check mode returns `{sorted, disorder_line}`
+- `chmod/chown/chgrp --reference` — copy mode/owner/group from a reference file
+- `md5sum/sha*sum/b2sum --check` — verify checksums from a checksum file, JSON `{ok, failed, entries}`
+- `wc --files0-from` — read NUL-separated file list
+- `dd --conv=notrunc,noerror,fsync,sync` — data conversion options
+
 ## Governance rules (mandatory)
 
 Before changing docs, CI, tests, security status, command counts, or governance reports, read these three files first:
@@ -131,6 +167,14 @@ CI also runs these audit scripts (all must pass before merge):
 - `scripts/audit_command_specs.py` — spec registry vs parser consistency
 - `scripts/audit_supply_chain.py` — pinned actions, dependabot, Dockerfile hardening
 - `scripts/release_gate.py` — meta-gate that runs all of the above plus tests
+
+### Release process
+
+1. All CI checks pass (lint, typecheck, tests × 3 platforms × 3 Python versions)
+2. `scripts/release_gate.py` passes
+3. Bump version with `scripts/bump_version.py <new_version>`
+4. Update `CHANGELOG.md`
+5. Tag `v<new_version>` and push — CI publishes to PyPI automatically
 
 ## Behavioral guidelines
 

@@ -99,7 +99,25 @@ def command_sort(args: argparse.Namespace) -> dict[str, Any] | bytes:
         except ValueError:
             return (1, comparable)
 
+    # --check: verify input is already sorted, return first disorder line
+    if getattr(args, "check", False):
+        disorder_line = None
+        for i in range(len(lines) - 1):
+            if key(lines[i + 1]) < key(lines[i]):
+                disorder_line = i + 2  # 1-based line number (after the preceding line)
+                break
+        result: dict[str, Any] = {
+            "source_paths": source_paths,
+            "input_lines": len(lines),
+            "sorted": disorder_line is None,
+            "disorder_line": disorder_line,
+        }
+        if disorder_line is not None:
+            result["_exit_code"] = 1
+        return result
+
     sorted_lines = sorted(lines, key=key, reverse=args.reverse)
+    # --stable: Python sorted() is already stable, this flag exists for GNU compatibility
     if args.unique:
         unique_lines = []
         seen = set()

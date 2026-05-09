@@ -20,11 +20,11 @@ if TYPE_CHECKING:
     from .exceptions import AgentError
 
 # 项目版本号。作为信封的 version 字段，允许 Agent 做版本兼容性判断。
-# 版本号单一来源为 aicoreutils.__version__。
+# 版本号单一来源为 aicoreutils.__version__（通过 importlib.metadata 从 pyproject.toml 读取）。
 try:
-    from .. import __version__
+    from .. import __version__ as _pkg_version
 
-    _TOOL_VERSION = __version__
+    _TOOL_VERSION: str = _pkg_version  # type: ignore[has-type]
 except ImportError:
     _TOOL_VERSION = "0.3.9"  # 回退：无法导入时使用硬编码
 
@@ -97,3 +97,24 @@ def error_envelope(command: str | None, error: AgentError) -> dict[str, Any]:
         "command": command,
         "error": error.to_dict(),
     }
+
+
+def deprecation_warning(message: str, *, removal_version: str | None = None) -> dict[str, Any]:
+    """构建弃用警告条目，追加到 envelope 的 warnings 列表中。
+
+    弃用策略遵循 COMPATIBILITY.md：
+    1. 标记弃用 — 在 warnings 中追加此条目
+    2. 保留一个版本 — 弃用项在下一个次版本中仍然工作
+    3. 在主版本中移除
+
+    Args:
+        message: 弃用说明（如 "--old-flag is deprecated, use --new-flag"）。
+        removal_version: 计划移除的主版本号（如 "2.0.0"）。
+
+    Returns:
+        {"type": "deprecation", "message": ..., "removal_version": ...} 字典。
+    """
+    entry: dict[str, Any] = {"type": "deprecation", "message": message}
+    if removal_version is not None:
+        entry["removal_version"] = removal_version
+    return entry

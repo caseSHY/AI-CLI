@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Semi-automated version bump for AICoreUtils.
 
-Updates all 5 files that carry the version number:
-    pyproject.toml, __init__.py, server.json, CURRENT_STATUS.md
-and appends a new CHANGELOG section template.
+Updates the version in pyproject.toml, CURRENT_STATUS.md, and appends a new
+CHANGELOG section template.  (__init__.py now reads the version dynamically
+from importlib.metadata, so it is no longer a bump target.)
 
 Usage:
     python scripts/bump_version.py 1.2.0          # bump to 1.2.0
@@ -19,17 +19,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-FILES_TO_UPDATE = [
+FILES_TO_UPDATE: list[tuple[Path, str, str]] = [
     (ROOT / "pyproject.toml", r'(version\s*=\s*)"(\d+\.\d+\.\d+)"', r'\g<1>"{new}"'),
-    (ROOT / "src" / "aicoreutils" / "__init__.py", r'(__version__\s*=\s*)"(\d+\.\d+\.\d+)"', r'\g<1>"{new}"'),
-    (ROOT / "server.json", r'("version":\s*)"\d+\.\d+\.\d+"', r'\g<1>"{new}"'),
     (
-        ROOT / "project" / "docs" / "status" / "CURRENT_STATUS.md",
+        ROOT / "docs" / "status" / "CURRENT_STATUS.md",
         r"(\|\s*\*\*项目版本\*\*\s*\|\s*)\d+\.\d+\.\d+",
         r"\g<1>{new}",
     ),
     (
-        ROOT / "project" / "docs" / "status" / "CURRENT_STATUS.md",
+        ROOT / "docs" / "status" / "CURRENT_STATUS.md",
         r"(\|\s*\*\*Project version\*\*\s*\|\s*)\d+\.\d+\.\d+",
         r"\g<1>{new}",
     ),
@@ -70,14 +68,6 @@ def bump(new_version: str, dry_run: bool = False) -> None:
         text = filepath.read_text(encoding="utf-8")
         pattern = re.compile(pattern_str)
         new_text = pattern.sub(replacement_template.format(new=new_version), text)
-
-        # server.json needs special handling (two version fields)
-        if filepath.name == "server.json":
-            new_text = re.sub(
-                r'("version":\s*)"\d+\.\d+\.\d+"',
-                rf'\g<1>"{new_version}"',
-                new_text,
-            )
 
         if new_text != text:
             if dry_run:

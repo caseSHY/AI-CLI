@@ -29,9 +29,7 @@ def _aicoreutils_output(*args: str) -> dict:
 class DocsGovernanceTests(unittest.TestCase):
     def test_copilot_and_agent_instruction_entry_points_exist(self) -> None:
         required_files = [
-            ".github/copilot-instructions.md",
-            ".github/instructions/docs-governance.instructions.md",
-            ".github/instructions/python-tests.instructions.md",
+            "CLAUDE.md",
             "docs/architecture/DOC_GOVERNANCE_RULES.md",
             "docs/architecture/FACT_PROPAGATION_MATRIX.md",
         ]
@@ -39,15 +37,15 @@ class DocsGovernanceTests(unittest.TestCase):
             with self.subTest(relative=relative):
                 self.assertTrue((ROOT / relative).exists(), f"missing {relative}")
 
-        copilot = read_text(".github/copilot-instructions.md")
+        claude_md = read_text("CLAUDE.md")
         for required in [
             "docs/status/CURRENT_STATUS.md",
             "docs/architecture/DOC_GOVERNANCE_RULES.md",
             "docs/architecture/FACT_PROPAGATION_MATRIX.md",
-            "python -m pytest tests/ -v --tb=short",
+            "uv run pytest tests/ -v --tb=short",
         ]:
             with self.subTest(required=required):
-                self.assertIn(required, copilot)
+                self.assertIn(required, claude_md)
 
     def test_agent_governance_guides_are_indexed(self) -> None:
         docs_index = read_text("docs/README.md")

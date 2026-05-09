@@ -34,7 +34,7 @@ from .constants import (
     FACTOR_MAX,
     HASH_CHUNK_SIZE,
 )
-from .envelope import envelope, error_envelope, utc_iso, write_json
+from .envelope import deprecation_warning, envelope, error_envelope, utc_iso, write_json
 from .exceptions import AgentError
 from .exit_codes import EXIT
 from .path_utils import (
@@ -81,6 +81,7 @@ __all__ = [
     "PluginRegistry",
     "StreamWriter",
     "dangerous_delete_target",
+    "deprecation_warning",
     "destination_inside_directory",
     "directory_size",
     "disk_usage_entry",

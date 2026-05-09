@@ -52,7 +52,7 @@ async def run_async(
     """
     cmd = [sys.executable, "-m", "aicoreutils", *args]
     # 计算 src/ 目录的绝对路径，放入 PYTHONPATH 确保子进程能找到包
-    env = {"PYTHONPATH": str(Path(__file__).resolve().parents[2])}
+    env = {"PYTHONPATH": str(Path(__file__).resolve().parents[1])}
 
     proc = await asyncio.create_subprocess_exec(
         *cmd,
