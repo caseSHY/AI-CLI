@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -590,6 +591,8 @@ class ChmodChownChgrpReferenceTests(unittest.TestCase):
                 os.chdir(self._orig_cwd)
 
     def test_chown_reference(self) -> None:
+        if sys.platform == "win32":
+            self.skipTest("chown is not supported on Windows")
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
@@ -605,6 +608,8 @@ class ChmodChownChgrpReferenceTests(unittest.TestCase):
                 os.chdir(self._orig_cwd)
 
     def test_chown_dry_run(self) -> None:
+        if sys.platform == "win32":
+            self.skipTest("chown is not supported on Windows")
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
@@ -618,6 +623,8 @@ class ChmodChownChgrpReferenceTests(unittest.TestCase):
                 os.chdir(self._orig_cwd)
 
     def test_chgrp_reference(self) -> None:
+        if sys.platform == "win32":
+            self.skipTest("chgrp is not supported on Windows")
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
@@ -633,6 +640,8 @@ class ChmodChownChgrpReferenceTests(unittest.TestCase):
                 os.chdir(self._orig_cwd)
 
     def test_chgrp_dry_run(self) -> None:
+        if sys.platform == "win32":
+            self.skipTest("chgrp is not supported on Windows")
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
