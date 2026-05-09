@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Coreutils but not a full clone. It exposes 114 commands (109 in the priority catalog + 5 meta-commands: catalog, schema, coreutils, tool-list, hash) via CLI and an MCP server. Package: `aicoreutils` (v1.1.2), Python >= 3.11, zero runtime dependencies. Version is single-sourced from pyproject.toml via `importlib.metadata`.
+AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Coreutils but not a full clone. It exposes 114 commands (111 priority catalog entries + meta-commands) via CLI and an MCP server. Package: `aicoreutils` (v1.2.0 LTS), Python >= 3.11, zero runtime dependencies. Version is single-sourced from pyproject.toml via `importlib.metadata`.
 
 ## Commands
 
@@ -73,7 +73,7 @@ core/          Foundation: exit codes, exceptions, JSON envelope, path utils, sa
 utils/         Domain utilities: argparse wrapper, I/O, hashing, text processing, ranges, printf, numfmt, system, path
 commands/      Command handlers (fs/_core.py, system/_core.py, text/_core.py — one file per category)
 parser/        CLI entry point: single _parser.py builds argparse tree, dispatches to handlers
-registry/      Command registry: catalog (111 commands P0-P3), plugins, command_specs, tool_schema
+registry/      Command registry: catalog (109 commands P0-P3), plugins, command_specs, tool_schema
 mcp_server.py  MCP server: JSON-RPC 2.0 over stdio, no external deps
 async_interface.py  Async wrapper: asyncio subprocess pool for concurrent command execution
 ```

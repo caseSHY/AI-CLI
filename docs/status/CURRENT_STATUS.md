@@ -51,7 +51,7 @@
 | 项目 | 状态 |
 |---|---|
 | **GNU 命令名覆盖** | 109/109 |
-| **Agent 子集实现** | 全部 114 命令（含 5 个元命令：catalog、schema、coreutils、tool-list、hash） |
+| **Agent 子集实现** | 全部 114 命令（含元命令：catalog、schema、coreutils、tool-list） |
 | **GNU differential verified (Windows)** | 仅 sort (5 tests), 其余 51 因缺少 GNU 工具跳过 |
 | **GNU differential verified (Local WSL Ubuntu)** | 本地 WSL 已验证 — 54/56 GNU 对照测试通过，2 个中文用例硬编码跳过 |
 | **GNU differential verified (CI Ubuntu)** | ✅ CI verified — CI #7 (`cb3e61e`) Ubuntu job 中 GNU 对照测试通过 |
@@ -137,7 +137,7 @@
 | Item | Status |
 |---|---|
 | **GNU command name coverage** | 109/109 |
-| **Agent subset implemented** | All 114 commands (incl. 5 meta-commands: catalog, schema, coreutils, tool-list, hash) |
+| **Agent subset implemented** | All 114 commands (incl. meta-commands: catalog, schema, coreutils, tool-list) |
 | **GNU differential verified (Windows)** | sort only (5 tests), 51 skipped (no GNU tools) |
 | **GNU differential verified (Local WSL Ubuntu)** | Locally verified in WSL — 54/56 GNU differential tests passed, 2 Chinese cases hard-skipped |
 | **GNU differential verified (CI Ubuntu)** | ✅ CI verified — CI #7 (`cb3e61e`) GNU differential tests passed in Ubuntu job |
