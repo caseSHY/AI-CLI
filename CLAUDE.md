@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Coreutils but not a full clone. It exposes 116 commands (111 in the priority catalog + 5 meta-commands: catalog, schema, coreutils, tool-list, hash) via CLI and an MCP server, with deterministic JSON envelopes so agents can parse output reliably. Package name: `aicoreutils` (v1.1.2), requires Python >= 3.11, zero runtime dependencies. Version is single-sourced from pyproject.toml via `importlib.metadata`.
+AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Coreutils but not a full clone. It exposes 114 commands (109 in the priority catalog + 5 meta-commands: catalog, schema, coreutils, tool-list, hash) via CLI and an MCP server. Package: `aicoreutils` (v1.1.2), Python >= 3.11, zero runtime dependencies. Version is single-sourced from pyproject.toml via `importlib.metadata`.
 
 ## Commands
 
@@ -83,7 +83,7 @@ async_interface.py  Async wrapper: asyncio subprocess pool for concurrent comman
 ```
 src/aicoreutils/    Python package (core -> utils -> commands -> parser, with registry/)
 docs/               Documentation (reference, guides, architecture, development, status, audits; QUICKSTART.md, COMPATIBILITY.md)
-tests/              Test suite (35 test files, stress/, conftest, support, golden/)
+tests/              Test suite (42 test files, ~837 tests, stress/, support/, golden/)
 examples/           Examples and agent tasks
 scripts/            CI audit, release gate, bump version, generate status
 .github/scripts/    WSL CI helpers and golden output updater
