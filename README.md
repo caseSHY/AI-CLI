@@ -5,6 +5,7 @@
 [![PyPI](https://img.shields.io/pypi/v/aicoreutils)](https://pypi.org/project/aicoreutils/)
 
 [![CI](https://github.com/caseSHY/AI-CLI/actions/workflows/ci.yml/badge.svg)](https://github.com/caseSHY/AI-CLI/actions/workflows/ci.yml)
+[![LTS](https://img.shields.io/badge/LTS-1.2.0-blue)](https://github.com/caseSHY/AI-CLI/blob/master/CHANGELOG.md)
 > **Glama 92%** | TDQS A 级 (均值 4.6) | 114 工具全部 A 级 | CI 全平台通过
 
 > ⚠️ **Stability**: This project is actively evolving. While the JSON output schema and MCP tool interface are stable, internal CLI argument parsing and per-command flags may change. 阅读 [稳定性说明](#稳定性和-semver) 了解详情。
@@ -257,4 +258,4 @@ aicoreutils 从 v1.0.0 起采用语义化版本控制，承诺如下：
 - **Minor (1.x.0)**：新增命令、新增参数。已有命令的 JSON 输出结构保持向后兼容。
 - **Major (x.0.0)**：破坏性变更 — JSON schema 变化、命令重命名、MCP tool schema 变化。
 
-⚠️ 当前状态：项目仍在活跃开发中。CLI 内部参数解析和 per-command flag 可能因 argparse 重构频繁变化，但 JSON envelope（`ok`, `result`, `error`, `command`, `version`）和 MCP tool schema 是稳定的。生产使用前请固定版本号 (`pip install aicoreutils==1.1.2`)。
+⚠️ 当前状态：项目仍在活跃开发中。CLI 内部参数解析和 per-command flag 可能因 argparse 重构频繁变化，但 JSON envelope（`ok`, `result`, `error`, `command`, `version`）和 MCP tool schema 是稳定的。生产使用请固定版本号 (`pip install aicoreutils==1.2.0`)。**v1.2.0 为 LTS 版本**，关键 bug 和安全修复将回溯至少 12 个月。

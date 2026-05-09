@@ -2,6 +2,42 @@
 
 All notable changes to AICoreUtils.
 
+## [1.2.0] - 2026-05-10 — **LTS**
+
+> **Long-Term Support**: v1.2.0 is designated an LTS release. Critical bug fixes and
+> security patches will be backported to this release line for at least 12 months.
+
+### Added
+- Coverage threshold raised from 50% → 77%; test suite expanded from 670 → 781 tests.
+- New unit test files: `test_unit_commands_fs.py`, `test_unit_commands_system.py`,
+  `test_unit_commands_text.py`, `test_unit_command_specs.py`, `test_unit_utils_path.py`,
+  `test_concurrency.py`, `test_error_recovery.py`, `test_large_input.py`.
+- Stress-test CI workflow (`stress-test.yml`) — 24-hour fuzzing and concurrency run.
+- Shell completion generation script (`scripts/generate_completions.py`).
+- New documentation: `COMPATIBILITY.md` (deprecation policy), `QUICKSTART.md`.
+- GitHub issue templates (bug report, feature request).
+- `vulture` dev dependency for dead-code detection.
+
+### Changed
+- `__version__` now single-sourced from `pyproject.toml` via `importlib.metadata`.
+- GNU compatibility additions: `chmod/chown/chgrp --reference`, `hash --check`,
+  `wc --files0-from`, `dd conv=sync,notrunc`.
+- `.github/copilot-instructions.md` and `.github/instructions/` removed;
+  agent guidance consolidated into `CLAUDE.md`.
+- CI coverage gate: 50% → 77% (all platforms).
+- Documentation status and test counts synchronized across Chinese/English.
+
+### Fixed
+- Windows CI: `os.chmod` permission semantics, signal handling, path separator,
+  tempfile cleanup ordering, and platform-specific feature skips.
+- `generate_status.py` now handles dynamic `importlib.metadata` version pattern.
+- `CURRENT_STATUS.md` stale data corrected (test counts, CI job count, coverage threshold).
+
+### Security
+- Command risk/test matrix audit (`scripts/audit_command_matrix.py`) now blocks CI on gaps.
+- Supply-chain audit expanded to cover stress-test workflow and pinned actions.
+
+
 ## [1.1.2] - 2026-05-06
 
 ### Added

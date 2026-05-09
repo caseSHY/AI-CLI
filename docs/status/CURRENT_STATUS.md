@@ -13,7 +13,7 @@
 | **验证对象** | 本地工作区（`2f91744`，已推送至 GitHub，GitHub Actions CI 运行中） |
 | **Python 版本** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
 | **操作系统** | Windows 11 (开发) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
-| **项目版本** | 1.1.2 |
+| **项目版本** | 1.2.0 |
 <!-- status-managed:end cn-baseline -->
 
 ### 测试
@@ -98,7 +98,7 @@
 | **Verified target** | local working tree (`2f91744`, pushed to GitHub, GitHub Actions CI in progress) |
 | **Python version** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
 | **OS** | Windows 11 (dev) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
-| **Project version** | 1.1.2 |
+| **Project version** | 1.2.0 |
 <!-- status-managed:end en-baseline -->
 
 ### Tests
