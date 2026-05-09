@@ -22,8 +22,8 @@
 |---|---|
 | **推荐测试命令** | `uv run pytest tests/ -v --tb=short` |
 | **Legacy 入口** | `uv run python -m unittest discover -s tests -v` (部分运行器) |
-| **WSL 测试结果** | 781 passed, 56 skipped, 0 failed |
-| **CI 全平台结果 (最新)** | 13/13 全平台通过: Ubuntu/macOS/Windows × 3.11/3.12/3.13 |
+| **Windows 推荐入口结果** | 781 passed, 56 skipped, 0 failed |
+| **CI 全平台结果 (最新)** | Ubuntu: 781 passed, 56 skipped; macOS: 781 passed, 56 skipped; Windows: 816 passed, 13 skipped; lint + typecheck ✅ |
 | **Windows 跳过原因** | chown/chgrp 不支持; symlink 需 admin; mkfifo 不可用 |
 | **Property-based 测试** | `uv run pytest tests/test_property_based_cli.py -v` (34 测试) |
 | **GNU 对照测试** | `uv run pytest tests/test_gnu_differential.py -v`（56 测试；需 GNU coreutils；Ubuntu CI 通过；Windows/macOS 按平台跳过） |
@@ -107,8 +107,8 @@
 |---|---|
 | **Recommended command** | `uv run pytest tests/ -v --tb=short` |
 | **Legacy entry** | `uv run python -m unittest discover -s tests -v` (partial runner) |
-| **WSL test result** | 781 passed, 56 skipped, 0 failed |
-| **CI all-platform results (latest)** | 13/13 all platforms pass: Ubuntu/macOS/Windows × 3.11/3.12/3.13 |
+| **Windows recommended-entry result** | 781 passed, 56 skipped, 0 failed |
+| **CI all-platform results (latest)** | Ubuntu: 781 passed, 56 skipped; macOS: 781 passed, 56 skipped; Windows: 816 passed, 13 skipped; lint + typecheck ✅ |
 | **Windows skip reasons** | chown/chgrp unsupported; symlink needs admin; mkfifo unavailable |
 | **Property-based** | `uv run pytest tests/test_property_based_cli.py -v` (34 tests) |
 | **GNU differential** | `uv run pytest tests/test_gnu_differential.py -v` (56 tests; needs GNU coreutils; Ubuntu CI passes; Windows/macOS skip per platform) |
