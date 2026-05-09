@@ -28,10 +28,10 @@
 | **Property-based 测试** | `python -m pytest tests/test_property_based_cli.py -v` (25 测试) |
 | **GNU 对照测试** | `python -m pytest tests/test_gnu_differential.py -v`（56 测试；Ubuntu CI 通过；Windows/macOS 按平台跳过） |
 | **沙箱逃逸测试** | `python -m pytest tests/test_sandbox_escape_hardening.py -v` (58 测试, 全部通过或 skip) |
-| **文档治理测试** | `python -m pytest tests/test_docs_governance.py -v` (9 测试, 全部通过) |
+| **文档治理测试** | `python -m pytest tests/test_docs_governance.py -v` (8 测试, 全部通过) |
 | **双语文档测试** | `python -m pytest tests/test_docs_bilingual.py -v` (1 测试, 通过) |
 | **版本一致性测试** | `python -m pytest tests/test_version_consistency.py -v` (4 测试; 已在 CI pipeline 中) |
-| **覆盖率** | `python -m pytest tests/ --cov=src/aicoreutils` (需要 pytest-cov; 阈值 45%) |
+| **覆盖率** | `python -m pytest tests/ --cov=src/aicoreutils` (需要 pytest-cov; 阈值 50%) |
 | **静态检查** | `ruff check src/ tests/`; `ruff format --check src/ tests/`; `mypy src/aicoreutils/ --strict` 全部通过 |
 | **CI 平台** | GitHub Actions: ubuntu-latest (3.11/3.12/3.13), macos-latest (3.11/3.12/3.13), windows-latest (3.11/3.12/3.13) |
 
@@ -113,10 +113,10 @@
 | **Property-based** | `python -m pytest tests/test_property_based_cli.py -v` (25 tests) |
 | **GNU differential** | `python -m pytest tests/test_gnu_differential.py -v` (56 tests; Ubuntu CI passes; Windows/macOS skip per platform) |
 | **Sandbox escape** | `python -m pytest tests/test_sandbox_escape_hardening.py -v` (58 tests, all pass or skip) |
-| **Docs governance** | `python -m pytest tests/test_docs_governance.py -v` (9 tests, all pass) |
+| **Docs governance** | `python -m pytest tests/test_docs_governance.py -v` (8 tests, all pass) |
 | **Bilingual docs** | `python -m pytest tests/test_docs_bilingual.py -v` (1 test, passes) |
 | **Version consistency** | `python -m pytest tests/test_version_consistency.py -v` (4 tests; in CI pipeline) |
-| **Coverage** | `python -m pytest tests/ --cov=src/aicoreutils` (requires pytest-cov; threshold 45%) |
+| **Coverage** | `python -m pytest tests/ --cov=src/aicoreutils` (requires pytest-cov; threshold 50%) |
 | **Static checks** | `ruff check src/ tests/`; `ruff format --check src/ tests/`; `mypy src/aicoreutils/ --strict` all pass |
 | **CI platform** | GitHub Actions: ubuntu-latest (3.11/3.12/3.13), macos-latest (3.12/3.13), windows-latest (3.11/3.12/3.13) |
 

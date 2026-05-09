@@ -33,6 +33,9 @@ def get_package_version() -> str:
 
 def get_init_version() -> str:
     content = INIT_FILE.read_text(encoding="utf-8")
+    # Single-source from pyproject.toml via importlib.metadata
+    if "importlib.metadata" in content and 'version("aicoreutils")' in content:
+        return get_package_version()
     match = re.search(r'__version__\s*=\s*"([^"]+)"', content)
     return match.group(1) if match else "unknown"
 
