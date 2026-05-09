@@ -350,6 +350,51 @@ class SttyNohupChrootTests(unittest.TestCase):
         result = args.func(args)
         self.assertTrue(result["dry_run"])
 
+    def test_stty_raw(self) -> None:
+        if sys.platform == "win32":
+            self.skipTest("stty unsupported on Windows")
+        args = _parser.parse_args(["stty", "--raw"])
+        result = args.func(args)
+        self.assertIsInstance(result, bytes)
+
+
+class FactorEdgeCaseTests(unittest.TestCase):
+    def test_factor_non_integer_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        args = _parser.parse_args(["factor", "abc"])
+        with self.assertRaises(AgentError) as ctx:
+            args.func(args)
+        self.assertEqual(ctx.exception.code, "invalid_input")
+
+    def test_factor_exceeds_max_value_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        args = _parser.parse_args(["factor", "99999999999999999999999"])
+        with self.assertRaises(AgentError):
+            args.func(args)
+
+
+class ExprEdgeCaseTests(unittest.TestCase):
+    def test_expr_invalid_syntax_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        args = _parser.parse_args(["expr", "1", "+"])
+        with self.assertRaises(AgentError) as ctx:
+            args.func(args)
+        self.assertEqual(ctx.exception.code, "invalid_input")
+
+
+class PathchkEdgeCaseTests(unittest.TestCase):
+    def test_pathchk_exit_code(self) -> None:
+        args = _parser.parse_args(["pathchk", "--exit-code", "valid.txt"])
+        result = args.func(args)
+        self.assertTrue(result["valid"])
+
+
+if __name__ == "__main__":
+    unittest.main()
+
 
 class YesCommandTests(unittest.TestCase):
     def test_yes_count(self) -> None:

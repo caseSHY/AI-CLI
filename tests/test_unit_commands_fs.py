@@ -937,5 +937,249 @@ class DdConvMkfifoMknodTests(unittest.TestCase):
                 os.chdir(self._orig_cwd)
 
 
+class InputValidationTests(unittest.TestCase):
+    def test_truncate_negative_size_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        args = _parser.parse_args(["truncate", "--size", "-1", "/tmp/fake"])
+        with self.assertRaises(AgentError) as ctx:
+            args.func(args)
+        self.assertEqual(ctx.exception.code, "invalid_input")
+
+    def test_shred_passes_lt_1_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        args = _parser.parse_args(["shred", "--passes", "0", "/tmp/fake"])
+        with self.assertRaises(AgentError) as ctx:
+            args.func(args)
+        self.assertEqual(ctx.exception.code, "invalid_input")
+
+    def test_dd_bs_lt_1_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        args = _parser.parse_args(["dd", "--bs=0"])
+        with self.assertRaises(AgentError) as ctx:
+            args.func(args)
+        self.assertEqual(ctx.exception.code, "invalid_input")
+
+    def test_dd_count_negative_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        args = _parser.parse_args(["dd", "--count=-1"])
+        with self.assertRaises(AgentError) as ctx:
+            args.func(args)
+        self.assertEqual(ctx.exception.code, "invalid_input")
+
+    def test_tee_max_preview_negative_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        args = _parser.parse_args(["tee", "--max-preview-bytes", "-1"])
+        with self.assertRaises(AgentError) as ctx:
+            args.func(args)
+        self.assertEqual(ctx.exception.code, "invalid_input")
+
+
+class MkdirCpMvErrorPathTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._orig_cwd = os.getcwd()
+
+    def test_mkdir_existing_non_directory_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "file.txt"
+                f.write_text("x", encoding="utf-8")
+                args = _parser.parse_args(["mkdir", str(f)])
+                with self.assertRaises(AgentError) as ctx:
+                    args.func(args)
+                self.assertIn(ctx.exception.code, ["conflict", "invalid_input"])
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_cp_directory_without_recursive_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                src = root / "srcdir"
+                src.mkdir()
+                dst = root / "dstdir"
+                args = _parser.parse_args(["cp", str(src), str(dst)])
+                with self.assertRaises(AgentError) as ctx:
+                    args.func(args)
+                self.assertEqual(ctx.exception.code, "invalid_input")
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_cp_missing_source_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                args = _parser.parse_args(["cp", str(root / "missing.txt"), str(root / "dst.txt")])
+                with self.assertRaises(AgentError) as ctx:
+                    args.func(args)
+                self.assertEqual(ctx.exception.code, "not_found")
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_mv_missing_source_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                args = _parser.parse_args(["mv", str(root / "missing.txt"), str(root / "new.txt")])
+                with self.assertRaises(AgentError) as ctx:
+                    args.func(args)
+                self.assertEqual(ctx.exception.code, "not_found")
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_rm_force_missing_ignores(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                args = _parser.parse_args(["rm", "--force", str(root / "missing.txt")])
+                result = args.func(args)
+                self.assertIn("operations", result)
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_ln_hardlink_directory_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                srcdir = root / "srcdir"
+                srcdir.mkdir()
+                dst = root / "linkdir"
+                args = _parser.parse_args(["link", str(srcdir), str(dst)])
+                with self.assertRaises(AgentError) as ctx:
+                    args.func(args)
+                self.assertEqual(ctx.exception.code, "invalid_input")
+            finally:
+                os.chdir(self._orig_cwd)
+
+
+class InputValidationSystemTests(unittest.TestCase):
+    def test_sleep_negative_seconds_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        args = _parser.parse_args(["sleep", "-1"])
+        with self.assertRaises(AgentError) as ctx:
+            args.func(args)
+        self.assertEqual(ctx.exception.code, "invalid_input")
+
+
+class LsEdgeCaseTests(unittest.TestCase):
+    def test_ls_max_depth_negative_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        with TemporaryDirectory() as raw:
+            args = _parser.parse_args(["ls", "--max-depth", "-1", raw])
+            with self.assertRaises(AgentError) as ctx:
+                args.func(args)
+            self.assertEqual(ctx.exception.code, "invalid_input")
+
+    def test_ls_limit_lt_1_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        with TemporaryDirectory() as raw:
+            args = _parser.parse_args(["ls", "--limit", "0", raw])
+            with self.assertRaises(AgentError) as ctx:
+                args.func(args)
+            self.assertEqual(ctx.exception.code, "invalid_input")
+
+
+class HeadTailEdgeCaseTests(unittest.TestCase):
+    def test_head_lines_negative_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "f.txt").write_text("a\n", encoding="utf-8")
+            args = _parser.parse_args(["head", "--lines", "-1", str(root / "f.txt")])
+            with self.assertRaises(AgentError) as ctx:
+                args.func(args)
+            self.assertEqual(ctx.exception.code, "invalid_input")
+
+    def test_tail_lines_negative_raises(self) -> None:
+        from aicoreutils.core.exceptions import AgentError
+
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "f.txt").write_text("a\n", encoding="utf-8")
+            args = _parser.parse_args(["tail", "--lines", "-1", str(root / "f.txt")])
+            with self.assertRaises(AgentError) as ctx:
+                args.func(args)
+            self.assertEqual(ctx.exception.code, "invalid_input")
+
+
+class MockStdinHandlerTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._orig_cwd = os.getcwd()
+
+    def test_tee_with_mock_stdin(self) -> None:
+        from unittest import mock
+
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "out.txt"
+                with mock.patch("aicoreutils.commands.fs._core.read_stdin_bytes", return_value=b"hello world"):
+                    args = _parser.parse_args(["tee", str(f)])
+                    result = args.func(args)
+                    self.assertIn("operations", result)
+                    self.assertEqual(result["input_bytes"], 11)
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_tee_raw_with_mock_stdin(self) -> None:
+        from unittest import mock
+
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "out.txt"
+                with mock.patch("aicoreutils.commands.fs._core.read_stdin_bytes", return_value=b"hello"):
+                    args = _parser.parse_args(["tee", "--raw", str(f)])
+                    result = args.func(args)
+                    self.assertIsInstance(result, bytes)
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_hash_stdin(self) -> None:
+        from unittest import mock
+
+        with mock.patch("aicoreutils.commands.fs._core.read_stdin_bytes", return_value=b"hash this data"):
+            args = _parser.parse_args(["hash", "-"])
+            result = args.func(args)
+            self.assertIn("entries", result)
+
+    def test_dd_stdin_raw(self) -> None:
+        from unittest import mock
+
+        with (
+            mock.patch("aicoreutils.commands.fs._core.read_input_bytes", return_value=("-", b"A" * 1024)),
+        ):
+            args = _parser.parse_args(["dd", "--raw", "--count=1", "--bs=512"])
+            result = args.func(args)
+            self.assertIsInstance(result, bytes)
+
+
 if __name__ == "__main__":
     unittest.main()

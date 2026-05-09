@@ -34,8 +34,8 @@ uv run pytest tests/test_unit_commands_system.py -v    # System command handlers
 uv run pytest tests/test_unit_commands_fs.py -v        # FS command handlers
 uv run pytest tests/test_error_recovery.py -v          # Disk full, permission, signal tests
 
-# Coverage (threshold: 76%)
-uv run pytest tests/ --cov=src/aicoreutils --cov-fail-under=76
+# Coverage (threshold: 80%)
+uv run pytest tests/ --cov=src/aicoreutils --cov-fail-under=80
 
 # Lint and typecheck (match CI scope)
 uv run ruff check src/ tests/ scripts/
