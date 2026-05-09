@@ -844,6 +844,139 @@ class ShredCommandTests(unittest.TestCase):
             finally:
                 os.chdir(self._orig_cwd)
 
+    def test_shred_with_allow_destructive(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "secret.txt"
+                f.write_text("sensitive data here", encoding="utf-8")
+                args = _parser.parse_args(["shred", "--allow-destructive", "--passes", "1", str(f)])
+                result = args.func(args)
+                self.assertEqual(result["count"], 1)
+            finally:
+                os.chdir(self._orig_cwd)
+
+
+class MoreMockErrorTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._orig_cwd = os.getcwd()
+
+    def test_chmod_os_error(self) -> None:
+        from unittest import mock
+
+        from aicoreutils.core.exceptions import AgentError
+
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "f.txt"
+                f.write_text("x", encoding="utf-8")
+                with mock.patch("os.chmod", side_effect=PermissionError("denied")):
+                    args = _parser.parse_args(["chmod", "644", str(f)])
+                    with self.assertRaises(AgentError) as ctx:
+                        args.func(args)
+                    self.assertEqual(ctx.exception.code, "permission_denied")
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_rm_os_error(self) -> None:
+        from unittest import mock
+
+        from aicoreutils.core.exceptions import AgentError
+
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "del.txt"
+                f.write_text("x", encoding="utf-8")
+                with mock.patch("pathlib.Path.unlink", side_effect=OSError("io error")):
+                    args = _parser.parse_args(["rm", str(f)])
+                    with self.assertRaises(AgentError) as ctx:
+                        args.func(args)
+                    self.assertEqual(ctx.exception.code, "io_error")
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_rmdir_os_error(self) -> None:
+        from unittest import mock
+
+        from aicoreutils.core.exceptions import AgentError
+
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                sub = root / "subdir"
+                sub.mkdir()
+                with mock.patch("pathlib.Path.rmdir", side_effect=OSError("not empty")):
+                    args = _parser.parse_args(["rmdir", str(sub)])
+                    with self.assertRaises(AgentError) as ctx:
+                        args.func(args)
+                    self.assertEqual(ctx.exception.code, "conflict")
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_unlink_permission_denied(self) -> None:
+        from unittest import mock
+
+        from aicoreutils.core.exceptions import AgentError
+
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "f.txt"
+                f.write_text("x", encoding="utf-8")
+                with mock.patch("pathlib.Path.unlink", side_effect=PermissionError("denied")):
+                    args = _parser.parse_args(["unlink", str(f)])
+                    with self.assertRaises(AgentError) as ctx:
+                        args.func(args)
+                    self.assertEqual(ctx.exception.code, "permission_denied")
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_ln_symlink_error(self) -> None:
+        from unittest import mock
+
+        from aicoreutils.core.exceptions import AgentError
+
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                src = root / "src.txt"
+                src.write_text("data", encoding="utf-8")
+                dst = root / "link.txt"
+                with mock.patch("os.symlink", side_effect=OSError("cross-device")):
+                    args = _parser.parse_args(["ln", "--symbolic", str(src), str(dst)])
+                    with self.assertRaises(AgentError) as ctx:
+                        args.func(args)
+                    self.assertEqual(ctx.exception.code, "io_error")
+            finally:
+                os.chdir(self._orig_cwd)
+
+
+class MoreTextCommandCoverageTests(unittest.TestCase):
+    def test_sort_check_sorted(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "sorted.txt").write_text("a\nb\nc\n", encoding="utf-8")
+            args = _parser.parse_args(["sort", "--check", str(root / "sorted.txt")])
+            result = args.func(args)
+            self.assertTrue(result["sorted"])
+
+    def test_sort_check_unsorted(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "unsorted.txt").write_text("b\na\nc\n", encoding="utf-8")
+            args = _parser.parse_args(["sort", "--check", str(root / "unsorted.txt")])
+            result = args.func(args)
+            self.assertFalse(result["sorted"])
+            self.assertIn("disorder_line", result)
+
 
 class TestBracketCommandTests(unittest.TestCase):
     def test_test_exists(self) -> None:
