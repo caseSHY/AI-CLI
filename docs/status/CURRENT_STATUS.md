@@ -20,13 +20,13 @@
 
 | 指标 | 数值 |
 |---|---|
-| **推荐测试命令** | `python -m pytest tests/ -v --tb=short` |
-| **Legacy 入口** | `python -m unittest discover -s tests -v` (部分运行器) |
-| **Windows 推荐入口结果** | 399 passed, 60 skipped, 0 failed (Python 3.14) |
-| **CI 全平台结果 (最新)** | Ubuntu: 399 passed, 1 skipped; macOS: 399 passed, 60 skipped; Windows: 399 passed, 60 skipped; lint + typecheck ✅ |
-| **Windows 跳过原因** | 无 symlink 支持; locale 相关中文排序/分词; GNU 工具部分不可用 (choco 安装后部分可用) |
-| **Property-based 测试** | `python -m pytest tests/test_property_based_cli.py -v` (25 测试) |
-| **GNU 对照测试** | `python -m pytest tests/test_gnu_differential.py -v`（56 测试；Ubuntu CI 通过；Windows/macOS 按平台跳过） |
+| **推荐测试命令** | `uv run pytest tests/ -v --tb=short` |
+| **Legacy 入口** | `uv run python -m unittest discover -s tests -v` (部分运行器) |
+| **WSL 测试结果** | 781 passed, 56 skipped, 0 failed |
+| **CI 全平台结果 (最新)** | 13/13 全平台通过: Ubuntu/macOS/Windows × 3.11/3.12/3.13 |
+| **Windows 跳过原因** | chown/chgrp 不支持; symlink 需 admin; mkfifo 不可用 |
+| **Property-based 测试** | `uv run pytest tests/test_property_based_cli.py -v` (34 测试) |
+| **GNU 对照测试** | `uv run pytest tests/test_gnu_differential.py -v`（56 测试；需 GNU coreutils；Ubuntu CI 通过；Windows/macOS 按平台跳过） |
 | **沙箱逃逸测试** | `python -m pytest tests/test_sandbox_escape_hardening.py -v` (58 测试, 全部通过或 skip) |
 | **文档治理测试** | `python -m pytest tests/test_docs_governance.py -v` (8 测试, 全部通过) |
 | **双语文档测试** | `python -m pytest tests/test_docs_bilingual.py -v` (1 测试, 通过) |
@@ -66,9 +66,9 @@
 | **macOS runner** | macos-latest, Python 3.11/3.12/3.13 |
 | **Windows runner** | windows-latest, Python 3.11/3.12/3.13 |
 | **Lint + Typecheck** | ruff check + ruff format --check + mypy --strict, Python 3.13 |
-| **CI 测试命令** | `python -m pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-fail-under=50` |
+| **CI 测试命令** | `uv run pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-fail-under=77` |
 | **GNU coreutils** | ✅ Ubuntu job 已安装（`apt-get update && apt-get install coreutils`）; macOS: `brew install coreutils` |
-| **最新 CI 结果** | ✅ 11/11 全平台通过 (commit `16d46ba`): lint, typecheck, test-ubuntu (3×Python), test-macos (3×Python), test-windows (3×Python) |
+| **最新 CI 结果** | ✅ 13/13 全平台通过: lint, typecheck, status-check, governance-gate, test-ubuntu (3.11/3.12/3.13), test-macos (3.11/3.12/3.13), test-windows (3.11/3.12/3.13) |
 | **本地 WSL CI 入口** | ✅ `.github/scripts/run-ci-wsl.ps1` + `.github/scripts/wsl-ci.sh` |
 
 ### 已知未解决问题
@@ -79,9 +79,9 @@
 
 ### 建议下一步
 
-1. **补充测试覆盖**：为 `async_interface`、`plugins`、`stream` 模块添加单元测试
-2. **MCP 安全默认模式**：添加 `--read-only`、`--deny` 禁用列表、tool annotations
-3. **状态文档自动化**：让 CI 自动同步动态数字（版本号、测试通过数等）到 CURRENT_STATUS.md
+1. **持续提升覆盖率**：fs/_core.py (77%), system/_core.py (52%) 仍有提升空间
+2. **MCP 安全增强**：tool annotations 和更细粒度的权限控制
+3. **状态文档自动化**：让 CI 自动同步动态数字到 CURRENT_STATUS.md
 
 ---
 
@@ -105,20 +105,20 @@
 
 | Metric | Value |
 |---|---|
-| **Recommended command** | `python -m pytest tests/ -v --tb=short` |
-| **Legacy entry** | `python -m unittest discover -s tests -v` (partial runner) |
-| **Windows recommended-entry result** | 399 passed, 60 skipped, 0 failed (Python 3.14) |
-| **CI all-platform results (latest)** | Ubuntu: 399 passed, 1 skipped; macOS: 399 passed, 60 skipped; Windows: 399 passed, 60 skipped; lint + typecheck ✅ |
-| **Windows skip reasons** | No symlink support; locale-dependent Chinese sort/word-count; GNU tools partially available (after choco install) |
-| **Property-based** | `python -m pytest tests/test_property_based_cli.py -v` (25 tests) |
-| **GNU differential** | `python -m pytest tests/test_gnu_differential.py -v` (56 tests; Ubuntu CI passes; Windows/macOS skip per platform) |
+| **Recommended command** | `uv run pytest tests/ -v --tb=short` |
+| **Legacy entry** | `uv run python -m unittest discover -s tests -v` (partial runner) |
+| **WSL test result** | 781 passed, 56 skipped, 0 failed |
+| **CI all-platform results (latest)** | 13/13 all platforms pass: Ubuntu/macOS/Windows × 3.11/3.12/3.13 |
+| **Windows skip reasons** | chown/chgrp unsupported; symlink needs admin; mkfifo unavailable |
+| **Property-based** | `uv run pytest tests/test_property_based_cli.py -v` (34 tests) |
+| **GNU differential** | `uv run pytest tests/test_gnu_differential.py -v` (56 tests; needs GNU coreutils; Ubuntu CI passes; Windows/macOS skip per platform) |
 | **Sandbox escape** | `python -m pytest tests/test_sandbox_escape_hardening.py -v` (58 tests, all pass or skip) |
 | **Docs governance** | `python -m pytest tests/test_docs_governance.py -v` (8 tests, all pass) |
 | **Bilingual docs** | `python -m pytest tests/test_docs_bilingual.py -v` (1 test, passes) |
 | **Version consistency** | `python -m pytest tests/test_version_consistency.py -v` (4 tests; in CI pipeline) |
 | **Coverage** | `python -m pytest tests/ --cov=src/aicoreutils` (requires pytest-cov; threshold 77%) |
 | **Static checks** | `ruff check src/ tests/`; `ruff format --check src/ tests/`; `mypy src/aicoreutils/ --strict` all pass |
-| **CI platform** | GitHub Actions: ubuntu-latest (3.11/3.12/3.13), macos-latest (3.12/3.13), windows-latest (3.11/3.12/3.13) |
+| **CI platform** | GitHub Actions: ubuntu-latest (3.11/3.12/3.13), macos-latest (3.11/3.12/3.13), windows-latest (3.11/3.12/3.13) |
 
 ### Security Status
 
@@ -152,9 +152,9 @@
 | **macOS runner** | macos-latest, Python 3.11/3.12/3.13 |
 | **Windows runner** | windows-latest, Python 3.11/3.12/3.13 |
 | **Lint + Typecheck** | ruff check + ruff format --check + mypy --strict, Python 3.13 |
-| **CI test command** | `python -m pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-fail-under=50` |
+| **CI test command** | `uv run pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-fail-under=77` |
 | **GNU coreutils** | ✅ Ubuntu: `apt-get update && apt-get install coreutils`; macOS: `brew install coreutils` |
-| **Latest CI result** | ✅ 11/11 all platforms pass (commit `16d46ba`): lint, typecheck, test-ubuntu (3×Python), test-macos (3×Python), test-windows (3×Python) |
+| **Latest CI result** | ✅ 13/13 all platforms pass: lint, typecheck, status-check, governance-gate, test-ubuntu (3.11/3.12/3.13), test-macos (3.11/3.12/3.13), test-windows (3.11/3.12/3.13) |
 | **Local WSL CI entry** | ✅ `.github/scripts/run-ci-wsl.ps1` + `.github/scripts/wsl-ci.sh` |
 
 ### Known Open Issues
@@ -165,6 +165,6 @@
 
 ### Next Required Actions
 
-1. **Add test coverage**: Unit tests for `async_interface`, `plugins`, `stream` modules
-2. **MCP security defaults**: Add `--read-only` mode, `--deny` block list, tool annotations
-3. **Status doc automation**: Have CI auto-sync dynamic numbers (version, test counts, etc.) to CURRENT_STATUS.md
+1. **Continue coverage improvement**: fs/_core.py (77%), system/_core.py (52%) still have gaps
+2. **MCP security hardening**: Tool annotations and finer-grained access control
+3. **Status doc automation**: Have CI auto-sync dynamic numbers to CURRENT_STATUS.md

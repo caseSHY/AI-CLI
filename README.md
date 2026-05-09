@@ -85,12 +85,12 @@ Claude 自动调用 `aicoreutils ls` + `aicoreutils wc`，全程 JSON 交互。
 
 ### 运行测试
 
-```powershell
+```bash
 # 推荐主入口（pytest，含 Hypothesis property-based 测试和 GNU 对照测试）
-python -m pytest tests/ -v --tb=short
+uv run pytest tests/ -v --tb=short
 
 # Legacy 入口（unittest，部分运行器）
-python -m unittest discover -s tests -v
+uv run python -m unittest discover -s tests -v
 ```
 
 ### 项目结构
@@ -110,7 +110,7 @@ python -m unittest discover -s tests -v
 |-- tests/                  # 测试套件
 |-- examples/               # 示例
 |-- scripts/                # CI/审计/发布脚本
-|-- .github/                # CI workflows 和 Copilot 指令
+|-- .github/                # CI workflows 和 issue 模板
 `-- vendor/                 # 本地上游源码缓存
 ```
 
@@ -200,12 +200,12 @@ Add `--include-risk` when an orchestrator or audit system needs machine-readable
 
 ### Run tests
 
-```powershell
+```bash
 # Recommended primary entry (pytest, includes Hypothesis property-based and GNU differential tests)
-python -m pytest tests/ -v --tb=short
+uv run pytest tests/ -v --tb=short
 
 # Legacy entry (unittest, partial runner)
-python -m unittest discover -s tests -v
+uv run python -m unittest discover -s tests -v
 ```
 
 ### Project Layout
@@ -225,7 +225,7 @@ python -m unittest discover -s tests -v
 |-- tests/                  # test suite
 |-- examples/               # examples
 |-- scripts/                # CI/audit/release scripts
-|-- .github/                # CI workflows and Copilot instructions
+|-- .github/                # CI workflows and issue templates
 `-- vendor/                 # local upstream source cache
 ```
 
