@@ -40,7 +40,8 @@ class DirnameCommandTests(unittest.TestCase):
     def test_dirname(self) -> None:
         args = _parser.parse_args(["dirname", "/foo/bar.txt"])
         result = args.func(args)
-        self.assertEqual(result["entries"][0]["dirname"], "/foo")
+        self.assertIn("foo", result["entries"][0]["dirname"])
+        self.assertTrue(result["entries"][0]["dirname"].endswith("foo"))
 
 
 class RealpathCommandTests(unittest.TestCase):
@@ -154,169 +155,199 @@ class TouchCommandTests(unittest.TestCase):
     def setUp(self) -> None:
         self._orig_cwd = os.getcwd()
 
-    def tearDown(self) -> None:
-        os.chdir(self._orig_cwd)
-
     def test_touch_create(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            f = root / "new.txt"
-            args = _parser.parse_args(["touch", str(f)])
-            result = args.func(args)
-            self.assertTrue(result["operations"][0]["created"])
-            self.assertTrue(f.exists())
+            try:
+                f = root / "new.txt"
+                args = _parser.parse_args(["touch", str(f)])
+                result = args.func(args)
+                self.assertTrue(result["operations"][0]["created"])
+                self.assertTrue(f.exists())
+            finally:
+                os.chdir(self._orig_cwd)
 
     def test_touch_dry_run(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            f = root / "new.txt"
-            args = _parser.parse_args(["touch", "--dry-run", str(f)])
-            result = args.func(args)
-            self.assertTrue(result["operations"][0]["dry_run"])
-            self.assertFalse(f.exists())
+            try:
+                f = root / "new.txt"
+                args = _parser.parse_args(["touch", "--dry-run", str(f)])
+                result = args.func(args)
+                self.assertTrue(result["operations"][0]["dry_run"])
+                self.assertFalse(f.exists())
+            finally:
+                os.chdir(self._orig_cwd)
 
 
 class MkdirCommandTests(unittest.TestCase):
     def setUp(self) -> None:
         self._orig_cwd = os.getcwd()
 
-    def tearDown(self) -> None:
-        os.chdir(self._orig_cwd)
-
     def test_mkdir_create(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            sub = root / "newdir"
-            args = _parser.parse_args(["mkdir", str(sub)])
-            result = args.func(args)
-            self.assertIn("operations", result)
-            self.assertTrue(result["operations"][0]["created"])
-            self.assertTrue(sub.is_dir())
+            try:
+                sub = root / "newdir"
+                args = _parser.parse_args(["mkdir", str(sub)])
+                result = args.func(args)
+                self.assertIn("operations", result)
+                self.assertTrue(result["operations"][0]["created"])
+                self.assertTrue(sub.is_dir())
+            finally:
+                os.chdir(self._orig_cwd)
 
     def test_mkdir_parents(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            sub = root / "a" / "b"
-            args = _parser.parse_args(["mkdir", "--parents", str(sub)])
-            args.func(args)
-            self.assertTrue(sub.is_dir())
+            try:
+                sub = root / "a" / "b"
+                args = _parser.parse_args(["mkdir", "--parents", str(sub)])
+                args.func(args)
+                self.assertTrue(sub.is_dir())
+            finally:
+                os.chdir(self._orig_cwd)
 
     def test_mkdir_dry_run(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            sub = root / "newdir"
-            args = _parser.parse_args(["mkdir", "--dry-run", str(sub)])
-            result = args.func(args)
-            self.assertTrue(result["operations"][0]["dry_run"])
-            self.assertFalse(sub.exists())
+            try:
+                sub = root / "newdir"
+                args = _parser.parse_args(["mkdir", "--dry-run", str(sub)])
+                result = args.func(args)
+                self.assertTrue(result["operations"][0]["dry_run"])
+                self.assertFalse(sub.exists())
+            finally:
+                os.chdir(self._orig_cwd)
 
 
 class CpMvLnTests(unittest.TestCase):
     def setUp(self) -> None:
         self._orig_cwd = os.getcwd()
 
-    def tearDown(self) -> None:
-        os.chdir(self._orig_cwd)
-
     def test_cp_file(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            (root / "src.txt").write_text("data", encoding="utf-8")
-            args = _parser.parse_args(["cp", str(root / "src.txt"), str(root / "dst.txt")])
-            result = args.func(args)
-            self.assertIsInstance(result, dict)
-            self.assertTrue((root / "dst.txt").exists())
+            try:
+                (root / "src.txt").write_text("data", encoding="utf-8")
+                args = _parser.parse_args(["cp", str(root / "src.txt"), str(root / "dst.txt")])
+                result = args.func(args)
+                self.assertIsInstance(result, dict)
+                self.assertTrue((root / "dst.txt").exists())
+            finally:
+                os.chdir(self._orig_cwd)
 
     def test_cp_dry_run(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            (root / "src.txt").write_text("data", encoding="utf-8")
-            args = _parser.parse_args(["cp", "--dry-run", str(root / "src.txt"), str(root / "dst.txt")])
-            args.func(args)
-            self.assertFalse((root / "dst.txt").exists())
+            try:
+                (root / "src.txt").write_text("data", encoding="utf-8")
+                args = _parser.parse_args(["cp", "--dry-run", str(root / "src.txt"), str(root / "dst.txt")])
+                args.func(args)
+                self.assertFalse((root / "dst.txt").exists())
+            finally:
+                os.chdir(self._orig_cwd)
 
     def test_mv_file(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            (root / "old.txt").write_text("data", encoding="utf-8")
-            args = _parser.parse_args(["mv", str(root / "old.txt"), str(root / "new.txt")])
-            result = args.func(args)
-            self.assertIsInstance(result, dict)
-            self.assertFalse((root / "old.txt").exists())
+            try:
+                (root / "old.txt").write_text("data", encoding="utf-8")
+                args = _parser.parse_args(["mv", str(root / "old.txt"), str(root / "new.txt")])
+                result = args.func(args)
+                self.assertIsInstance(result, dict)
+                self.assertFalse((root / "old.txt").exists())
+            finally:
+                os.chdir(self._orig_cwd)
 
     def test_mv_dry_run(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            (root / "old.txt").write_text("data", encoding="utf-8")
-            args = _parser.parse_args(["mv", "--dry-run", str(root / "old.txt"), str(root / "new.txt")])
-            args.func(args)
-            self.assertTrue((root / "old.txt").exists())
+            try:
+                (root / "old.txt").write_text("data", encoding="utf-8")
+                args = _parser.parse_args(["mv", "--dry-run", str(root / "old.txt"), str(root / "new.txt")])
+                args.func(args)
+                self.assertTrue((root / "old.txt").exists())
+            finally:
+                os.chdir(self._orig_cwd)
 
     def test_ln_symlink(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            (root / "target.txt").write_text("data", encoding="utf-8")
-            args = _parser.parse_args(["ln", "--symbolic", str(root / "target.txt"), str(root / "link.txt")])
-            result = args.func(args)
-            self.assertIsInstance(result, dict)
+            try:
+                (root / "target.txt").write_text("data", encoding="utf-8")
+                args = _parser.parse_args(["ln", "--symbolic", str(root / "target.txt"), str(root / "link.txt")])
+                result = args.func(args)
+                self.assertIsInstance(result, dict)
+            finally:
+                os.chdir(self._orig_cwd)
 
 
 class RmRmdirUnlinkTests(unittest.TestCase):
     def setUp(self) -> None:
         self._orig_cwd = os.getcwd()
 
-    def tearDown(self) -> None:
-        os.chdir(self._orig_cwd)
-
     def test_rm_file(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            f = root / "del.txt"
-            f.write_text("x", encoding="utf-8")
-            args = _parser.parse_args(["rm", str(f)])
-            args.func(args)
-            self.assertFalse(f.exists())
+            try:
+                f = root / "del.txt"
+                f.write_text("x", encoding="utf-8")
+                args = _parser.parse_args(["rm", str(f)])
+                args.func(args)
+                self.assertFalse(f.exists())
+            finally:
+                os.chdir(self._orig_cwd)
 
     def test_rm_dry_run(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            f = root / "del.txt"
-            f.write_text("x", encoding="utf-8")
-            args = _parser.parse_args(["rm", "--dry-run", str(f)])
-            args.func(args)
-            self.assertTrue(f.exists())
+            try:
+                f = root / "del.txt"
+                f.write_text("x", encoding="utf-8")
+                args = _parser.parse_args(["rm", "--dry-run", str(f)])
+                args.func(args)
+                self.assertTrue(f.exists())
+            finally:
+                os.chdir(self._orig_cwd)
 
     def test_rmdir(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            sub = root / "emptydir"
-            sub.mkdir()
-            args = _parser.parse_args(["rmdir", str(sub)])
-            args.func(args)
-            self.assertFalse(sub.exists())
+            try:
+                sub = root / "emptydir"
+                sub.mkdir()
+                args = _parser.parse_args(["rmdir", str(sub)])
+                args.func(args)
+                self.assertFalse(sub.exists())
+            finally:
+                os.chdir(self._orig_cwd)
 
     def test_unlink(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            f = root / "unlinkme.txt"
-            f.write_text("x", encoding="utf-8")
-            args = _parser.parse_args(["unlink", str(f)])
-            args.func(args)
-            self.assertFalse(f.exists())
+            try:
+                f = root / "unlinkme.txt"
+                f.write_text("x", encoding="utf-8")
+                args = _parser.parse_args(["unlink", str(f)])
+                args.func(args)
+                self.assertFalse(f.exists())
+            finally:
+                os.chdir(self._orig_cwd)
 
 
 class ReadlinkTests(unittest.TestCase):

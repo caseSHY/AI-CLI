@@ -329,54 +329,63 @@ class RemoveRecursiveTests(unittest.TestCase):
     def setUp(self) -> None:
         self._orig_cwd = os.getcwd()
 
-    def tearDown(self) -> None:
-        os.chdir(self._orig_cwd)
-
     def test_dry_run_inside_cwd(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))  # cwd = temp dir
-            sub = root / "sub"
-            sub.mkdir()
-            ops = remove_recursive(sub, dry_run=True, allow_outside_cwd=False)
-            self.assertEqual(len(ops), 1)
-            self.assertTrue(ops[0]["dry_run"])
-            self.assertTrue(sub.exists())
+            try:
+                sub = root / "sub"
+                sub.mkdir()
+                ops = remove_recursive(sub, dry_run=True, allow_outside_cwd=False)
+                self.assertEqual(len(ops), 1)
+                self.assertTrue(ops[0]["dry_run"])
+                self.assertTrue(sub.exists())
+            finally:
+                os.chdir(self._orig_cwd)
 
     def test_remove_symlink_uses_unlink(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            target = root / "target.txt"
-            target.write_text("data", encoding="utf-8")
-            link = root / "link.txt"
             try:
-                link.symlink_to(target)
-            except OSError:
-                self.skipTest("symlink requires admin on Windows")
-            ops = remove_recursive(link, dry_run=False, allow_outside_cwd=False)
-            self.assertEqual(ops[0]["status"], "removed")
-            self.assertTrue(target.exists())
+                target = root / "target.txt"
+                target.write_text("data", encoding="utf-8")
+                link = root / "link.txt"
+                try:
+                    link.symlink_to(target)
+                except OSError:
+                    self.skipTest("symlink requires admin on Windows")
+                ops = remove_recursive(link, dry_run=False, allow_outside_cwd=False)
+                self.assertEqual(ops[0]["status"], "removed")
+                self.assertTrue(target.exists())
+            finally:
+                os.chdir(self._orig_cwd)
 
     def test_inside_cwd_works(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            sub = root / "sub"
-            sub.mkdir()
-            (sub / "f.txt").write_text("x", encoding="utf-8")
-            ops = remove_recursive(sub, dry_run=False, allow_outside_cwd=False)
-            self.assertEqual(ops[0]["status"], "removed")
-            self.assertFalse(sub.exists())
+            try:
+                sub = root / "sub"
+                sub.mkdir()
+                (sub / "f.txt").write_text("x", encoding="utf-8")
+                ops = remove_recursive(sub, dry_run=False, allow_outside_cwd=False)
+                self.assertEqual(ops[0]["status"], "removed")
+                self.assertFalse(sub.exists())
+            finally:
+                os.chdir(self._orig_cwd)
 
     def test_outside_cwd_raises_without_allow(self) -> None:
         with TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             os.chdir(str(root))
-            outside = root.parent
-            with self.assertRaises(AgentError) as ctx:
-                remove_recursive(outside, dry_run=True, allow_outside_cwd=False)
-            self.assertEqual(ctx.exception.code, "unsafe_operation")
+            try:
+                outside = root.parent
+                with self.assertRaises(AgentError) as ctx:
+                    remove_recursive(outside, dry_run=True, allow_outside_cwd=False)
+                self.assertEqual(ctx.exception.code, "unsafe_operation")
+            finally:
+                os.chdir(self._orig_cwd)
 
 
 # ── path_utils: edge cases ──
@@ -419,6 +428,8 @@ class PathTypeEdgeTests(unittest.TestCase):
             self.assertEqual(path_type(link), "symlink")
 
     def test_fifo_type(self) -> None:
+        if not hasattr(os, "mkfifo"):
+            self.skipTest("mkfifo not available on this platform")
         with TemporaryDirectory() as raw:
             fifo_path = Path(raw) / "test_fifo"
             try:

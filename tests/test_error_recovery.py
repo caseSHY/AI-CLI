@@ -91,6 +91,8 @@ class SignalHandlingTests(unittest.TestCase):
 
     def test_sigint_during_command_exits_cleanly(self) -> None:
         """Verify SIGINT produces a clean exit."""
+        if not hasattr(signal, "SIGINT"):
+            self.skipTest("SIGINT not available on this platform")
         proc = subprocess.Popen(
             [sys.executable, "-m", "aicoreutils", "sleep", "30"],
             stdout=subprocess.PIPE,
