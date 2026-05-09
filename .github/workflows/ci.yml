@@ -29,7 +29,7 @@ jobs:
       - name: Install package and test deps
         run: uv sync --extra dev
       - name: Run tests with coverage
-        run: uv run pytest tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-report=xml --cov-fail-under=70
+        run: uv run pytest tests/ -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-report=xml --cov-fail-under=78
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v7
@@ -52,7 +52,7 @@ jobs:
       - name: Install package and test deps
         run: uv sync --extra dev
       - name: Run tests with coverage
-        run: uv run pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=70
+        run: uv run pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=78
 
   test-windows:
     runs-on: windows-latest
@@ -72,7 +72,7 @@ jobs:
       - name: Run tests with coverage
         env:
           PYTHONIOENCODING: utf-8
-        run: uv run pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=70
+        run: uv run pytest tests/ tests/test_version_consistency.py -v --tb=short --cov=src/aicoreutils --cov-report=term-missing --cov-fail-under=78
 
   lint:
     runs-on: ubuntu-latest

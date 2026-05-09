@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -291,6 +293,69 @@ class TimeoutNiceStdbufDryRunTests(unittest.TestCase):
         args = _parser.parse_args(["stdbuf", "--dry-run", "echo", "test"])
         result = args.func(args)
         self.assertTrue(result["dry_run"])
+
+
+class SttyNohupChrootTests(unittest.TestCase):
+    def test_stty_no_args(self) -> None:
+        if sys.platform == "win32":
+            self.skipTest("stty unsupported on Windows")
+        args = _parser.parse_args(["stty"])
+        result = args.func(args)
+        self.assertIn("stdin_is_tty", result)
+
+    def test_stty_dry_run(self) -> None:
+        if sys.platform == "win32":
+            self.skipTest("stty unsupported on Windows")
+        args = _parser.parse_args(["stty", "--dry-run", "echo"])
+        result = args.func(args)
+        self.assertTrue(result["dry_run"])
+        self.assertTrue(result["planned"])
+
+    def test_nohup_dry_run(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            orig = os.getcwd()
+            os.chdir(str(root))
+            try:
+                out = root / "nohup.out"
+                args = _parser.parse_args(["nohup", "--dry-run", f"--output={out}", "echo", "test"])
+                result = args.func(args)
+                self.assertIn("operation", result)
+            finally:
+                os.chdir(orig)
+
+    def test_kill_dry_run(self) -> None:
+        args = _parser.parse_args(["kill", "--dry-run", "1234"])
+        result = args.func(args)
+        self.assertIn("operations", result)
+        self.assertEqual(result["count"], 1)
+
+    def test_chroot_dry_run(self) -> None:
+        with TemporaryDirectory() as raw:
+            args = _parser.parse_args(["chroot", "--dry-run", str(Path(raw)), "echo", "test"])
+            result = args.func(args)
+            self.assertTrue(result["dry_run"])
+
+    def test_chcon_dry_run(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            f = root / "f.txt"
+            f.write_text("x", encoding="utf-8")
+            args = _parser.parse_args(["chcon", "--dry-run", "system_u:object_r:etc_t:s0", str(f)])
+            result = args.func(args)
+            self.assertIn("operations", result)
+
+    def test_runcon_dry_run(self) -> None:
+        args = _parser.parse_args(["runcon", "--dry-run", "echo", "test"])
+        result = args.func(args)
+        self.assertTrue(result["dry_run"])
+
+
+class YesCommandTests(unittest.TestCase):
+    def test_yes_count(self) -> None:
+        args = _parser.parse_args(["yes", "--count", "2"])
+        result = args.func(args)
+        self.assertEqual(result["count"], 2)
 
 
 if __name__ == "__main__":

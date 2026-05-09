@@ -556,5 +556,377 @@ class RawModeTests(unittest.TestCase):
             self.assertIsInstance(result, bytes)
 
 
+class ChmodChownChgrpReferenceTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._orig_cwd = os.getcwd()
+
+    def test_chmod_reference(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                ref = root / "ref.txt"
+                ref.write_text("x", encoding="utf-8")
+                ref.chmod(0o600)
+                f = root / "f.txt"
+                f.write_text("y", encoding="utf-8")
+                args = _parser.parse_args(["chmod", "--reference", str(ref), str(f)])
+                result = args.func(args)
+                self.assertIn("operations", result)
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_chmod_dry_run(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "f.txt"
+                f.write_text("x", encoding="utf-8")
+                args = _parser.parse_args(["chmod", "--dry-run", "644", str(f)])
+                result = args.func(args)
+                self.assertTrue(result["operations"][0]["dry_run"])
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_chown_reference(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                ref = root / "ref.txt"
+                ref.write_text("x", encoding="utf-8")
+                f = root / "f.txt"
+                f.write_text("y", encoding="utf-8")
+                args = _parser.parse_args(["chown", "--reference", str(ref), str(f)])
+                result = args.func(args)
+                self.assertIn("operations", result)
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_chown_dry_run(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "f.txt"
+                f.write_text("x", encoding="utf-8")
+                args = _parser.parse_args(["chown", "--dry-run", "0:0", str(f)])
+                result = args.func(args)
+                self.assertTrue(result["operations"][0]["dry_run"])
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_chgrp_reference(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                ref = root / "ref.txt"
+                ref.write_text("x", encoding="utf-8")
+                f = root / "f.txt"
+                f.write_text("y", encoding="utf-8")
+                args = _parser.parse_args(["chgrp", "--reference", str(ref), str(f)])
+                result = args.func(args)
+                self.assertIn("operations", result)
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_chgrp_dry_run(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "f.txt"
+                f.write_text("x", encoding="utf-8")
+                args = _parser.parse_args(["chgrp", "--dry-run", "0", str(f)])
+                result = args.func(args)
+                self.assertTrue(result["operations"][0]["dry_run"])
+            finally:
+                os.chdir(self._orig_cwd)
+
+
+class HashCheckModeTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._orig_cwd = os.getcwd()
+
+    def test_hash_check_valid(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "f.txt"
+                f.write_text("hello", encoding="utf-8")
+                import hashlib
+
+                digest = hashlib.md5(f.read_bytes()).hexdigest()
+                check_file = root / "checksums.md5"
+                check_file.write_text(f"{digest}  {f}\n", encoding="utf-8")
+                args = _parser.parse_args(["hash", "--algorithm", "md5", "--check", str(check_file)])
+                result = args.func(args)
+                self.assertEqual(result["failed"], 0)
+                self.assertGreaterEqual(result["ok"], 1)
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_hash_check_invalid(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "f.txt"
+                f.write_text("hello", encoding="utf-8")
+                check_file = root / "checksums.md5"
+                check_file.write_text(f"deadbeef000000000000000000000000  {f}\n", encoding="utf-8")
+                args = _parser.parse_args(["hash", "--algorithm", "md5", "--check", str(check_file)])
+                result = args.func(args)
+                self.assertGreaterEqual(result["failed"], 1)
+            finally:
+                os.chdir(self._orig_cwd)
+
+
+class TeeCommandTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._orig_cwd = os.getcwd()
+
+    def test_tee_dry_run(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "out.txt"
+                args = _parser.parse_args(["tee", "--dry-run", str(f)])
+                self.assertTrue(args.dry_run)
+                self.assertEqual(args.paths, [str(f)])
+            finally:
+                os.chdir(self._orig_cwd)
+
+
+class HardLinkCommandTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._orig_cwd = os.getcwd()
+
+    def test_link_create(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                src = root / "src.txt"
+                src.write_text("data", encoding="utf-8")
+                dst = root / "linked.txt"
+                args = _parser.parse_args(["link", str(src), str(dst)])
+                result = args.func(args)
+                self.assertIn("operations", result)
+                self.assertTrue(dst.exists())
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_link_dry_run(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                src = root / "src.txt"
+                src.write_text("data", encoding="utf-8")
+                dst = root / "linked.txt"
+                args = _parser.parse_args(["link", "--dry-run", str(src), str(dst)])
+                result = args.func(args)
+                self.assertTrue(result["operations"][0]["dry_run"])
+                self.assertFalse(dst.exists())
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_link_destination_exists_raises(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                src = root / "src.txt"
+                src.write_text("data", encoding="utf-8")
+                dst = root / "dst.txt"
+                dst.write_text("existing", encoding="utf-8")
+                args = _parser.parse_args(["link", str(src), str(dst)])
+                from aicoreutils.core.exceptions import AgentError
+
+                with self.assertRaises(AgentError) as ctx:
+                    args.func(args)
+                self.assertEqual(ctx.exception.code, "conflict")
+            finally:
+                os.chdir(self._orig_cwd)
+
+
+class InstallCommandTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._orig_cwd = os.getcwd()
+
+    def test_install_directory(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                d = root / "newdir"
+                args = _parser.parse_args(["install", "--directory", str(d)])
+                result = args.func(args)
+                self.assertTrue(result["operations"][0]["directory"])
+                self.assertTrue(d.is_dir())
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_install_directory_dry_run(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                d = root / "newdir"
+                args = _parser.parse_args(["install", "--directory", "--dry-run", str(d)])
+                result = args.func(args)
+                self.assertTrue(result["operations"][0]["dry_run"])
+                self.assertFalse(d.exists())
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_install_file(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                src = root / "src.txt"
+                src.write_text("hello", encoding="utf-8")
+                dst = root / "installed.txt"
+                args = _parser.parse_args(["install", str(src), str(dst)])
+                result = args.func(args)
+                self.assertFalse(result["operations"][0]["directory"])
+                self.assertTrue(dst.exists())
+            finally:
+                os.chdir(self._orig_cwd)
+
+
+class ShredCommandTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._orig_cwd = os.getcwd()
+
+    def test_shred_dry_run(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "secret.txt"
+                f.write_text("secret data", encoding="utf-8")
+                args = _parser.parse_args(["shred", "--dry-run", str(f)])
+                result = args.func(args)
+                self.assertTrue(result["operations"][0]["dry_run"])
+                self.assertTrue(f.exists())
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_shred_requires_allow_destructive(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "secret.txt"
+                f.write_text("secret data", encoding="utf-8")
+                args = _parser.parse_args(["shred", str(f)])
+                from aicoreutils.core.exceptions import AgentError
+
+                with self.assertRaises(AgentError) as ctx:
+                    args.func(args)
+                self.assertEqual(ctx.exception.code, "unsafe_operation")
+            finally:
+                os.chdir(self._orig_cwd)
+
+
+class TestBracketCommandTests(unittest.TestCase):
+    def test_test_exists(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            f = root / "f.txt"
+            f.write_text("x", encoding="utf-8")
+            args = _parser.parse_args(["test", "--exists", str(f)])
+            result = args.func(args)
+            self.assertTrue(result["matches"])
+
+    def test_test_file(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            f = root / "f.txt"
+            f.write_text("x", encoding="utf-8")
+            args = _parser.parse_args(["test", "--file", str(f)])
+            result = args.func(args)
+            self.assertTrue(result["matches"])
+
+    def test_test_directory(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            d = root / "dir"
+            d.mkdir()
+            args = _parser.parse_args(["test", "--directory", str(d)])
+            result = args.func(args)
+            self.assertTrue(result["matches"])
+
+    def test_test_nonexistent(self) -> None:
+        args = _parser.parse_args(["test", "--exists", "/nonexistent/path/xyz"])
+        result = args.func(args)
+        self.assertFalse(result["matches"])
+
+    def test_bracket_single_arg(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            f = root / "f.txt"
+            f.write_text("x", encoding="utf-8")
+            args = _parser.parse_args(["[", str(f), "]"])
+            result = args.func(args)
+            self.assertIn("matches", result)
+
+    def test_bracket_flag(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            f = root / "f.txt"
+            f.write_text("x", encoding="utf-8")
+            args = _parser.parse_args(["[", "-f", str(f), "]"])
+            result = args.func(args)
+            self.assertIn("matches", result)
+
+    def test_bracket_string_equality(self) -> None:
+        args = _parser.parse_args(["[", "abc", "=", "abc", "]"])
+        result = args.func(args)
+        self.assertTrue(result["matches"])
+
+
+class DdConvMkfifoMknodTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._orig_cwd = os.getcwd()
+
+    def test_dd_argument_validation(self) -> None:
+        args = _parser.parse_args(["dd", "--bs=1", "--count=0"])
+        self.assertEqual(args.bs, 1)
+        self.assertEqual(args.count, 0)
+
+    def test_mkfifo_dry_run(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                fifo = root / "test.fifo"
+                args = _parser.parse_args(["mkfifo", "--dry-run", str(fifo)])
+                result = args.func(args)
+                self.assertTrue(result["operations"][0]["dry_run"])
+                self.assertFalse(fifo.exists())
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_mknod_dry_run(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                node = root / "test.node"
+                args = _parser.parse_args(["mknod", "--dry-run", str(node)])
+                result = args.func(args)
+                self.assertTrue(result["operations"][0]["dry_run"])
+            finally:
+                os.chdir(self._orig_cwd)
+
+
 if __name__ == "__main__":
     unittest.main()
