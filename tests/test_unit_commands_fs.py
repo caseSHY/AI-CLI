@@ -383,5 +383,178 @@ class DdDfDuTests(unittest.TestCase):
             self.assertIsInstance(result, dict)
 
 
+class DirVdirCommandTests(unittest.TestCase):
+    def test_dir_delegates_to_ls(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "a.txt").write_text("x", encoding="utf-8")
+            args = _parser.parse_args(["dir", str(root)])
+            result = args.func(args)
+            self.assertEqual(result["alias"], "dir")
+            self.assertIn("entries", result)
+
+    def test_vdir_delegates_to_ls(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "a.txt").write_text("x", encoding="utf-8")
+            args = _parser.parse_args(["vdir", str(root)])
+            result = args.func(args)
+            self.assertEqual(result["alias"], "vdir")
+            self.assertTrue(result["verbose"])
+
+
+class CksumSumCommandTests(unittest.TestCase):
+    def test_cksum_file(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "f.txt").write_text("hello", encoding="utf-8")
+            args = _parser.parse_args(["cksum", str(root / "f.txt")])
+            result = args.func(args)
+            self.assertIsInstance(result, dict)
+            self.assertEqual(result["entries"][0]["algorithm"], "crc32")
+
+    def test_cksum_raw(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "f.txt").write_text("hello", encoding="utf-8")
+            args = _parser.parse_args(["cksum", "--raw", str(root / "f.txt")])
+            result = args.func(args)
+            self.assertIsInstance(result, bytes)
+
+    def test_sum_file(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "f.txt").write_text("hello", encoding="utf-8")
+            args = _parser.parse_args(["sum", str(root / "f.txt")])
+            result = args.func(args)
+            self.assertIsInstance(result, dict)
+            self.assertEqual(result["entries"][0]["algorithm"], "byte-sum-16")
+
+    def test_sum_raw(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "f.txt").write_text("hello", encoding="utf-8")
+            args = _parser.parse_args(["sum", "--raw", str(root / "f.txt")])
+            result = args.func(args)
+            self.assertIsInstance(result, bytes)
+
+
+class SyncTruncateMktempTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._orig_cwd = os.getcwd()
+
+    def test_sync(self) -> None:
+        args = _parser.parse_args(["sync"])
+        result = args.func(args)
+        self.assertEqual(result["operation"], "sync")
+
+    def test_sync_dry_run(self) -> None:
+        args = _parser.parse_args(["sync", "--dry-run"])
+        result = args.func(args)
+        self.assertTrue(result["dry_run"])
+
+    def test_truncate_create(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "new.txt"
+                args = _parser.parse_args(["truncate", "--size", "10", str(f)])
+                result = args.func(args)
+                self.assertTrue(result["operations"][0]["created"])
+                self.assertEqual(f.stat().st_size, 10)
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_truncate_dry_run(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                f = root / "new.txt"
+                args = _parser.parse_args(["truncate", "--size", "10", "--dry-run", str(f)])
+                result = args.func(args)
+                self.assertTrue(result["operations"][0]["dry_run"])
+                self.assertFalse(f.exists())
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_mktemp_file(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                args = _parser.parse_args(["mktemp"])
+                result = args.func(args)
+                self.assertIn("path", result)
+                self.assertTrue(Path(result["path"]).exists())
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_mktemp_dry_run(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                args = _parser.parse_args(["mktemp", "--dry-run"])
+                result = args.func(args)
+                self.assertTrue(result["dry_run"])
+                self.assertIn("path", result)
+            finally:
+                os.chdir(self._orig_cwd)
+
+    def test_mktemp_directory(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+            os.chdir(str(root))
+            try:
+                args = _parser.parse_args(["mktemp", "--directory"])
+                result = args.func(args)
+                self.assertIn("path", result)
+                self.assertTrue(Path(result["path"]).is_dir())
+            finally:
+                os.chdir(self._orig_cwd)
+
+
+class RawModeTests(unittest.TestCase):
+    def test_readlink_raw(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            target = root / "target.txt"
+            target.write_text("data", encoding="utf-8")
+            link = root / "link.txt"
+            try:
+                link.symlink_to(target)
+            except OSError:
+                self.skipTest("symlink requires admin on Windows")
+            args = _parser.parse_args(["readlink", "--raw", "--canonicalize", str(root / "target.txt")])
+            result = args.func(args)
+            self.assertIsInstance(result, bytes)
+
+    def test_head_raw(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "f.txt").write_text("line1\nline2\nline3\n", encoding="utf-8")
+            args = _parser.parse_args(["head", "--raw", "--lines", "2", str(root / "f.txt")])
+            result = args.func(args)
+            self.assertIsInstance(result, bytes)
+
+    def test_tail_raw(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "f.txt").write_text("line1\nline2\nline3\n", encoding="utf-8")
+            args = _parser.parse_args(["tail", "--raw", "--lines", "2", str(root / "f.txt")])
+            result = args.func(args)
+            self.assertIsInstance(result, bytes)
+
+    def test_wc_raw(self) -> None:
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "f.txt").write_text("hello world\n", encoding="utf-8")
+            args = _parser.parse_args(["wc", "--raw", str(root / "f.txt")])
+            result = args.func(args)
+            self.assertIsInstance(result, bytes)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -296,5 +296,93 @@ class PluginRegistryTests(unittest.TestCase):
         self.assertIn("x", r)
 
 
+class DeprecationWarningTests(unittest.TestCase):
+    def test_basic(self) -> None:
+        from aicoreutils.core.envelope import deprecation_warning
+
+        w = deprecation_warning("--old is deprecated")
+        self.assertEqual(w["type"], "deprecation")
+        self.assertEqual(w["message"], "--old is deprecated")
+        self.assertNotIn("removal_version", w)
+
+    def test_with_removal_version(self) -> None:
+        from aicoreutils.core.envelope import deprecation_warning
+
+        w = deprecation_warning("--old is deprecated", removal_version="2.0.0")
+        self.assertEqual(w["removal_version"], "2.0.0")
+
+
+class CatalogTests(unittest.TestCase):
+    def test_get_priority_known(self) -> None:
+        from aicoreutils.registry.catalog import get_priority
+
+        self.assertEqual(get_priority("ls"), "P0")
+        self.assertEqual(get_priority("rm"), "P1")
+        self.assertEqual(get_priority("sort"), "P2")
+        self.assertEqual(get_priority("date"), "P3")
+
+    def test_get_priority_unknown(self) -> None:
+        from aicoreutils.registry.catalog import get_priority
+
+        self.assertEqual(get_priority("nonexistent_cmd"), "unknown")
+
+    def test_merge_plugin_commands(self) -> None:
+        from aicoreutils.registry.catalog import merge_plugin_commands
+
+        merged = merge_plugin_commands({"my_plugin", "other_plugin"})
+        self.assertEqual(merged["my_plugin"], "P3")
+        self.assertEqual(merged["other_plugin"], "P3")
+        self.assertIn("ls", merged)  # built-in preserved
+
+    def test_merge_plugin_commands_custom_priority(self) -> None:
+        from aicoreutils.registry.catalog import merge_plugin_commands
+
+        merged = merge_plugin_commands({"my_plugin"}, priority="P1")
+        self.assertEqual(merged["my_plugin"], "P1")
+
+    def test_merge_plugin_does_not_overwrite_builtin(self) -> None:
+        from aicoreutils.registry.catalog import merge_plugin_commands
+
+        merged = merge_plugin_commands({"ls"})
+        self.assertEqual(merged["ls"], "P0")  # stays P0, not P3
+
+    def test_catalog_with_plugins(self) -> None:
+        from aicoreutils.registry.catalog import catalog_with_plugins
+
+        result = catalog_with_plugins({"my_plugin"})
+        plugin_entries = [e for e in result if e["category"] == "plugin"]
+        self.assertEqual(len(plugin_entries), 1)
+        self.assertEqual(plugin_entries[0]["tools"], ["my_plugin"])
+
+    def test_catalog_with_plugins_empty(self) -> None:
+        from aicoreutils.registry.catalog import catalog_with_plugins
+
+        result = catalog_with_plugins(set())
+        self.assertFalse(any(e["category"] == "plugin" for e in result))
+
+
+class AgentArgumentParserErrorTests(unittest.TestCase):
+    def test_error_writes_json_to_stderr(self) -> None:
+        from aicoreutils.utils._parser import AgentArgumentParser
+
+        parser = AgentArgumentParser(prog="testprog")
+        buf = io.StringIO()
+        with unittest.mock.patch("sys.stderr", buf):
+            with self.assertRaises(SystemExit) as ctx:
+                parser.error("test error message")
+            self.assertEqual(ctx.exception.code, 2)  # EXIT["usage"] = 2
+        output = buf.getvalue()
+        self.assertIn("\n", output)
+        parsed = json.loads(output)
+        self.assertFalse(parsed["ok"])
+        self.assertEqual(parsed["error"]["code"], "usage")
+        self.assertIn("test error message", parsed["error"]["message"])
+
+
+class MainModuleTests(unittest.TestCase):
+    def test_main_module_importable(self) -> None:
+        import aicoreutils.__main__  # noqa: F401
+
+
 if __name__ == "__main__":
     unittest.main()

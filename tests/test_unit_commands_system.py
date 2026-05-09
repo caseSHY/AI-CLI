@@ -204,5 +204,94 @@ class DfDuTests(unittest.TestCase):
             self.assertIsInstance(result, dict)
 
 
+class FactorCommandTests(unittest.TestCase):
+    def test_factor_basic(self) -> None:
+        args = _parser.parse_args(["factor", "12"])
+        result = args.func(args)
+        self.assertIn("entries", result)
+        factors_text = " ".join(str(f) for f in result["entries"][0]["factors"])
+        self.assertIn("2", factors_text)
+        self.assertIn("3", factors_text)
+
+    def test_factor_prime(self) -> None:
+        args = _parser.parse_args(["factor", "7"])
+        result = args.func(args)
+        self.assertEqual(result["entries"][0]["input"], "7")
+        self.assertEqual(result["entries"][0]["factors"], [7])
+
+    def test_factor_raw(self) -> None:
+        args = _parser.parse_args(["factor", "--raw", "6"])
+        result = args.func(args)
+        self.assertIsInstance(result, bytes)
+
+
+class ExprCommandTests(unittest.TestCase):
+    def test_expr_addition(self) -> None:
+        args = _parser.parse_args(["expr", "1", "+", "1"])
+        result = args.func(args)
+        self.assertEqual(result["value"], 2)
+
+    def test_expr_string_comparison(self) -> None:
+        args = _parser.parse_args(["expr", '"abc"', "=", '"abc"'])
+        result = args.func(args)
+        self.assertTrue(result["value"])
+
+    def test_expr_raw(self) -> None:
+        args = _parser.parse_args(["expr", "--raw", "1", "+", "1"])
+        result = args.func(args)
+        self.assertIsInstance(result, bytes)
+
+
+class SleepDryRunTests(unittest.TestCase):
+    def test_sleep_dry_run(self) -> None:
+        args = _parser.parse_args(["sleep", "--dry-run", "10"])
+        result = args.func(args)
+        self.assertTrue(result["dry_run"])
+
+    def test_sleep_zero_dry_run(self) -> None:
+        args = _parser.parse_args(["sleep", "--dry-run", "0"])
+        result = args.func(args)
+        self.assertTrue(result["dry_run"])
+
+
+class RawModeSystemTests(unittest.TestCase):
+    def test_uname_raw(self) -> None:
+        args = _parser.parse_args(["uname", "--raw"])
+        result = args.func(args)
+        self.assertIsInstance(result, bytes)
+
+    def test_hostid_raw(self) -> None:
+        args = _parser.parse_args(["hostid", "--raw"])
+        result = args.func(args)
+        self.assertIsInstance(result, bytes)
+
+    def test_pathchk_raw(self) -> None:
+        args = _parser.parse_args(["pathchk", "--raw", "valid.txt"])
+        result = args.func(args)
+        self.assertIsInstance(result, bytes)
+
+    def test_groups_raw(self) -> None:
+        args = _parser.parse_args(["groups", "--raw"])
+        result = args.func(args)
+        self.assertIsInstance(result, bytes)
+
+
+class TimeoutNiceStdbufDryRunTests(unittest.TestCase):
+    def test_timeout_dry_run(self) -> None:
+        args = _parser.parse_args(["timeout", "--dry-run", "1", "echo", "test"])
+        result = args.func(args)
+        self.assertTrue(result["dry_run"])
+
+    def test_nice_dry_run(self) -> None:
+        args = _parser.parse_args(["nice", "--dry-run", "echo", "test"])
+        result = args.func(args)
+        self.assertTrue(result["dry_run"])
+
+    def test_stdbuf_dry_run(self) -> None:
+        args = _parser.parse_args(["stdbuf", "--dry-run", "echo", "test"])
+        result = args.func(args)
+        self.assertTrue(result["dry_run"])
+
+
 if __name__ == "__main__":
     unittest.main()
