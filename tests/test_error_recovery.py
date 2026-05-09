@@ -16,6 +16,8 @@ from support import run_cli
 
 class DiskFullRecoveryTests(unittest.TestCase):
     def test_write_to_readonly_directory_returns_error(self) -> None:
+        if sys.platform == "win32":
+            self.skipTest("os.chmod does not enforce write protection on Windows")
         with TemporaryDirectory() as raw:
             root = Path(raw)
             readonly = root / "readonly"
@@ -52,6 +54,8 @@ class PermissionDeniedTests(unittest.TestCase):
                 os.chmod(f, 0o644)
 
     def test_touch_readonly_dir_returns_error(self) -> None:
+        if sys.platform == "win32":
+            self.skipTest("os.chmod does not enforce write protection on Windows")
         with TemporaryDirectory() as raw:
             root = Path(raw)
             readonly = root / "ro"
@@ -91,8 +95,8 @@ class SignalHandlingTests(unittest.TestCase):
 
     def test_sigint_during_command_exits_cleanly(self) -> None:
         """Verify SIGINT produces a clean exit."""
-        if not hasattr(signal, "SIGINT"):
-            self.skipTest("SIGINT not available on this platform")
+        if sys.platform == "win32":
+            self.skipTest("signal.SIGINT cannot be sent to subprocess on Windows")
         proc = subprocess.Popen(
             [sys.executable, "-m", "aicoreutils", "sleep", "30"],
             stdout=subprocess.PIPE,
