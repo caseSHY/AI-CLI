@@ -10,12 +10,15 @@ All notable changes to AICoreUtils.
 - CLAUDE.md 同步最新数据：测试数 1017，catalog 111 命令
 
 ### Fixed
+- **Windows cp936 stdout 编码修复** — 新增 `core/output.py` 安全输出层，所有 JSON/text/error 输出统一通过 `stream.buffer.write(utf8_bytes)` 绕过平台文本编码层。emoji、韩文、数学符号等在 Windows 中文环境下不再触发 `UnicodeEncodeError`
 - 删除 3 项纯死代码：`attach_encoding_info` / `_build_input_schema` / `detect_encoding(hint=)`
 - stress-test CI ModuleNotFoundError 修复：PYTHONPATH 包含项目根
 - test_chcon_raw Windows 兼容：TemporaryDirectory 替代 /tmp 路径
 - CURRENT_STATUS.md 与 CI 实际通过数同步
 
 ### Added
+- `core/output.py` — 统一安全输出层（`safe_write_json` / `safe_write_bytes` / `safe_write_text` / `safe_write_error` / `safe_flush` / `configure_stdio`）
+- `tests/test_output_encoding.py` — 29 个输出编码安全测试（cp936 模拟、emoji/韩文/数学符号、binary raw 直通、StringIO fallback）
 - parser / mcp_server / 命令层关键路径添加 AI Agent 可读性注释
 - system/_core.py 新增 42 个边界/错误/覆盖率测试
 

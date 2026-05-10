@@ -231,9 +231,21 @@ def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
 
 
 def _send(response: dict[str, Any]) -> None:
-    """Write a JSON-RPC response to stdout."""
-    sys.stdout.write(json.dumps(response, ensure_ascii=False, sort_keys=True) + "\n")
-    sys.stdout.flush()
+    """Write a JSON-RPC response to stdout.
+
+    Bypasses the platform text encoding layer (cp936/gbk on Windows)
+    by writing UTF-8 bytes to sys.stdout.buffer when available.
+    Falls back to text-mode write for StringIO and test doubles.
+    """
+    text = json.dumps(response, ensure_ascii=False, sort_keys=True) + "\n"
+    buf = getattr(sys.stdout, "buffer", None)
+    if buf is not None:
+        data = text.encode("utf-8", errors="backslashreplace")
+        buf.write(data)
+        buf.flush()
+    else:
+        sys.stdout.write(text)
+        sys.stdout.flush()
 
 
 def _read_request() -> dict[str, Any] | None:

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Coreutils but not a full clone. It exposes 114 commands (111 catalog: P0 14 + P1 19 + P2 33 + P3 45, plus 3 unique meta-commands: catalog/schema/tool-list) via CLI and an MCP server. Package: `aicoreutils` (v1.2.0 LTS), Python >= 3.11, zero runtime dependencies. Version is single-sourced from pyproject.toml via `importlib.metadata`.
+AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Coreutils but not a full clone. It exposes 114 commands (111 catalog: P0 14 + P1 19 + P2 33 + P3 45, plus 3 unique meta-commands: catalog/schema/tool-list) via CLI and an MCP server. Package: `aicoreutils` (v1.2.1), Python >= 3.11, zero runtime dependencies. Version is single-sourced from pyproject.toml via `importlib.metadata`.
 
 ## Commands
 
@@ -23,20 +23,8 @@ uv run pytest tests/test_property_based_cli.py -v      # Hypothesis property-bas
 uv run pytest tests/test_gnu_differential.py -v        # GNU differential (needs GNU coreutils)
 uv run pytest tests/test_sandbox_escape_hardening.py -v # Sandbox escape hardening
 uv run pytest tests/test_docs_governance.py -v         # Docs governance checks
-uv run pytest tests/test_docs_bilingual.py -v          # Bilingual docs check
-uv run pytest tests/test_version_consistency.py -v     # Version consistency
-uv run pytest tests/test_project_consistency.py -v     # Project consistency
-uv run pytest tests/test_unit_utils_path.py -v         # Path utilities unit tests
-uv run pytest tests/test_concurrency.py -v             # Async + MCP concurrency
 uv run pytest tests/test_large_input.py -v             # Large-input behavior (slow, 100 MB)
-uv run pytest tests/test_unit_commands_text.py -v      # Text command handlers (direct call)
-uv run pytest tests/test_unit_commands_system.py -v    # System command handlers
-uv run pytest tests/test_unit_commands_fs.py -v        # FS command handlers
-uv run pytest tests/test_error_recovery.py -v          # Disk full, permission, signal tests
-uv run pytest tests/test_oop_command_base.py -v       # OOP command base classes
-uv run pytest tests/test_oop_compat.py -v            # OOP backward compat
-uv run pytest tests/test_oop_pilots.py -v            # OOP pilot commands golden tests
-uv run pytest tests/test_text_encoding.py -v         # Encoding layer (decode_bytes, BOM, CJK, CLI flags)
+uv run pytest tests/test_text_encoding.py -v           # Encoding layer (BOM, CJK, CLI flags)
 
 # Coverage (threshold: 77% matching CI)
 uv run pytest tests/ --cov=src/aicoreutils --cov-fail-under=77
@@ -73,7 +61,7 @@ uv run python scripts/generate_completions.py fish > aicoreutils.fish
 ### Layer stack (bottom -> top)
 
 ```
-core/          Foundation: exit codes, exceptions, JSON envelope, encoding, command base classes, path utils, sandbox, streaming, config, constants
+core/          Foundation: exit codes, exceptions, JSON envelope, encoding, command base classes, path utils, sandbox, streaming, output, config, constants
 utils/         Domain utilities: argparse wrapper, I/O, hashing, text processing, ranges, printf, numfmt, system, path
 commands/      Command handlers (fs/_core.py, system/_core.py, text/_core.py — one file per category)
 parser/        CLI entry point: single _parser.py builds argparse tree, dispatches to handlers
@@ -84,7 +72,7 @@ async_interface.py  Async wrapper: asyncio subprocess pool for concurrent comman
 
 ### OOP command layer (`core/command.py`)
 
-96 of 114 commands are class-based (84%). The class hierarchy:
+96 of 114 catalog entries use OOP command classes (84%), served by 85 unique `*Command` classes. 11 entries share classes via alias patterns (e.g., install/ginstall both use `InstallCommand`). The class hierarchy:
 
 ```
 CommandResult          — unified dataclass: data | raw_bytes, exit_code, warnings, encoding_meta
@@ -97,10 +85,14 @@ BaseCommand (ABC)      — __call__ bridges to legacy dispatch (returns dict | b
 **How it works:**
 - Each command class overrides one hook method (`transform()`, `process_path()`, `_execute_one()`, or `execute()`).
 - `BaseCommand.__call__` converts `CommandResult` back to the legacy `dict | bytes` protocol, so `dispatch()` and MCP `_call_tool()` work unchanged.
-- `dispatch()` checks `isinstance(result, CommandResult)` first; falls back to the legacy `dict | bytes` path.
-- All 96 OOP commands retain `command_*()` wrappers: `return XxxCommand()(args)`.
+- All OOP commands retain `command_*()` wrappers: `return XxxCommand()(args)`.
 
 **Key rule:** new command classes must accept `(args: argparse.Namespace)`, return `dict | bytes` via `__call__`, and NOT modify the JSON output shape.
+
+**The dispatch protocol** (in `parser/_parser.py:dispatch()`) follows a two-path structure:
+1. OOP path: `args.func(args)` returns `CommandResult` — `is_raw` decides bytes vs JSON envelope; `_exit_code` is popped before wrapping in `envelope()`.
+2. Legacy path: returns `dict | bytes` — bytes bypass the envelope; dicts have `_exit_code` popped and wrapped in the JSON envelope.
+Both paths produce identical JSON output shapes — no caller should depend on which path is taken.
 
 ### Coverage by module (overall: 85%)
 
@@ -124,8 +116,10 @@ Subprocess real-execution paths (timeout/nice/stdbuf/nohup/chroot/chcon/runcon/k
 - Stream/special architectures: `ls`, `dd` — StreamWriter direct-to-stdout / complex conv option chains
 - Danger-gated subprocess: `timeout`, `nice`, `stdbuf`, `stty`, `nohup`, `chroot`, `chcon`, `runcon` — platform-specific, require `--allow-*` flags
 - Safety-gated: `shred` — unique `--allow-destructive` requirement
-- Compatibility shell: `[` — thin wrapper delegating to `TestCommand`
-- Shared helpers: `_resolve_source_dest()` (cp/mv), `_check_link_dest_conflict()` (ln/link), `_apply_chown()` (chown/chgrp) eliminate duplication without adding intermediate base classes
+- Shared handler: `base64` / `base32` both dispatch through `command_codec()` at `text/_core.py:1105` — reads raw bytes, delegates to Python's `base64` module without routing through the text encoding layer. Adding a new encoding mode means adding a branch in `command_codec()`.
+- Shared handler alias: `install` / `ginstall` share a single subparser loop at `_parser.py:1169-1179`, both setting `func=command_install` which delegates to `InstallCommand`.
+- Compatibility shell: `[` (via `command_bracket` at `fs/_core.py:1510`) re-parses token arguments then delegates to `TestCommand`. `test` calls `TestCommand` directly via `command_test`. Both produce identical output.
+- Shared helpers: `_resolve_source_dest()` (cp/mv), `_check_link_dest_conflict()` (ln/link), `_apply_chown()` (chown/chgrp) eliminate duplication without adding intermediate base classes.
 
 ### MCP server security (`mcp_server.py`)
 
@@ -161,12 +155,25 @@ All text I/O flows through `decode_bytes()` in `core/encoding.py` — the single
 
 Binary-first commands (base64 encode, hash, cksum, dd, tee, etc.) work on raw bytes and do not route through the encoding layer, except for `content_text` preview in codec/basenc.
 
+### Safe output layer (`core/output.py`)
+
+All stdout/stderr output is routed through `core/output.py` to bypass platform text encoding (e.g. Windows cp936/gbk).  On Windows Chinese locale, `sys.stdout.write(str)` with emoji, Korean, or math symbols raises `UnicodeEncodeError` because GBK cannot encode those codepoints.
+
+**Key functions:**
+- `safe_write_json(stream, payload)` — JSON output via `stream.buffer.write(utf8_bytes)`
+- `safe_write_bytes(stream, data)` — binary raw output, no re-encoding
+- `safe_write_text(stream, text, *, encoding, errors)` — text raw output
+- `safe_write_error(payload)` — stderr error envelope (same UTF-8 bytes strategy)
+- `configure_stdio()` — called at CLI startup, sets `PYTHONIOENCODING=utf-8`
+
+All functions write UTF-8 bytes to `stream.buffer`, with `errors="backslashreplace"` as the ultimate safety net.  When `.buffer` is unavailable (StringIO in tests), they fall back to text-mode writes.  See `tests/test_output_encoding.py` for the full test suite.
+
 ### Project layout
 
 ```
 src/aicoreutils/    Python package (core -> utils -> commands -> parser, with registry/)
 docs/               Documentation (reference, guides, architecture, development, status, audits; QUICKSTART.md, COMPATIBILITY.md)
-tests/              Test suite (46 test files, 1017 tests, stress/, support/, golden/)
+tests/              Test suite (39 test files, 1017 tests, stress/, support/, golden/)
 examples/           Examples and agent tasks
 scripts/            CI audit, release gate, bump version, generate status
 .github/scripts/    WSL CI helpers and golden output updater

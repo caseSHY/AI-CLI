@@ -44,6 +44,14 @@ from .encoding import EncodingResult, decode_bytes, detect_bom, detect_encoding,
 from .envelope import deprecation_warning, envelope, error_envelope, utc_iso, write_json
 from .exceptions import AgentError
 from .exit_codes import EXIT
+from .output import (
+    configure_stdio,
+    safe_flush,
+    safe_write_bytes,
+    safe_write_error,
+    safe_write_json,
+    safe_write_text,
+)
 from .path_utils import (
     directory_size,
     disk_usage_entry,
@@ -72,6 +80,7 @@ __all__ = [
     "AgentError",
     "CommandFunc",
     "CommandResult",
+    "configure_stdio",
     "DD_DEFAULT_BLOCK_SIZE",
     "DEFAULT_CONFIG",
     "DEFAULT_ENCODING",
@@ -119,6 +128,11 @@ __all__ = [
     "remove_one",
     "require_inside_cwd",
     "resolve_path",
+    "safe_flush",
+    "safe_write_bytes",
+    "safe_write_error",
+    "safe_write_json",
+    "safe_write_text",
     "stat_entry",
     "utc_iso",
     "write_json",

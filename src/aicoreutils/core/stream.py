@@ -55,6 +55,25 @@ class StreamWriter:
         self._truncated = False  # 是否已截断
         self._closed = False  # 是否已关闭
 
+    def _write_to_stream(self, payload: dict[str, Any], *, indent: int | None = None) -> None:
+        """Write a JSON dict to the underlying stream.
+
+        When the stream has a .buffer (real stdout/stderr), writes UTF-8
+        bytes to bypass the platform text encoding layer.  Falls back to
+        text-mode write for StringIO and other test doubles.
+        """
+        kwargs: dict[str, Any] = {"ensure_ascii": False, "sort_keys": True}
+        if indent is not None:
+            kwargs["indent"] = indent
+        else:
+            kwargs["separators"] = (",", ":")
+        text = json.dumps(payload, **kwargs)
+        buf = getattr(self._stream, "buffer", None)
+        if buf is not None:
+            buf.write((text + "\n").encode("utf-8", errors="backslashreplace"))
+        else:
+            self._stream.write(text + "\n")
+
     def write_item(self, item: dict[str, Any]) -> bool:
         """写入一个 NDJSON 条目。
 
@@ -68,9 +87,7 @@ class StreamWriter:
             self._truncated = True
             return False
         self._count += 1
-        # 紧凑 JSON 格式：无空格、按键排序、允许非 ASCII
-        line = json.dumps(item, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-        self._stream.write(line + "\n")
+        self._write_to_stream(item)
         return True
 
     def write_summary(self, summary: dict[str, Any]) -> None:
@@ -81,17 +98,19 @@ class StreamWriter:
         if self._closed:
             return
         self._closed = True
-        envelope = {
-            "ok": True,
-            "tool": "aicoreutils",
-            "version": _TOOL_VERSION,
-            "command": self._command,
-            "stream": True,  # 标记这是流式响应
-            "count": self._count,
-            "truncated": self._truncated,
-            "summary": summary,
-        }
-        self._stream.write(json.dumps(envelope, ensure_ascii=False, sort_keys=True, indent=2) + "\n")
+        self._write_to_stream(
+            {
+                "ok": True,
+                "tool": "aicoreutils",
+                "version": _TOOL_VERSION,
+                "command": self._command,
+                "stream": True,
+                "count": self._count,
+                "truncated": self._truncated,
+                "summary": summary,
+            },
+            indent=2,
+        )
 
     @property
     def count(self) -> int:

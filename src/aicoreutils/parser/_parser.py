@@ -131,6 +131,7 @@ from ..core.constants import (
     ENCODING_PROFILE_CHOICES,
     FACTOR_MAX,
 )
+from ..core.output import configure_stdio, safe_write_bytes, safe_write_error, safe_write_json
 from ..registry.catalog import get_commands_by_priority, get_priority, priority_catalog
 from ..registry.plugins import get_registry
 from ..utils import (
@@ -140,7 +141,6 @@ from ..utils import (
     AgentError,
     envelope,
     error_envelope,
-    write_json,
 )
 
 
@@ -1286,6 +1286,9 @@ def main(argv: list[str] | None = None) -> int:
     command_name: str | None = None
     if argv is None:
         argv = sys.argv[1:]
+    # Ensure stdout/stderr use UTF-8 bytes output, bypassing the platform
+    # text encoding layer (cp936/gbk on Windows Chinese locale).
+    configure_stdio()
     try:
         args = parser.parse_args(argv)
         args.pretty = getattr(args, "pretty", False)
@@ -1294,12 +1297,12 @@ def main(argv: list[str] | None = None) -> int:
         code, payload = dispatch(args)
         if isinstance(payload, bytes):
             # --raw mode: write bytes directly to stdout, no envelope
-            sys.stdout.buffer.write(payload)
+            safe_write_bytes(sys.stdout, payload)
         else:
-            write_json(sys.stdout, payload, pretty=args.pretty)
+            safe_write_json(sys.stdout, payload, pretty=args.pretty)
         return code
     except AgentError as exc:
-        write_json(sys.stderr, error_envelope(command_name, exc))
+        safe_write_error(error_envelope(command_name, exc))
         return exc.exit_code
     except BrokenPipeError:
         # Broken pipe is normal in pipelines (e.g. head | ...).  Treat as
@@ -1307,7 +1310,7 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT["ok"]
     except KeyboardInterrupt:
         interrupt_error = AgentError("general_error", "Interrupted.")
-        write_json(sys.stderr, error_envelope(command_name, interrupt_error))
+        safe_write_error(error_envelope(command_name, interrupt_error))
         return interrupt_error.exit_code
     except Exception as exc:
         # Catch-all: wrap any unexpected exception in the JSON error
@@ -1318,7 +1321,7 @@ def main(argv: list[str] | None = None) -> int:
             "Unexpected error.",
             details={"type": type(exc).__name__, "message": str(exc)},
         )
-        write_json(sys.stderr, error_envelope(command_name, error))
+        safe_write_error(error_envelope(command_name, error))
         return error.exit_code
 
 

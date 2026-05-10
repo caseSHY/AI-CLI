@@ -13,7 +13,6 @@ JSON 信封格式是 aicoreutils 与 LLM Agent 之间的核心协议。
 from __future__ import annotations
 
 import datetime as dt
-import json
 from typing import TYPE_CHECKING, Any, TextIO
 
 if TYPE_CHECKING:
@@ -39,7 +38,7 @@ def utc_iso(timestamp: float) -> str:
 
 
 def write_json(stream: TextIO, payload: dict[str, Any], *, pretty: bool = False) -> None:
-    """将字典序列化为一行 JSON 写入流。
+    """将字典序列化为一行 UTF-8 JSON bytes 写入 stream.buffer。
 
     Args:
         stream: 输出流（通常为 sys.stdout 或 sys.stderr）。
@@ -49,14 +48,16 @@ def write_json(stream: TextIO, payload: dict[str, Any], *, pretty: bool = False)
     默认使用紧凑格式（无空格），确保 Agent 解析效率最高。
     sort_keys=True 保证输出确定性，方便 Agent 做哈希比对。
     ensure_ascii=False 允许非 ASCII 字符直接输出（UTF-8）。
+
+    写入 stream.buffer（bytes）而非 stream（str），绕过 Windows
+    cp936/gbk 等平台文本编码层——确保 emoji、韩文、数学符号等
+    不会在输出阶段触发 UnicodeEncodeError。
     """
-    kwargs: dict[str, Any] = {"ensure_ascii": False, "sort_keys": True}
-    if pretty:
-        kwargs["indent"] = 2  # 人类可读模式：2 空格缩进
-    else:
-        kwargs["separators"] = (",", ":")  # 紧凑模式：最小空白
-    stream.write(json.dumps(payload, **kwargs))
-    stream.write("\n")
+    # Delegate to the safe output layer so all paths share the same
+    # UTF-8 bytes encoding strategy.
+    from .output import safe_write_json as _safe_write
+
+    _safe_write(stream, payload, pretty=pretty)
 
 
 def envelope(command: str, result: Any, *, warnings: list[str] | None = None) -> dict[str, Any]:
