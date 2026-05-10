@@ -599,9 +599,13 @@ class FactorStdinTests(unittest.TestCase):
 
 class ChconChrootNohupEdgeCaseTests(unittest.TestCase):
     def test_chcon_raw(self) -> None:
-        args = _parser.parse_args(["chcon", "--raw", "system_u:object_r:etc_t:s0", "/tmp"])
-        result = args.func(args)
-        self.assertIsInstance(result, bytes)
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            f = root / "f.txt"
+            f.write_text("x", encoding="utf-8")
+            args = _parser.parse_args(["chcon", "--raw", "system_u:object_r:etc_t:s0", str(f)])
+            result = args.func(args)
+            self.assertIsInstance(result, bytes)
 
     def test_chcon_recursive_dry_run(self) -> None:
         with TemporaryDirectory() as raw:
