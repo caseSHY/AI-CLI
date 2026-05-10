@@ -33,7 +33,7 @@ jobs:
         id: stress
         run: |
           DURATION="${{ inputs.duration-hours || '24' }}"
-          uv run python tests/stress/stress_runner.py \
+          PYTHONPATH="${{ github.workspace }}" uv run python tests/stress/stress_runner.py \
             --duration-hours "$DURATION" \
             --checkpoint-minutes 15
 
