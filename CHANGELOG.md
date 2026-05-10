@@ -1,6 +1,24 @@
 # Changelog
 
 All notable changes to AICoreUtils.
+## [1.2.1] - 2026-05-11 — **Production/Stable**
+
+### Changed
+- **正式版发布** — 分类器从 Beta (4) 升级至 Production/Stable (5)
+- OOP 命令覆盖 96/114 (84%)，17→18 函数式命令均有明确理由
+- system/_core.py 覆盖率 59%→77%，总覆盖率 85%
+- CLAUDE.md 同步最新数据：测试数 1017，catalog 111 命令
+
+### Fixed
+- 删除 3 项纯死代码：`attach_encoding_info` / `_build_input_schema` / `detect_encoding(hint=)`
+- stress-test CI ModuleNotFoundError 修复：PYTHONPATH 包含项目根
+- test_chcon_raw Windows 兼容：TemporaryDirectory 替代 /tmp 路径
+- CURRENT_STATUS.md 与 CI 实际通过数同步
+
+### Added
+- parser / mcp_server / 命令层关键路径添加 AI Agent 可读性注释
+- system/_core.py 新增 42 个边界/错误/覆盖率测试
+
 
 ## [1.2.0] - 2026-05-10 — **LTS**
 
