@@ -253,113 +253,154 @@ def command_stat(args: argparse.Namespace) -> dict[str, Any]:
 # ── cat / head / tail ──────────────────────────────────────────────────
 
 
-def command_cat(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    from ...core.encoding import decode_bytes, encoding_metadata
+class CatCommand(BaseCommand):
+    """Read a file with bounded bytes and encoding detection."""
 
-    path = resolve_path(args.path, strict=True)
-    data, truncated, size = read_bytes(path, max_bytes=args.max_bytes, offset=args.offset)
-    if args.raw:
-        return data
-    enc = getattr(args, "encoding", "utf-8")
-    errors = getattr(args, "encoding_errors", "replace")
-    profile = getattr(args, "encoding_profile", None)
-    decoded = decode_bytes(data, encoding=enc, errors=errors, profile=profile)
-    result: dict[str, Any] = {
-        "path": str(path),
-        "encoding": enc,
-        "offset": args.offset,
-        "size_bytes": size,
-        "returned_bytes": len(data),
-        "truncated": truncated,
-        "content": decoded.text,
-    }
-    if getattr(args, "show_encoding", False):
-        result["_encoding_info"] = encoding_metadata(decoded, declared=enc)
-    return result
+    name = "cat"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        from ...core.encoding import decode_bytes, encoding_metadata
+
+        path = resolve_path(args.path, strict=True)
+        data, truncated, size = read_bytes(path, max_bytes=args.max_bytes, offset=args.offset)
+        if args.raw:
+            return CommandResult(raw_bytes=data)
+        enc = getattr(args, "encoding", "utf-8")
+        errors = getattr(args, "encoding_errors", "replace")
+        profile = getattr(args, "encoding_profile", None)
+        decoded = decode_bytes(data, encoding=enc, errors=errors, profile=profile)
+        result: dict[str, Any] = {
+            "path": str(path),
+            "encoding": enc,
+            "offset": args.offset,
+            "size_bytes": size,
+            "returned_bytes": len(data),
+            "truncated": truncated,
+            "content": decoded.text,
+        }
+        r = CommandResult(data=result)
+        if getattr(args, "show_encoding", False):
+            r.encoding_meta = encoding_metadata(decoded, declared=enc)
+        return r
+
+
+def command_cat(args: argparse.Namespace) -> dict[str, Any] | bytes:
+    return CatCommand()(args)
+
+
+class HeadCommand(BaseCommand):
+    """Return the first N lines of a file."""
+
+    name = "head"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        if args.lines < 0:
+            raise AgentError("invalid_input", "--lines must be >= 0.")
+        path = resolve_path(args.path, strict=True)
+        if args.raw:
+            ensure_exists(path)
+            if path.is_dir():
+                raise AgentError("invalid_input", "Path is a directory, not a file.", path=str(path))
+            return CommandResult(raw_bytes=b"".join(path.read_bytes().splitlines(keepends=True)[: args.lines]))
+        lines = read_text_lines(path, encoding=args.encoding)
+        selected = lines[: args.lines]
+        return CommandResult(
+            data={
+                "path": str(path),
+                "encoding": args.encoding,
+                "requested_lines": args.lines,
+                "returned_lines": len(selected),
+                "total_lines": len(lines),
+                "truncated": len(selected) < len(lines),
+                "lines": selected,
+            }
+        )
 
 
 def command_head(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    if args.lines < 0:
-        raise AgentError("invalid_input", "--lines must be >= 0.")
-    path = resolve_path(args.path, strict=True)
-    if args.raw:
-        ensure_exists(path)
-        if path.is_dir():
-            raise AgentError("invalid_input", "Path is a directory, not a file.", path=str(path))
-        return b"".join(path.read_bytes().splitlines(keepends=True)[: args.lines])
-    lines = read_text_lines(path, encoding=args.encoding)
-    selected = lines[: args.lines]
-    return {
-        "path": str(path),
-        "encoding": args.encoding,
-        "requested_lines": args.lines,
-        "returned_lines": len(selected),
-        "total_lines": len(lines),
-        "truncated": len(selected) < len(lines),
-        "lines": selected,
-    }
+    return HeadCommand()(args)
+
+
+class TailCommand(BaseCommand):
+    """Return the last N lines of a file."""
+
+    name = "tail"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        if args.lines < 0:
+            raise AgentError("invalid_input", "--lines must be >= 0.")
+        path = resolve_path(args.path, strict=True)
+        if args.raw:
+            ensure_exists(path)
+            if path.is_dir():
+                raise AgentError("invalid_input", "Path is a directory, not a file.", path=str(path))
+            lines_with_endings = path.read_bytes().splitlines(keepends=True)
+            return CommandResult(raw_bytes=b"".join(lines_with_endings[-args.lines :] if args.lines else []))
+        lines = read_text_lines(path, encoding=args.encoding)
+        selected = lines[-args.lines :] if args.lines else []
+        return CommandResult(
+            data={
+                "path": str(path),
+                "encoding": args.encoding,
+                "requested_lines": args.lines,
+                "returned_lines": len(selected),
+                "total_lines": len(lines),
+                "truncated": len(selected) < len(lines),
+                "lines": selected,
+            }
+        )
 
 
 def command_tail(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    if args.lines < 0:
-        raise AgentError("invalid_input", "--lines must be >= 0.")
-    path = resolve_path(args.path, strict=True)
-    if args.raw:
-        ensure_exists(path)
-        if path.is_dir():
-            raise AgentError("invalid_input", "Path is a directory, not a file.", path=str(path))
-        lines_with_endings = path.read_bytes().splitlines(keepends=True)
-        return b"".join(lines_with_endings[-args.lines :] if args.lines else [])
-    lines = read_text_lines(path, encoding=args.encoding)
-    selected = lines[-args.lines :] if args.lines else []
-    return {
-        "path": str(path),
-        "encoding": args.encoding,
-        "requested_lines": args.lines,
-        "returned_lines": len(selected),
-        "total_lines": len(lines),
-        "truncated": len(selected) < len(lines),
-        "lines": selected,
-    }
+    return TailCommand()(args)
 
 
 # ── wc ─────────────────────────────────────────────────────────────────
 
 
+class WcCommand(BaseCommand):
+    """Count lines, words, chars, and bytes in files or stdin."""
+
+    name = "wc"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        entries = []
+        totals = {"bytes": 0, "chars": 0, "lines": 0, "words": 0}
+        paths: list[str] = list(args.paths) if args.paths else []
+        if args.files0_from:
+            enc = getattr(args, "encoding", "utf-8")
+            with open(args.files0_from, "rb") as fh:
+                paths += [p for p in fh.read().decode(enc, errors="replace").split("\0") if p]
+        if not paths:
+            paths = ["-"]
+        for raw in paths:
+            if raw == "-":
+                data = read_stdin_bytes()
+                path_label = "-"
+            else:
+                path = resolve_path(raw, strict=True)
+                ensure_exists(path)
+                if path.is_dir():
+                    raise AgentError("invalid_input", "Path is a directory, not a file.", path=str(path))
+                data = path.read_bytes()
+                path_label = str(path)
+            counts = wc_for_bytes(data, encoding=args.encoding)
+            for key in totals:
+                totals[key] += counts[key]
+            entries.append({"path": path_label, **counts})
+        if args.raw:
+            lines = [
+                f"{entry['lines']} {entry['words']} {entry['bytes']}{'' if entry['path'] == '-' else ' ' + Path(entry['path']).name}"
+                for entry in entries
+            ]
+            if len(entries) > 1:
+                lines.append(f"{totals['lines']} {totals['words']} {totals['bytes']} total")
+            return CommandResult(raw_bytes=lines_to_raw(lines, encoding=args.encoding))
+        return CommandResult(data={"count": len(entries), "entries": entries, "totals": totals})
+
+
 def command_wc(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    entries = []
-    totals = {"bytes": 0, "chars": 0, "lines": 0, "words": 0}
-    paths: list[str] = list(args.paths) if args.paths else []
-    if args.files0_from:
-        enc = getattr(args, "encoding", "utf-8")
-        with open(args.files0_from, "rb") as fh:
-            paths += [p for p in fh.read().decode(enc, errors="replace").split("\0") if p]
-    if not paths:
-        paths = ["-"]  # default to stdin
-    for raw in paths:
-        if raw == "-":
-            data = read_stdin_bytes()
-            path_label = "-"
-        else:
-            path = resolve_path(raw, strict=True)
-            ensure_exists(path)
-            if path.is_dir():
-                raise AgentError("invalid_input", "Path is a directory, not a file.", path=str(path))
-            data = path.read_bytes()
-            path_label = str(path)
-        counts = wc_for_bytes(data, encoding=args.encoding)
-        for key in totals:
-            totals[key] += counts[key]
-        entries.append({"path": path_label, **counts})
-    if args.raw:
-        lines = [
-            f"{entry['lines']} {entry['words']} {entry['bytes']}{'' if entry['path'] == '-' else ' ' + Path(entry['path']).name}"
-            for entry in entries
-        ]
-        if len(entries) > 1:
-            lines.append(f"{totals['lines']} {totals['words']} {totals['bytes']} total")
-        return lines_to_raw(lines, encoding=args.encoding)
-    return {"count": len(entries), "entries": entries, "totals": totals}
+    return WcCommand()(args)
 
 
 # ── hash commands ──────────────────────────────────────────────────────
