@@ -69,7 +69,7 @@ class TestTacPilot(unittest.TestCase):
             (d / "f.txt").write_text("a\nb\nc\n", encoding="utf-8")
             r = _cli_json("tac", str(d / "f.txt"))
             self.assertEqual(r["result"]["lines"], ["c", "b", "a"])
-            self.assertEqual(r["result"]["source_paths"], [str(d / "f.txt")])
+            self.assertEqual(r["result"]["source_paths"], [str((d / "f.txt").resolve())])
             self.assertEqual(r["result"]["returned_lines"], 3)
             self.assertFalse(r["result"]["truncated"])
         finally:

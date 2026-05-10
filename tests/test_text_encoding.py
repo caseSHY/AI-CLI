@@ -374,7 +374,7 @@ class TestCliEncodingFlag(unittest.TestCase):
 
         d = Path(tempfile.mkdtemp())
         try:
-            (d / "f.txt").write_text("hello\n", encoding="utf-8")
+            (d / "f.txt").write_bytes(b"hello\n")
             r = _json_result("cat", str(d / "f.txt"))
             self.assertEqual(r["result"]["content"], "hello\n")
             self.assertEqual(r["result"]["encoding"], "utf-8")
@@ -498,7 +498,7 @@ class TestBackwardCompat(unittest.TestCase):
 
         d = Path(tempfile.mkdtemp())
         try:
-            (d / "f.txt").write_text("hello world\n", encoding="utf-8")
+            (d / "f.txt").write_bytes(b"hello world\n")
             r = _json_result("cat", str(d / "f.txt"))
             self.assertEqual(r["result"]["content"], "hello world\n")
         finally:

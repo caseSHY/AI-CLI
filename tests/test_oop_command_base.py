@@ -102,7 +102,7 @@ class TestTextFilterCommand(unittest.TestCase):
             result = UpperFilter()(ns)
             self.assertIsInstance(result, dict)
             self.assertEqual(result["lines"], ["HELLO", "WORLD"])
-            self.assertEqual(result["source_paths"], [str(d / "f.txt")])
+            self.assertEqual(result["source_paths"], [str((d / "f.txt").resolve())])
         finally:
             for f in d.iterdir():
                 f.unlink()
