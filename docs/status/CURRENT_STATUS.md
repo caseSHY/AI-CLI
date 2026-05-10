@@ -9,10 +9,10 @@
 | 属性 | 值 |
 |---|---|
 <!-- status-managed:start cn-baseline -->
-| **最后验证日期** | 2026-05-06 |
-| **验证对象** | 本地工作区（`2f91744`，已推送至 GitHub，GitHub Actions CI 运行中） |
-| **Python 版本** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
-| **操作系统** | Windows 11 (开发) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
+| **最后验证日期** | 2026-05-11 |
+| **验证对象** | 本地工作区（`6914c30`，已推送至 GitHub，GitHub Actions CI 运行中） |
+| **Python 版本** | Windows: 3.14.4; WSL: 3.14.4; CI: 3.11/3.12/3.13 |
+| **操作系统** | Windows 11 (开发) + WSL Ubuntu-26.04 (Ubuntu 26.04 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
 | **项目版本** | 1.2.0 |
 <!-- status-managed:end cn-baseline -->
 
@@ -22,8 +22,8 @@
 |---|---|
 | **推荐测试命令** | `uv run pytest tests/ -v --tb=short` |
 | **Legacy 入口** | `uv run python -m unittest discover -s tests -v` (部分运行器) |
-| **Windows 推荐入口结果** | 781 passed, 56 skipped, 0 failed |
-| **CI 全平台结果 (最新)** | Ubuntu: 781 passed, 56 skipped; macOS: 781 passed, 56 skipped; Windows: 816 passed, 13 skipped; lint + typecheck ✅ |
+| **本地 WSL 推荐入口结果** | 961 passed, 56 skipped, 0 failed |
+| **CI 全平台结果 (最新)** | ✅ 13/13 全平台通过: Ubuntu: 3.11/3.12/3.13; macOS: 3.11/3.12/3.13; Windows: 3.11/3.12/3.13; lint + typecheck ✅ |
 | **Windows 跳过原因** | chown/chgrp 不支持; symlink 需 admin; mkfifo 不可用 |
 | **Property-based 测试** | `uv run pytest tests/test_property_based_cli.py -v` (34 测试) |
 | **GNU 对照测试** | `uv run pytest tests/test_gnu_differential.py -v`（56 测试；需 GNU coreutils；Ubuntu CI 通过；Windows/macOS 按平台跳过） |
@@ -50,7 +50,7 @@
 
 | 项目 | 状态 |
 |---|---|
-| **GNU 命令名覆盖** | 109/109 |
+| **GNU 命令名覆盖** | 111/111 (P0 14 + P1 19 + P2 33 + P3 45) |
 | **Agent 子集实现** | 全部 114 命令（含元命令：catalog、schema、coreutils、tool-list） |
 | **GNU differential verified (Windows)** | 仅 sort (5 tests), 其余 51 因缺少 GNU 工具跳过 |
 | **GNU differential verified (Local WSL Ubuntu)** | 本地 WSL 已验证 — 54/56 GNU 对照测试通过，2 个中文用例硬编码跳过 |
@@ -79,7 +79,7 @@
 
 ### 建议下一步
 
-1. **持续提升覆盖率**：fs/_core.py (77%), system/_core.py (52%) 仍有提升空间
+1. **持续提升覆盖率**：fs/_core.py (81%), system/_core.py (77%), text/_core.py (77%) 已达目标，可向 85% 推进
 2. **MCP 安全增强**：tool annotations 和更细粒度的权限控制
 3. **状态文档自动化**：让 CI 自动同步动态数字到 CURRENT_STATUS.md
 
@@ -94,10 +94,10 @@
 | Property | Value |
 |---|---|
 <!-- status-managed:start en-baseline -->
-| **Last verified** | 2026-05-06 |
-| **Verified target** | local working tree (`2f91744`, pushed to GitHub, GitHub Actions CI in progress) |
-| **Python version** | Windows: 3.14.4; WSL: 3.12.3; CI: 3.11/3.12/3.13 |
-| **OS** | Windows 11 (dev) + WSL Ubuntu-24.04 (Ubuntu 24.04.4 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
+| **Last verified** | 2026-05-11 |
+| **Verified target** | local working tree (`6914c30`, pushed to GitHub, GitHub Actions CI in progress) |
+| **Python version** | Windows: 3.14.4; WSL: 3.14.4; CI: 3.11/3.12/3.13 |
+| **OS** | Windows 11 (dev) + WSL Ubuntu-26.04 (Ubuntu 26.04 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
 | **Project version** | 1.2.0 |
 <!-- status-managed:end en-baseline -->
 
@@ -107,8 +107,8 @@
 |---|---|
 | **Recommended command** | `uv run pytest tests/ -v --tb=short` |
 | **Legacy entry** | `uv run python -m unittest discover -s tests -v` (partial runner) |
-| **Windows recommended-entry result** | 781 passed, 56 skipped, 0 failed |
-| **CI all-platform results (latest)** | Ubuntu: 781 passed, 56 skipped; macOS: 781 passed, 56 skipped; Windows: 816 passed, 13 skipped; lint + typecheck ✅ |
+| **Local WSL recommended-entry result** | 961 passed, 56 skipped, 0 failed |
+| **CI all-platform results (latest)** | ✅ 13/13 all platforms pass: Ubuntu/macOS/Windows × 3.11/3.12/3.13; lint + typecheck ✅ |
 | **Windows skip reasons** | chown/chgrp unsupported; symlink needs admin; mkfifo unavailable |
 | **Property-based** | `uv run pytest tests/test_property_based_cli.py -v` (34 tests) |
 | **GNU differential** | `uv run pytest tests/test_gnu_differential.py -v` (56 tests; needs GNU coreutils; Ubuntu CI passes; Windows/macOS skip per platform) |
@@ -136,7 +136,7 @@
 
 | Item | Status |
 |---|---|
-| **GNU command name coverage** | 109/109 |
+| **GNU command name coverage** | 111/111 (P0 14 + P1 19 + P2 33 + P3 45) |
 | **Agent subset implemented** | All 114 commands (incl. meta-commands: catalog, schema, coreutils, tool-list) |
 | **GNU differential verified (Windows)** | sort only (5 tests), 51 skipped (no GNU tools) |
 | **GNU differential verified (Local WSL Ubuntu)** | Locally verified in WSL — 54/56 GNU differential tests passed, 2 Chinese cases hard-skipped |
@@ -165,6 +165,6 @@
 
 ### Next Required Actions
 
-1. **Continue coverage improvement**: fs/_core.py (77%), system/_core.py (52%) still have gaps
+1. **Continue coverage improvement**: fs/_core.py (81%), system/_core.py (77%), text/_core.py (77%) all at or above threshold; push toward 85%
 2. **MCP security hardening**: Tool annotations and finer-grained access control
 3. **Status doc automation**: Have CI auto-sync dynamic numbers to CURRENT_STATUS.md
