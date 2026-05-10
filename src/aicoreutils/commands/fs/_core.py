@@ -97,43 +97,34 @@ def command_realpath(args: argparse.Namespace) -> dict[str, Any]:
     return RealpathCommand()(args)  # type: ignore[return-value]
 
 
-def command_readlink(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    entries = []
-    raw_lines = []
-    for raw in args.paths:
+class ReadlinkCommand(FileInfoCommand):
+    """Resolve symbolic links or canonicalize paths."""
+
+    name = "readlink"
+
+    def process_path(self, raw: str, args: argparse.Namespace) -> tuple[dict[str, Any], str]:
         input_path = Path(raw).expanduser()
         if args.canonicalize:
             resolved = str(resolve_path(input_path, strict=args.strict))
-            entry = {
-                "input": raw,
-                "path": resolved,
-                "mode": "canonicalize",
-                "exists": input_path.exists(),
-            }
-            target = resolved
-        else:
-            path = resolve_path(input_path, strict=True)
-            if not path.is_symlink():
-                raise AgentError(
-                    "invalid_input",
-                    "Path is not a symbolic link. Use --canonicalize to resolve regular paths.",
-                    path=str(path),
-                )
-            try:
-                target = os.readlink(path)
-            except OSError as exc:
-                raise AgentError("io_error", str(exc), path=str(path)) from exc
-            entry = {
-                "input": raw,
-                "path": str(path),
-                "mode": "readlink",
-                "target": target,
-            }
-        entries.append(entry)
-        raw_lines.append(target)
-    if args.raw:
-        return lines_to_raw(raw_lines, encoding=getattr(args, "encoding", "utf-8"))
-    return {"count": len(entries), "entries": entries}
+            entry = {"input": raw, "path": resolved, "mode": "canonicalize", "exists": input_path.exists()}
+            return entry, resolved
+        path = resolve_path(input_path, strict=True)
+        if not path.is_symlink():
+            raise AgentError(
+                "invalid_input",
+                "Path is not a symbolic link. Use --canonicalize to resolve regular paths.",
+                path=str(path),
+            )
+        try:
+            target = os.readlink(path)
+        except OSError as exc:
+            raise AgentError("io_error", str(exc), path=str(path)) from exc
+        entry = {"input": raw, "path": str(path), "mode": "readlink", "target": target}
+        return entry, target
+
+
+def command_readlink(args: argparse.Namespace) -> dict[str, Any] | bytes:
+    return ReadlinkCommand()(args)
 
 
 # ── basename / dirname ─────────────────────────────────────────────────
@@ -883,14 +874,17 @@ def command_chgrp(args: argparse.Namespace) -> dict[str, Any]:
 # ── truncate / mktemp / mkfifo / mknod ─────────────────────────────────
 
 
-def command_truncate(args: argparse.Namespace) -> dict[str, Any]:
-    if args.size < 0:
-        raise AgentError("invalid_input", "--size must be >= 0.")
-    cwd = Path.cwd().resolve()
-    operations = []
-    for raw in args.paths:
-        path = resolve_path(raw)
-        require_inside_cwd(path, cwd, allow_outside_cwd=False)
+class TruncateCommand(MutatingCommand):
+    """Truncate files to a specified size with dry-run protection."""
+
+    name = "truncate"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        if args.size < 0:
+            raise AgentError("invalid_input", "--size must be >= 0.")
+        return super().execute(args)
+
+    def _execute_one(self, path: Any, args: argparse.Namespace, operations: list[dict[str, Any]]) -> None:
         existed = path.exists()
         if not existed and args.no_create:
             raise AgentError("not_found", "Path does not exist and --no-create was passed.", path=str(path))
@@ -916,43 +910,59 @@ def command_truncate(args: argparse.Namespace) -> dict[str, Any]:
                 ) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), path=str(path)) from exc
-    return {"count": len(operations), "operations": operations}
+
+
+def command_truncate(args: argparse.Namespace) -> dict[str, Any]:
+    return TruncateCommand()(args)  # type: ignore[return-value]
+
+
+class MktempCommand(BaseCommand):
+    """Create a temporary file or directory safely."""
+
+    name = "mktemp"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        cwd = Path.cwd().resolve()
+        tmpdir = resolve_path(args.tmpdir or ".", strict=True)
+        require_inside_cwd(tmpdir, cwd, allow_outside_cwd=False)
+        if not tmpdir.is_dir():
+            raise AgentError("invalid_input", "--tmpdir must be a directory.", path=str(tmpdir))
+        if args.dry_run:
+            candidate = tmpdir / f"{args.prefix}{uuid.uuid4().hex}{args.suffix}"
+            return CommandResult(
+                data={
+                    "operation": "mktemp",
+                    "path": str(candidate),
+                    "directory": args.directory,
+                    "created": False,
+                    "dry_run": True,
+                }
+            )
+        try:
+            if args.directory:
+                path = tempfile.mkdtemp(prefix=args.prefix, suffix=args.suffix, dir=tmpdir)
+            else:
+                fd, path = tempfile.mkstemp(prefix=args.prefix, suffix=args.suffix, dir=tmpdir)
+                os.close(fd)
+        except PermissionError as exc:
+            raise AgentError(
+                "permission_denied", "Permission denied while creating temporary path.", path=str(tmpdir)
+            ) from exc
+        except OSError as exc:
+            raise AgentError("io_error", str(exc), path=str(tmpdir)) from exc
+        return CommandResult(
+            data={
+                "operation": "mktemp",
+                "path": str(Path(path).resolve()),
+                "directory": args.directory,
+                "created": True,
+                "dry_run": False,
+            }
+        )
 
 
 def command_mktemp(args: argparse.Namespace) -> dict[str, Any]:
-    cwd = Path.cwd().resolve()
-    tmpdir = resolve_path(args.tmpdir or ".", strict=True)
-    require_inside_cwd(tmpdir, cwd, allow_outside_cwd=False)
-    if not tmpdir.is_dir():
-        raise AgentError("invalid_input", "--tmpdir must be a directory.", path=str(tmpdir))
-    if args.dry_run:
-        candidate = tmpdir / f"{args.prefix}{uuid.uuid4().hex}{args.suffix}"
-        return {
-            "operation": "mktemp",
-            "path": str(candidate),
-            "directory": args.directory,
-            "created": False,
-            "dry_run": True,
-        }
-    try:
-        if args.directory:
-            path = tempfile.mkdtemp(prefix=args.prefix, suffix=args.suffix, dir=tmpdir)
-        else:
-            fd, path = tempfile.mkstemp(prefix=args.prefix, suffix=args.suffix, dir=tmpdir)
-            os.close(fd)
-    except PermissionError as exc:
-        raise AgentError(
-            "permission_denied", "Permission denied while creating temporary path.", path=str(tmpdir)
-        ) from exc
-    except OSError as exc:
-        raise AgentError("io_error", str(exc), path=str(tmpdir)) from exc
-    return {
-        "operation": "mktemp",
-        "path": str(Path(path).resolve()),
-        "directory": args.directory,
-        "created": True,
-        "dry_run": False,
-    }
+    return MktempCommand()(args)  # type: ignore[return-value]
 
 
 def command_mkfifo(args: argparse.Namespace) -> dict[str, Any]:
@@ -1105,43 +1115,56 @@ def command_install(args: argparse.Namespace) -> dict[str, Any]:
 # ── tee / rmdir / unlink ───────────────────────────────────────────────
 
 
-def command_tee(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    if args.max_preview_bytes < 0:
-        raise AgentError("invalid_input", "--max-preview-bytes must be >= 0.")
-    cwd = Path.cwd().resolve()
-    data = read_stdin_bytes()
-    operations = []
-    for raw in args.paths:
-        path = resolve_path(raw)
-        require_inside_cwd(path, cwd, allow_outside_cwd=False)
-        ensure_parent(path, create=args.parents, dry_run=args.dry_run)
-        operations.append(
-            {
-                "operation": "tee",
-                "path": str(path),
-                "append": args.append,
-                "bytes": len(data),
-                "dry_run": args.dry_run,
+class TeeCommand(BaseCommand):
+    """Read stdin and write to multiple files simultaneously."""
+
+    name = "tee"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        if args.max_preview_bytes < 0:
+            raise AgentError("invalid_input", "--max-preview-bytes must be >= 0.")
+        cwd = Path.cwd().resolve()
+        data = read_stdin_bytes()
+        operations = []
+        for raw in args.paths:
+            path = resolve_path(raw)
+            require_inside_cwd(path, cwd, allow_outside_cwd=False)
+            ensure_parent(path, create=args.parents, dry_run=args.dry_run)
+            operations.append(
+                {
+                    "operation": "tee",
+                    "path": str(path),
+                    "append": args.append,
+                    "bytes": len(data),
+                    "dry_run": args.dry_run,
+                }
+            )
+            if not args.dry_run:
+                try:
+                    with path.open("ab" if args.append else "wb") as handle:
+                        handle.write(data)
+                except PermissionError as exc:
+                    raise AgentError(
+                        "permission_denied", "Permission denied while writing file.", path=str(path)
+                    ) from exc
+                except OSError as exc:
+                    raise AgentError("io_error", str(exc), path=str(path)) from exc
+        if args.raw:
+            return CommandResult(raw_bytes=data)
+        preview = data[: args.max_preview_bytes]
+        return CommandResult(
+            data={
+                "input_bytes": len(data),
+                "returned_preview_bytes": len(preview),
+                "truncated": len(data) > len(preview),
+                "content_base64": base64.b64encode(preview).decode("ascii"),
+                "operations": operations,
             }
         )
-        if not args.dry_run:
-            try:
-                with path.open("ab" if args.append else "wb") as handle:
-                    handle.write(data)
-            except PermissionError as exc:
-                raise AgentError("permission_denied", "Permission denied while writing file.", path=str(path)) from exc
-            except OSError as exc:
-                raise AgentError("io_error", str(exc), path=str(path)) from exc
-    if args.raw:
-        return data
-    preview = data[: args.max_preview_bytes]
-    return {
-        "input_bytes": len(data),
-        "returned_preview_bytes": len(preview),
-        "truncated": len(data) > len(preview),
-        "content_base64": base64.b64encode(preview).decode("ascii"),
-        "operations": operations,
-    }
+
+
+def command_tee(args: argparse.Namespace) -> dict[str, Any] | bytes:
+    return TeeCommand()(args)
 
 
 class RmdirCommand(MutatingCommand):
