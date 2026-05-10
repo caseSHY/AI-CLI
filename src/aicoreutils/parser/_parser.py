@@ -1240,12 +1240,22 @@ def build_parser() -> AgentArgumentParser:
 
 
 def dispatch(args: argparse.Namespace) -> tuple[int, dict[str, Any] | bytes]:
+    """Run a parsed command and return (exit_code, payload).
+
+    Payload is dict (JSON mode) or bytes (--raw mode).  The two-path
+    structure — CommandResult vs dict/bytes — exists because 85/114
+    commands have been migrated to OOP while 17 function-based commands
+    still return dict|bytes directly.  Both paths produce identical
+    JSON output shapes; no caller should depend on which path is taken.
+    """
     result = args.func(args)
     # OO path: CommandResult from BaseCommand subclasses
     if isinstance(result, CommandResult):
         if result.is_raw:
             return EXIT["ok"], result.raw_bytes  # type: ignore[return-value]
         d = result.to_dict()
+        # _exit_code lives in the result dict so the envelope doesn't
+        # need to know about exit semantics.  Pop it before wrapping.
         code = d.pop("_exit_code", EXIT["ok"])
         if getattr(args, "show_encoding", False) and result.encoding_meta:
             d.setdefault("encoding_meta", result.encoding_meta)
@@ -1253,6 +1263,9 @@ def dispatch(args: argparse.Namespace) -> tuple[int, dict[str, Any] | bytes]:
     # Legacy path: dict | bytes from classic command_* functions
     if isinstance(result, bytes):
         return EXIT["ok"], result
+    # _exit_code is smuggled through the dict so commands can signal
+    # non-zero exits (predicate_false, partial_failure, etc.) without
+    # raising AgentError.
     code = result.pop("_exit_code", EXIT["ok"]) if isinstance(result, dict) else EXIT["ok"]
     if isinstance(result, dict) and getattr(args, "show_encoding", False):
         info = result.pop("_encoding_info", None)
@@ -1262,6 +1275,13 @@ def dispatch(args: argparse.Namespace) -> tuple[int, dict[str, Any] | bytes]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point.  Parse args, dispatch, write envelope to stdout.
+
+    All errors — including AgentError, KeyboardInterrupt, and unexpected
+    exceptions — are caught here and serialized to the JSON error envelope
+    on stderr.  No exception escapes this function; the exit code is the
+    only thing the shell sees.
+    """
     parser = build_parser()
     command_name: str | None = None
     if argv is None:
@@ -1273,6 +1293,7 @@ def main(argv: list[str] | None = None) -> int:
         command_name = args.command
         code, payload = dispatch(args)
         if isinstance(payload, bytes):
+            # --raw mode: write bytes directly to stdout, no envelope
             sys.stdout.buffer.write(payload)
         else:
             write_json(sys.stdout, payload, pretty=args.pretty)
@@ -1281,12 +1302,17 @@ def main(argv: list[str] | None = None) -> int:
         write_json(sys.stderr, error_envelope(command_name, exc))
         return exc.exit_code
     except BrokenPipeError:
+        # Broken pipe is normal in pipelines (e.g. head | ...).  Treat as
+        # success — the downstream process closed the pipe intentionally.
         return EXIT["ok"]
     except KeyboardInterrupt:
         interrupt_error = AgentError("general_error", "Interrupted.")
         write_json(sys.stderr, error_envelope(command_name, interrupt_error))
         return interrupt_error.exit_code
     except Exception as exc:
+        # Catch-all: wrap any unexpected exception in the JSON error
+        # envelope so the caller (agent or shell script) always gets
+        # structured output, never a bare traceback.
         error = AgentError(
             "general_error",
             "Unexpected error.",

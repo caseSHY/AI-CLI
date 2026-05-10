@@ -148,9 +148,12 @@ def subprocess_result(
     timed_out: bool,
     max_output_bytes: int,
 ) -> dict[str, Any]:
-    """将子进程结果转换为 Agent 友好的 JSON 字典。
+    """Convert a subprocess result to an agent-safe JSON dict.
 
-    stdout/stderr 被 base64 编码以保证二进制安全传输。
+    stdout/stderr are base64-encoded so the JSON envelope stays valid
+    regardless of whether the subprocess produced binary output, invalid
+    UTF-8, or terminal escape sequences.  Callers that expect text output
+    should base64-decode and then decode with the appropriate encoding.
     """
     stdout = completed.stdout or b""
     stderr = completed.stderr or b""

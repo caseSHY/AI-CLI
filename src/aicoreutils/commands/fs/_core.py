@@ -651,6 +651,14 @@ def _resolve_source_dest(
 ) -> tuple[Path, Path, Path]:
     """Shared path resolution + sandbox + parent creation for cp/mv.
 
+    check_source_cwd=True (mv) requires the source to be inside cwd
+    because mv removes the source — it's a mutating operation on both
+    sides.  cp only checks the destination side.
+
+    destination_inside_directory() emulates GNU cp/mv behavior:
+    if destination is an existing directory, the source is copied/moved
+    INTO it (e.g. cp file.txt dir/ → cp file.txt dir/file.txt).
+
     Returns (source, destination, requested_destination).
     """
     source = resolve_path(args.source, strict=True)

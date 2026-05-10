@@ -463,25 +463,6 @@ def _command_tools(parser: argparse.ArgumentParser) -> list[dict[str, Any]]:
     return tools
 
 
-def _build_input_schema(name: str, subparser: argparse.ArgumentParser) -> dict[str, Any]:
-    """Build JSON Schema for a subparser's parameters (simplified, without annotations)."""
-    properties: dict[str, Any] = {}
-    required: list[str] = []
-    for action in subparser._actions:
-        dest = action.dest
-        if dest in ("help", "pretty", "command"):
-            continue
-        if dest == argparse.SUPPRESS:
-            continue
-        properties[dest] = _arg_to_schema(action)
-        if action.required:
-            required.append(dest)
-    schema: dict[str, Any] = {"type": "object", "properties": properties}
-    if required:
-        schema["required"] = required
-    return schema
-
-
 def _risk_extension(tool: dict[str, Any]) -> dict[str, bool | str | list[str]]:
     annotations = tool.get("annotations", {})
     return {

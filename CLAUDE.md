@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Coreutils but not a full clone. It exposes 114 commands (111 priority catalog entries + meta-commands) via CLI and an MCP server. Package: `aicoreutils` (v1.2.0 LTS), Python >= 3.11, zero runtime dependencies. Version is single-sourced from pyproject.toml via `importlib.metadata`.
+AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Coreutils but not a full clone. It exposes 114 commands (111 catalog: P0 14 + P1 19 + P2 33 + P3 45, plus 3 unique meta-commands: catalog/schema/tool-list) via CLI and an MCP server. Package: `aicoreutils` (v1.2.0 LTS), Python >= 3.11, zero runtime dependencies. Version is single-sourced from pyproject.toml via `importlib.metadata`.
 
 ## Commands
 
@@ -77,14 +77,14 @@ core/          Foundation: exit codes, exceptions, JSON envelope, encoding, comm
 utils/         Domain utilities: argparse wrapper, I/O, hashing, text processing, ranges, printf, numfmt, system, path
 commands/      Command handlers (fs/_core.py, system/_core.py, text/_core.py — one file per category)
 parser/        CLI entry point: single _parser.py builds argparse tree, dispatches to handlers
-registry/      Command registry: catalog (109 commands P0-P3), plugins, command_specs, tool_schema
+registry/      Command registry: catalog (111 commands P0-P3), plugins, command_specs, tool_schema
 mcp_server.py  MCP server: JSON-RPC 2.0 over stdio, no external deps
 async_interface.py  Async wrapper: asyncio subprocess pool for concurrent command execution
 ```
 
 ### OOP command layer (`core/command.py`)
 
-85 of 114 commands are class-based (75%). The class hierarchy:
+96 of 114 commands are class-based (84%). The class hierarchy:
 
 ```
 CommandResult          — unified dataclass: data | raw_bytes, exit_code, warnings, encoding_meta
@@ -98,16 +98,33 @@ BaseCommand (ABC)      — __call__ bridges to legacy dispatch (returns dict | b
 - Each command class overrides one hook method (`transform()`, `process_path()`, `_execute_one()`, or `execute()`).
 - `BaseCommand.__call__` converts `CommandResult` back to the legacy `dict | bytes` protocol, so `dispatch()` and MCP `_call_tool()` work unchanged.
 - `dispatch()` checks `isinstance(result, CommandResult)` first; falls back to the legacy `dict | bytes` path.
-- All 85 OOP commands retain `command_*()` wrappers: `return XxxCommand()(args)`.
+- All 96 OOP commands retain `command_*()` wrappers: `return XxxCommand()(args)`.
 
 **Key rule:** new command classes must accept `(args: argparse.Namespace)`, return `dict | bytes` via `__call__`, and NOT modify the JSON output shape.
 
-**Still function-based (17 commands — all have specific reasons):**
-- Binary-first: `csplit`, `split`, `od`, `codec`, `basenc` — raw bytes, not text pipeline
+### Coverage by module (overall: 85%)
+
+Key module coverage levels. When adding features or fixing bugs, check the coverage report for the affected module:
+
+| Module | Coverage | Notes |
+|--------|----------|-------|
+| `core/command.py` | high | OOP base classes, well-covered |
+| `core/encoding.py` | high | Unified encoding layer |
+| `core/sandbox.py` | high | Safety checks |
+| `commands/text/_core.py` | 77% | Text pipeline commands |
+| `commands/fs/_core.py` | 81% | Filesystem commands |
+| `commands/system/_core.py` | 77% | System commands, subprocess wrappers |
+| `mcp_server.py` | adequate | MCP JSON-RPC server |
+| `parser/_parser.py` | adequate | CLI entry point |
+
+Subprocess real-execution paths (timeout/nice/stdbuf/nohup/chroot/chcon/runcon/kill) and terminal manipulation (stty) have intentionally lower coverage because they require platform-specific facilities, real TTY, or `--allow-*` flags that are dangerous to exercise in automated tests.
+
+**Still function-based (18 commands — all have specific reasons):**
+- Binary-first: `csplit`, `split`, `od`, `base32`, `base64`, `basenc` — raw bytes, not text pipeline
 - Stream/special architectures: `ls`, `dd` — StreamWriter direct-to-stdout / complex conv option chains
 - Danger-gated subprocess: `timeout`, `nice`, `stdbuf`, `stty`, `nohup`, `chroot`, `chcon`, `runcon` — platform-specific, require `--allow-*` flags
 - Safety-gated: `shred` — unique `--allow-destructive` requirement
-- Compatibility shell: `bracket` — thin wrapper delegating to `TestCommand`
+- Compatibility shell: `[` — thin wrapper delegating to `TestCommand`
 - Shared helpers: `_resolve_source_dest()` (cp/mv), `_check_link_dest_conflict()` (ln/link), `_apply_chown()` (chown/chgrp) eliminate duplication without adding intermediate base classes
 
 ### MCP server security (`mcp_server.py`)
@@ -149,7 +166,7 @@ Binary-first commands (base64 encode, hash, cksum, dd, tee, etc.) work on raw by
 ```
 src/aicoreutils/    Python package (core -> utils -> commands -> parser, with registry/)
 docs/               Documentation (reference, guides, architecture, development, status, audits; QUICKSTART.md, COMPATIBILITY.md)
-tests/              Test suite (46 test files, 937 tests, stress/, support/, golden/)
+tests/              Test suite (46 test files, 1017 tests, stress/, support/, golden/)
 examples/           Examples and agent tasks
 scripts/            CI audit, release gate, bump version, generate status
 .github/scripts/    WSL CI helpers and golden output updater
@@ -249,6 +266,21 @@ CI also runs these audit scripts (all must pass before merge):
 3. Bump version with `scripts/bump_version.py <new_version>`
 4. Update `CHANGELOG.md`
 5. Tag `v<new_version>` and push — CI publishes to PyPI automatically
+
+## Pre-push checklist
+
+Run these before pushing. The pre-commit hook catches format/lint/typecheck, but the full test suite is too slow for a hook:
+
+```bash
+uv run ruff format --check src/ tests/ scripts/
+uv run ruff check src/ tests/ scripts/
+uv run mypy src/aicoreutils/ --strict
+uv run pytest tests/ --cov=src/aicoreutils --cov-fail-under=77
+```
+
+## Windows CRLF warning
+
+Windows CI failures are almost always CRLF line-ending skew — git checks out text files with `\r\n`, which shifts counts for `wc`, hashing, and any byte-sensitive golden comparisons. Fix with `.gitattributes eol=lf` on affected paths.
 
 ## Behavioral guidelines
 

@@ -255,7 +255,6 @@ def detect_encoding(
     data: bytes,
     *,
     profile: str = "universal",
-    hint: str | None = None,
 ) -> tuple[str, float, str, list[str]]:
     """Detect the likely encoding of raw bytes without decoding to text.
 

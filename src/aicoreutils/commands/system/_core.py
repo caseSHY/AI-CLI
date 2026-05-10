@@ -754,6 +754,18 @@ def command_nohup(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def _consume_remainder_execution_options(args: argparse.Namespace, *, allow_flag: str) -> list[str]:
+    """Extract execution control flags from the command remainder.
+
+    chroot and runcon accept a REMAINDER argument that mixes execution
+    options (--timeout, --max-output-bytes, --dry-run, --allow-*) with
+    the actual command to execute.  argparse.REMAINDER captures them
+    all together, so this function re-parses the known flags out of the
+    remainder, mutating ``args`` in place and returning the remaining
+    tokens (the subprocess command + its args).
+
+    Stops at the first unrecognized token (assumed to be the command name)
+    or at ``--`` (explicit end-of-options marker).
+    """
     command_args = list(args.command_args)
     index = 0
     while index < len(command_args):

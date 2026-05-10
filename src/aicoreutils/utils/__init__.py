@@ -46,7 +46,6 @@ from ._hashing import (  # noqa: F401
 
 # ── _io ──
 from ._io import (  # noqa: F401
-    attach_encoding_info,
     bounded_lines,
     combined_lines,
     lines_to_raw,

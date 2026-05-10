@@ -118,18 +118,6 @@ def read_text_lines(path: Path, *, encoding: str) -> list[str]:
     return result.text.splitlines()
 
 
-def attach_encoding_info(result: dict[str, Any], sources: list[dict[str, Any]]) -> None:
-    """从 sources 提取第一个来源的编码元数据，附加到 result 字典中。
-
-    用于 --show-encoding 模式下将编码检测信息注入 JSON 输出。
-    """
-    for src in sources:
-        info = src.pop("_encoding_info", None)
-        if info:
-            result["encoding"] = info
-            return
-
-
 def read_bytes(path: Path, *, max_bytes: int, offset: int = 0) -> tuple[bytes, bool, int]:
     """读取文件的部分字节（支持 offset 和 max_bytes 有界读取）。
 

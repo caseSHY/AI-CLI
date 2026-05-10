@@ -130,10 +130,16 @@ def _check_tool_access(
 
 
 def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
-    """Execute an aicoreutils command by name with the given arguments.
+    """Execute an aicoreutils command by name with JSON arguments.
 
     Security checks (read-only, allow/deny) are performed by the caller
     before this function is invoked.
+
+    The JSON-to-CLI bridge: MCP tools receive JSON objects; aicoreutils
+    commands expect argparse-parsed CLI args.  This function reconstructs
+    the CLI arg list from the JSON dict and passes it through the parser
+    so every command sees the same argparse.Namespace shape regardless
+    of whether it was invoked via MCP or CLI.
     """
     parser = build_parser()
 
@@ -151,12 +157,15 @@ def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     if func is None:
         return {"ok": False, "error": f"No handler for command: {name}"}
 
-    # Build CLI args from JSON arguments dict
+    # Build CLI args from JSON arguments dict.
+    # Positional args are encoded bare; optional args use their first
+    # option string (e.g. "--recursive").  Bool flags are only added
+    # when True.  List values are unpacked as repeated flag+value pairs.
     args_list: list[str] = []
 
-    # Collect all non-hidden actions
     for action in subparser._actions:
         dest = action.dest
+        # Skip meta-flags that don't map to command behavior
         if dest in ("help", "pretty", "command"):
             continue
         if dest == argparse.SUPPRESS:
@@ -186,7 +195,7 @@ def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             else:
                 args_list.append(str(value))
 
-    # Parse through argparse
+    # Parse through argparse to get the same Namespace as CLI invocation
     try:
         ns = parser.parse_args([name] + args_list)
     except SystemExit:
@@ -200,7 +209,9 @@ def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     except Exception as exc:
         return {"ok": False, "error": str(exc)}
 
-    # dispatch returns (exit_code, result_dict)
+    # dispatch returns (exit_code, result_dict) for dict results,
+    # or (0, bytes) for raw results.  Normalize to a dict with _exit_code
+    # so MCP clients always receive a consistent shape.
     if isinstance(raw_result, tuple):
         exit_code, result = raw_result
     else:
@@ -208,6 +219,7 @@ def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         result = raw_result
 
     if isinstance(result, bytes):
+        # Raw output: decode to string for JSON embedding
         decoded = decode_bytes(result, encoding="utf-8", errors="replace")
         result = {"raw_output": decoded.text}
     elif isinstance(result, dict):
