@@ -84,28 +84,31 @@ async_interface.py  Async wrapper: asyncio subprocess pool for concurrent comman
 
 ### OOP command layer (`core/command.py`)
 
-75 of 114 commands are class-based (66%). The class hierarchy:
+85 of 114 commands are class-based (75%). The class hierarchy:
 
 ```
 CommandResult          — unified dataclass: data | raw_bytes, exit_code, warnings, encoding_meta
 BaseCommand (ABC)      — __call__ bridges to legacy dispatch (returns dict | bytes)
-├── TextFilterCommand  — combined_lines → transform() → bounded_lines (7 commands)
-├── FileInfoCommand    — iterate paths → process_path() → {count, entries} (4 commands)
-└── MutatingCommand    — resolve → sandbox → dry_run → _execute_one() → operations (10 commands)
+├── TextFilterCommand  — combined_lines → transform() → bounded_lines (6 commands)
+├── FileInfoCommand    — iterate paths → process_path() → {count, entries} (3 commands)
+└── MutatingCommand    — resolve → sandbox → dry_run → _execute_one() → operations (8 commands)
 ```
 
 **How it works:**
 - Each command class overrides one hook method (`transform()`, `process_path()`, `_execute_one()`, or `execute()`).
 - `BaseCommand.__call__` converts `CommandResult` back to the legacy `dict | bytes` protocol, so `dispatch()` and MCP `_call_tool()` work unchanged.
 - `dispatch()` checks `isinstance(result, CommandResult)` first; falls back to the legacy `dict | bytes` path.
-- All 75 OOP commands retain `command_*()` wrappers: `return XxxCommand()(args)`.
+- All 85 OOP commands retain `command_*()` wrappers: `return XxxCommand()(args)`.
 
 **Key rule:** new command classes must accept `(args: argparse.Namespace)`, return `dict | bytes` via `__call__`, and NOT modify the JSON output shape.
 
-**Still function-based (39 commands):**
-- Complex multi-mode: `ls/dir/vdir` (stream mode), `hash --check`, `csplit`, `split`, `dd`, `install`
-- Platform-specific / subprocess: `cp`, `mv`, `ln`, `link`, `chown`, `chgrp`, `shred`, `bracket`, `coreutils`, `pinky`, `timeout`, `nice`, `stdbuf`, `stty`, `nohup`, `chroot`, `chcon`, `runcon`, `kill`
-- Binary-first: `od`, `codec`, `basenc`
+**Still function-based (17 commands — all have specific reasons):**
+- Binary-first: `csplit`, `split`, `od`, `codec`, `basenc` — raw bytes, not text pipeline
+- Stream/special architectures: `ls`, `dd` — StreamWriter direct-to-stdout / complex conv option chains
+- Danger-gated subprocess: `timeout`, `nice`, `stdbuf`, `stty`, `nohup`, `chroot`, `chcon`, `runcon` — platform-specific, require `--allow-*` flags
+- Safety-gated: `shred` — unique `--allow-destructive` requirement
+- Compatibility shell: `bracket` — thin wrapper delegating to `TestCommand`
+- Shared helpers: `_resolve_source_dest()` (cp/mv), `_check_link_dest_conflict()` (ln/link), `_apply_chown()` (chown/chgrp) eliminate duplication without adding intermediate base classes
 
 ### MCP server security (`mcp_server.py`)
 

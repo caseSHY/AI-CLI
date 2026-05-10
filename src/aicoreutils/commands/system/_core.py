@@ -57,18 +57,29 @@ from ...utils import (
 )
 
 
+class CoreutilsCommand(BaseCommand):
+    """Return the list of implemented commands and implementation metadata."""
+
+    name = "coreutils"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        commands = list(getattr(args, "implemented_commands", []) or [])
+        if args.raw or args.list:
+            return CommandResult(raw_bytes=lines_to_raw(commands, encoding=getattr(args, "encoding", "utf-8")))
+        return CommandResult(
+            data={
+                "implementation": "aicoreutils",
+                "compatible_with": "GNU Coreutils inspired subset",
+                "gnu_option_compatible": False,
+                "json_default": True,
+                "commands": commands,
+                "count": len(commands),
+            }
+        )
+
+
 def command_coreutils(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    commands = list(getattr(args, "implemented_commands", []) or [])
-    if args.raw or args.list:
-        return lines_to_raw(commands, encoding=getattr(args, "encoding", "utf-8"))
-    return {
-        "implementation": "aicoreutils",
-        "compatible_with": "GNU Coreutils inspired subset",
-        "gnu_option_compatible": False,
-        "json_default": True,
-        "commands": commands,
-        "count": len(commands),
-    }
+    return CoreutilsCommand()(args)
 
 
 # ── date ───────────────────────────────────────────────────────────────
@@ -344,42 +355,51 @@ def command_logname(args: argparse.Namespace) -> dict[str, Any]:
     return LognameCommand()(args)  # type: ignore[return-value]
 
 
-def command_pinky(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    active_entries = active_user_entries()
-    if args.users:
-        entries = []
-        for user in args.users:
-            matches = [entry for entry in active_entries if entry["user"] == user]
-            if matches:
-                entries.extend(matches)
-            else:
-                entries.append({"user": user, "terminal": None, "time": "", "source": "requested", "active": False})
-    else:
-        entries = active_entries
+class PinkyCommand(BaseCommand):
+    """Lightweight user lookup — filter and normalize active user entries."""
 
-    normalized = [
-        {
-            "user": entry["user"],
-            "terminal": entry.get("terminal"),
-            "time": entry.get("time", ""),
-            "source": entry.get("source", "unknown"),
-            "active": entry.get("active", True),
-        }
-        for entry in entries
-    ]
-    if args.raw:
-        lines = [
-            "\t".join(
-                [
-                    str(entry["user"]),
-                    str(entry["terminal"] or ""),
-                    str(entry["time"] or ""),
-                ]
-            ).rstrip()
-            for entry in normalized
+    name = "pinky"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        active_entries = active_user_entries()
+        if args.users:
+            entries: list[dict[str, Any]] = []
+            for user in args.users:
+                matches = [entry for entry in active_entries if entry["user"] == user]
+                if matches:
+                    entries.extend(matches)
+                else:
+                    entries.append({"user": user, "terminal": None, "time": "", "source": "requested", "active": False})
+        else:
+            entries = active_entries
+
+        normalized = [
+            {
+                "user": entry["user"],
+                "terminal": entry.get("terminal"),
+                "time": entry.get("time", ""),
+                "source": entry.get("source", "unknown"),
+                "active": entry.get("active", True),
+            }
+            for entry in entries
         ]
-        return lines_to_raw(lines, encoding=getattr(args, "encoding", "utf-8"))
-    return {"count": len(normalized), "long": args.long, "entries": normalized}
+        if args.raw:
+            lines = [
+                "\t".join(
+                    [
+                        str(entry["user"]),
+                        str(entry["terminal"] or ""),
+                        str(entry["time"] or ""),
+                    ]
+                ).rstrip()
+                for entry in normalized
+            ]
+            return CommandResult(raw_bytes=lines_to_raw(lines, encoding=getattr(args, "encoding", "utf-8")))
+        return CommandResult(data={"count": len(normalized), "long": args.long, "entries": normalized})
+
+
+def command_pinky(args: argparse.Namespace) -> dict[str, Any] | bytes:
+    return PinkyCommand()(args)
 
 
 # ── uptime / tty / users / who ─────────────────────────────────────────
@@ -898,34 +918,42 @@ def command_runcon(args: argparse.Namespace) -> dict[str, Any]:
 # ── kill ───────────────────────────────────────────────────────────────
 
 
-def command_kill(args: argparse.Namespace) -> dict[str, Any]:
-    signum = parse_signal(args.signal)
-    operations = []
-    for raw in args.pids:
-        try:
-            pid = int(raw)
-        except ValueError as exc:
-            raise AgentError("invalid_input", "PIDs must be integers.", details={"pid": raw}) from exc
-        operation = {"operation": "kill", "pid": pid, "signal": signum, "dry_run": args.dry_run}
-        operations.append(operation)
-        if not args.dry_run:
-            if not args.allow_signal:
-                raise AgentError(
-                    "unsafe_operation",
-                    "Sending a signal requires --allow-signal.",
-                    details={"pid": pid, "signal": signum},
-                )
+class KillCommand(BaseCommand):
+    """Send a signal to processes by PID — gated behind --allow-signal."""
+
+    name = "kill"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        signum = parse_signal(args.signal)
+        operations: list[dict[str, Any]] = []
+        for raw in args.pids:
             try:
-                os.kill(pid, signum)
-            except ProcessLookupError as exc:
-                raise AgentError("not_found", "Process does not exist.", details={"pid": pid}) from exc
-            except PermissionError as exc:
-                raise AgentError(
-                    "permission_denied", "Permission denied while signaling process.", details={"pid": pid}
-                ) from exc
-            except OSError as exc:
-                raise AgentError("io_error", str(exc), details={"pid": pid}) from exc
-    return {"count": len(operations), "operations": operations}
+                pid = int(raw)
+            except ValueError as exc:
+                raise AgentError("invalid_input", "PIDs must be integers.", details={"pid": raw}) from exc
+            operations.append({"operation": "kill", "pid": pid, "signal": signum, "dry_run": args.dry_run})
+            if not args.dry_run:
+                if not args.allow_signal:
+                    raise AgentError(
+                        "unsafe_operation",
+                        "Sending a signal requires --allow-signal.",
+                        details={"pid": pid, "signal": signum},
+                    )
+                try:
+                    os.kill(pid, signum)
+                except ProcessLookupError as exc:
+                    raise AgentError("not_found", "Process does not exist.", details={"pid": pid}) from exc
+                except PermissionError as exc:
+                    raise AgentError(
+                        "permission_denied", "Permission denied while signaling process.", details={"pid": pid}
+                    ) from exc
+                except OSError as exc:
+                    raise AgentError("io_error", str(exc), details={"pid": pid}) from exc
+        return CommandResult(data={"count": len(operations), "operations": operations})
+
+
+def command_kill(args: argparse.Namespace) -> dict[str, Any]:
+    return KillCommand()(args)  # type: ignore[return-value]
 
 
 # ── sleep ──────────────────────────────────────────────────────────────

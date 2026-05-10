@@ -207,21 +207,39 @@ def command_ls(args: argparse.Namespace) -> dict[str, Any] | bytes:
     }
 
 
+class DirCommand(BaseCommand):
+    """List directory contents — alias for ls with `alias: dir` marker."""
+
+    name = "dir"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        result = command_ls(args)
+        if isinstance(result, bytes):
+            return CommandResult(raw_bytes=result)
+        result["alias"] = "dir"
+        return CommandResult(data=result)
+
+
+class VdirCommand(BaseCommand):
+    """List directory contents — alias for ls with verbose marker."""
+
+    name = "vdir"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        result = command_ls(args)
+        if isinstance(result, bytes):
+            return CommandResult(raw_bytes=result)
+        result["alias"] = "vdir"
+        result["verbose"] = True
+        return CommandResult(data=result)
+
+
 def command_dir(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    result = command_ls(args)
-    if isinstance(result, bytes):
-        return result  # --stream mode: pass through
-    result["alias"] = "dir"
-    return result
+    return DirCommand()(args)
 
 
 def command_vdir(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    result = command_ls(args)
-    if isinstance(result, bytes):
-        return result  # --stream mode: pass through
-    result["alias"] = "vdir"
-    result["verbose"] = True
-    return result
+    return VdirCommand()(args)
 
 
 # ── stat ───────────────────────────────────────────────────────────────
@@ -397,13 +415,49 @@ def command_wc(args: argparse.Namespace) -> dict[str, Any] | bytes:
 # ── hash commands ──────────────────────────────────────────────────────
 
 
-def command_hash(args: argparse.Namespace) -> dict[str, Any]:
-    # --check mode: verify checksums from checksum files
-    if getattr(args, "check", False):
+class HashCommand(BaseCommand):
+    """Compute or verify cryptographic digests — dual mode: hash vs --check."""
+
+    name = "hash"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        if getattr(args, "check", False):
+            return self._check_mode(args)
+        return self._hash_mode(args)
+
+    @staticmethod
+    def _hash_mode(args: argparse.Namespace) -> CommandResult:
+        entries: list[dict[str, Any]] = []
+        for raw in args.paths if args.paths else ["-"]:
+            if raw == "-":
+                data = read_stdin_bytes()
+                entries.append(
+                    {
+                        "path": "-",
+                        "algorithm": args.algorithm,
+                        "digest": digest_bytes(data, args.algorithm),
+                        "size_bytes": len(data),
+                    }
+                )
+                continue
+            path = resolve_path(raw, strict=True)
+            entries.append(
+                {
+                    "path": str(path),
+                    "algorithm": args.algorithm,
+                    "digest": digest_file(path, args.algorithm),
+                    "size_bytes": path.stat().st_size,
+                }
+            )
+        return CommandResult(data={"count": len(entries), "entries": entries})
+
+    @staticmethod
+    def _check_mode(args: argparse.Namespace) -> CommandResult:
         enc = getattr(args, "encoding", "utf-8")
-        entries = []
+        entries: list[dict[str, Any]] = []
         ok_count = 0
         fail_count = 0
+        source: str = ""
         for raw in args.paths or ["-"]:
             if raw == "-":
                 content = read_stdin_bytes().decode(enc, errors="replace")
@@ -422,18 +476,19 @@ def command_hash(args: argparse.Namespace) -> dict[str, Any]:
                     fail_count += 1
                     continue
                 expected, target_path = parts[0], parts[1]
-                target_path = target_path.lstrip("*")  # GNU uses * for binary, ' ' for text
+                target_path = target_path.lstrip("*")
                 try:
                     actual = digest_file(Path(target_path), args.algorithm)
                 except (FileNotFoundError, OSError) as exc:
-                    missing_entry: dict[str, Any] = {
-                        "path": target_path,
-                        "expected": expected,
-                        "actual": None,
-                        "error": str(exc),
-                        "status": "MISSING",
-                    }
-                    entries.append(missing_entry)
+                    entries.append(
+                        {
+                            "path": target_path,
+                            "expected": expected,
+                            "actual": None,
+                            "error": str(exc),
+                            "status": "MISSING",
+                        }
+                    )
                     fail_count += 1
                     continue
                 ok = actual == expected
@@ -450,40 +505,22 @@ def command_hash(args: argparse.Namespace) -> dict[str, Any]:
                     }
                 )
         check_source: str = source if len(args.paths or []) == 1 else "multiple"
-        result: dict[str, Any] = {
-            "source": check_source,
-            "algorithm": args.algorithm,
-            "count": len(entries),
-            "ok": ok_count,
-            "failed": fail_count,
-            "entries": entries,
-        }
-        if fail_count > 0:
-            result["_exit_code"] = 1
-        return result
-
-    # Normal hashing mode
-    entries = []
-    for raw in args.paths if args.paths else ["-"]:
-        if raw == "-":
-            data = read_stdin_bytes()
-            entry_data: dict[str, Any] = {
-                "path": "-",
+        exit_code = 1 if fail_count > 0 else 0
+        return CommandResult(
+            data={
+                "source": check_source,
                 "algorithm": args.algorithm,
-                "digest": digest_bytes(data, args.algorithm),
-                "size_bytes": len(data),
-            }
-            entries.append(entry_data)
-            continue
-        path = resolve_path(raw, strict=True)
-        entry_data = {
-            "path": str(path),
-            "algorithm": args.algorithm,
-            "digest": digest_file(path, args.algorithm),
-            "size_bytes": path.stat().st_size,
-        }
-        entries.append(entry_data)
-    return {"count": len(entries), "entries": entries}
+                "count": len(entries),
+                "ok": ok_count,
+                "failed": fail_count,
+                "entries": entries,
+            },
+            exit_code=exit_code,
+        )
+
+
+def command_hash(args: argparse.Namespace) -> dict[str, Any]:
+    return HashCommand()(args)  # type: ignore[return-value]
 
 
 class CksumCommand(BaseCommand):
@@ -603,152 +640,193 @@ def command_touch(args: argparse.Namespace) -> dict[str, Any]:
 # ── cp / mv ────────────────────────────────────────────────────────────
 
 
-def command_cp(args: argparse.Namespace) -> dict[str, Any]:
-    cwd = Path.cwd().resolve()
+def _resolve_source_dest(
+    args: argparse.Namespace,
+    cwd: Path,
+    *,
+    check_source_cwd: bool = False,
+) -> tuple[Path, Path, Path]:
+    """Shared path resolution + sandbox + parent creation for cp/mv.
+
+    Returns (source, destination, requested_destination).
+    """
     source = resolve_path(args.source, strict=True)
     requested_destination = resolve_path(args.destination)
     destination = destination_inside_directory(source, requested_destination)
+    if check_source_cwd:
+        require_inside_cwd(source, cwd, allow_outside_cwd=False)
     require_inside_cwd(destination, cwd, allow_outside_cwd=False)
     ensure_parent(destination, create=args.parents, dry_run=args.dry_run)
-    if source.is_dir():
-        if not args.recursive:
-            raise AgentError(
-                "invalid_input",
-                "Source is a directory; recursive copy requires --recursive.",
-                path=str(source),
-            )
-        if destination.exists() and not args.allow_overwrite:
-            raise AgentError(
-                "conflict",
-                "Destination exists.",
-                path=str(destination),
-                suggestion="Pass --allow-overwrite if merging/replacing is intentional.",
-            )
-    else:
-        refuse_overwrite(destination, args.allow_overwrite)
+    return source, destination, requested_destination
 
-    operation = {
-        "operation": "cp",
-        "source": str(source),
-        "requested_destination": str(requested_destination),
-        "destination": str(destination),
-        "recursive": args.recursive,
-        "dry_run": args.dry_run,
-    }
-    if not args.dry_run:
+
+class CpCommand(BaseCommand):
+    """Copy files or directories with recursive support."""
+
+    name = "cp"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        cwd = Path.cwd().resolve()
+        source, destination, requested_destination = _resolve_source_dest(args, cwd)
         if source.is_dir():
-            shutil.copytree(source, destination, dirs_exist_ok=args.allow_overwrite)
+            if not args.recursive:
+                raise AgentError(
+                    "invalid_input",
+                    "Source is a directory; recursive copy requires --recursive.",
+                    path=str(source),
+                )
+            if destination.exists() and not args.allow_overwrite:
+                raise AgentError(
+                    "conflict",
+                    "Destination exists.",
+                    path=str(destination),
+                    suggestion="Pass --allow-overwrite if merging/replacing is intentional.",
+                )
         else:
-            shutil.copy2(source, destination)
-    return {"operations": [operation]}
+            refuse_overwrite(destination, args.allow_overwrite)
+        operation: dict[str, Any] = {
+            "operation": "cp",
+            "source": str(source),
+            "requested_destination": str(requested_destination),
+            "destination": str(destination),
+            "recursive": args.recursive,
+            "dry_run": args.dry_run,
+        }
+        if not args.dry_run:
+            if source.is_dir():
+                shutil.copytree(source, destination, dirs_exist_ok=args.allow_overwrite)
+            else:
+                shutil.copy2(source, destination)
+        return CommandResult(data={"operations": [operation]})
+
+
+class MvCommand(BaseCommand):
+    """Move (rename) files or directories."""
+
+    name = "mv"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        cwd = Path.cwd().resolve()
+        source, destination, requested_destination = _resolve_source_dest(args, cwd, check_source_cwd=True)
+        refuse_overwrite(destination, args.allow_overwrite)
+        operation: dict[str, Any] = {
+            "operation": "mv",
+            "source": str(source),
+            "requested_destination": str(requested_destination),
+            "destination": str(destination),
+            "dry_run": args.dry_run,
+        }
+        if not args.dry_run:
+            shutil.move(str(source), str(destination))
+        return CommandResult(data={"operations": [operation]})
+
+
+def command_cp(args: argparse.Namespace) -> dict[str, Any]:
+    return CpCommand()(args)  # type: ignore[return-value]
 
 
 def command_mv(args: argparse.Namespace) -> dict[str, Any]:
-    cwd = Path.cwd().resolve()
-    source = resolve_path(args.source, strict=True)
-    requested_destination = resolve_path(args.destination)
-    destination = destination_inside_directory(source, requested_destination)
-    require_inside_cwd(source, cwd, allow_outside_cwd=False)
-    require_inside_cwd(destination, cwd, allow_outside_cwd=False)
-    ensure_parent(destination, create=args.parents, dry_run=args.dry_run)
-    refuse_overwrite(destination, args.allow_overwrite)
-    operation = {
-        "operation": "mv",
-        "source": str(source),
-        "requested_destination": str(requested_destination),
-        "destination": str(destination),
-        "dry_run": args.dry_run,
-    }
-    if not args.dry_run:
-        shutil.move(str(source), str(destination))
-    return {"operations": [operation]}
+    return MvCommand()(args)  # type: ignore[return-value]
 
 
 # ── ln / link ──────────────────────────────────────────────────────────
 
 
-def command_ln(args: argparse.Namespace) -> dict[str, Any]:
-    cwd = Path.cwd().resolve()
-    source = Path(args.source).expanduser()
-    requested_destination = resolve_path(args.destination)
-    destination = destination_inside_directory(source, requested_destination)
-    require_inside_cwd(destination, cwd, allow_outside_cwd=False)
-    ensure_parent(destination, create=args.parents, dry_run=args.dry_run)
-    if destination.exists() or destination.is_symlink():
-        if not args.allow_overwrite:
-            raise AgentError(
-                "conflict",
-                "Destination exists.",
-                path=str(destination),
-                suggestion="Pass --allow-overwrite if replacing the destination is intentional.",
-            )
+class LnCommand(BaseCommand):
+    """Create hard or symbolic links with overwrite protection."""
+
+    name = "ln"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        cwd = Path.cwd().resolve()
+        source = Path(args.source).expanduser()
+        requested_destination = resolve_path(args.destination)
+        destination = destination_inside_directory(source, requested_destination)
+        require_inside_cwd(destination, cwd, allow_outside_cwd=False)
+        ensure_parent(destination, create=args.parents, dry_run=args.dry_run)
+        _check_link_dest_conflict(destination, args)
+        if not args.symbolic:
+            source = resolve_path(source, strict=True)
+            if source.is_dir():
+                raise AgentError("invalid_input", "Hard-linking directories is not supported.", path=str(source))
+        operation: dict[str, Any] = {
+            "operation": "ln",
+            "source": str(source),
+            "requested_destination": str(requested_destination),
+            "destination": str(destination),
+            "symbolic": args.symbolic,
+            "dry_run": args.dry_run,
+        }
         if not args.dry_run:
-            if destination.is_dir() and not destination.is_symlink():
-                raise AgentError("invalid_input", "Destination is a directory.", path=str(destination))
-            destination.unlink()
-    if not args.symbolic:
-        source = resolve_path(source, strict=True)
+            try:
+                if args.symbolic:
+                    os.symlink(str(source), destination)
+                else:
+                    os.link(source, destination)
+            except PermissionError as exc:
+                raise AgentError(
+                    "permission_denied", "Permission denied while creating link.", path=str(destination)
+                ) from exc
+            except OSError as exc:
+                raise AgentError("io_error", str(exc), path=str(destination)) from exc
+        return CommandResult(data={"operations": [operation]})
+
+
+class LinkCommand(BaseCommand):
+    """Create hard links with overwrite protection."""
+
+    name = "link"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        cwd = Path.cwd().resolve()
+        source = resolve_path(args.source, strict=True)
         if source.is_dir():
             raise AgentError("invalid_input", "Hard-linking directories is not supported.", path=str(source))
-    operation = {
-        "operation": "ln",
-        "source": str(source),
-        "requested_destination": str(requested_destination),
-        "destination": str(destination),
-        "symbolic": args.symbolic,
-        "dry_run": args.dry_run,
-    }
-    if not args.dry_run:
-        try:
-            if args.symbolic:
-                os.symlink(str(source), destination)
-            else:
+        destination = resolve_path(args.destination)
+        require_inside_cwd(destination, cwd, allow_outside_cwd=False)
+        ensure_parent(destination, create=args.parents, dry_run=args.dry_run)
+        _check_link_dest_conflict(destination, args)
+        operation: dict[str, Any] = {
+            "operation": "link",
+            "source": str(source),
+            "destination": str(destination),
+            "dry_run": args.dry_run,
+        }
+        if not args.dry_run:
+            try:
                 os.link(source, destination)
-        except PermissionError as exc:
-            raise AgentError(
-                "permission_denied", "Permission denied while creating link.", path=str(destination)
-            ) from exc
-        except OSError as exc:
-            raise AgentError("io_error", str(exc), path=str(destination)) from exc
-    return {"operations": [operation]}
+            except PermissionError as exc:
+                raise AgentError(
+                    "permission_denied", "Permission denied while creating hard link.", path=str(destination)
+                ) from exc
+            except OSError as exc:
+                raise AgentError("io_error", str(exc), path=str(destination)) from exc
+        return CommandResult(data={"operations": [operation]})
+
+
+def _check_link_dest_conflict(destination: Path, args: argparse.Namespace) -> None:
+    """Shared destination conflict check for ln and link commands."""
+    if not (destination.exists() or destination.is_symlink()):
+        return
+    if not args.allow_overwrite:
+        raise AgentError(
+            "conflict",
+            "Destination exists.",
+            path=str(destination),
+            suggestion="Pass --allow-overwrite if replacing the destination is intentional.",
+        )
+    if not args.dry_run:
+        if destination.is_dir() and not destination.is_symlink():
+            raise AgentError("invalid_input", "Destination is a directory.", path=str(destination))
+        destination.unlink()
+
+
+def command_ln(args: argparse.Namespace) -> dict[str, Any]:
+    return LnCommand()(args)  # type: ignore[return-value]
 
 
 def command_link(args: argparse.Namespace) -> dict[str, Any]:
-    cwd = Path.cwd().resolve()
-    source = resolve_path(args.source, strict=True)
-    if source.is_dir():
-        raise AgentError("invalid_input", "Hard-linking directories is not supported.", path=str(source))
-    destination = resolve_path(args.destination)
-    require_inside_cwd(destination, cwd, allow_outside_cwd=False)
-    ensure_parent(destination, create=args.parents, dry_run=args.dry_run)
-    if destination.exists() or destination.is_symlink():
-        if not args.allow_overwrite:
-            raise AgentError(
-                "conflict",
-                "Destination exists.",
-                path=str(destination),
-                suggestion="Pass --allow-overwrite if replacing the destination is intentional.",
-            )
-        if destination.is_dir() and not destination.is_symlink():
-            raise AgentError("invalid_input", "Destination is a directory.", path=str(destination))
-        if not args.dry_run:
-            destination.unlink()
-    operation = {
-        "operation": "link",
-        "source": str(source),
-        "destination": str(destination),
-        "dry_run": args.dry_run,
-    }
-    if not args.dry_run:
-        try:
-            os.link(source, destination)
-        except PermissionError as exc:
-            raise AgentError(
-                "permission_denied", "Permission denied while creating hard link.", path=str(destination)
-            ) from exc
-        except OSError as exc:
-            raise AgentError("io_error", str(exc), path=str(destination)) from exc
-    return {"operations": [operation]}
+    return LinkCommand()(args)  # type: ignore[return-value]
 
 
 # ── chmod / chown / chgrp ──────────────────────────────────────────────
@@ -797,30 +875,71 @@ def command_chmod(args: argparse.Namespace) -> dict[str, Any]:
     return ChmodCommand()(args)  # type: ignore[return-value]
 
 
-def command_chown(args: argparse.Namespace) -> dict[str, Any]:
-    if args.reference:
-        ref_path = resolve_path(args.reference, strict=True)
-        ref_st = ref_path.lstat()
-        owner_raw: str = str(getattr(ref_st, "st_uid", ""))
-        group_raw: str = str(getattr(ref_st, "st_gid", ""))
-    elif args.owner:
-        owner_raw, group_raw = split_owner_spec(args.owner)  # type: ignore[assignment]
-    else:
-        raise AgentError("invalid_input", "chown requires either an owner spec or --reference.")
-    uid = resolve_user_id(owner_raw)
-    gid = resolve_group_id(group_raw)
-    if uid is None and gid is None:
-        raise AgentError("invalid_input", "chown requires an owner, group, or both.")
+class ChownCommand(BaseCommand):
+    """Change file owner and/or group with dry-run protection."""
+
+    name = "chown"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        if args.reference:
+            ref_path = resolve_path(args.reference, strict=True)
+            ref_st = ref_path.lstat()
+            owner_raw: str = str(getattr(ref_st, "st_uid", ""))
+            group_raw: str = str(getattr(ref_st, "st_gid", ""))
+        elif args.owner:
+            owner_raw, group_raw = split_owner_spec(args.owner)  # type: ignore[assignment]
+        else:
+            raise AgentError("invalid_input", "chown requires either an owner spec or --reference.")
+        uid = resolve_user_id(owner_raw)
+        gid = resolve_group_id(group_raw)
+        if uid is None and gid is None:
+            raise AgentError("invalid_input", "chown requires an owner, group, or both.")
+        operations = _apply_chown(
+            args, uid=uid, gid=gid, owner_raw=owner_raw, group_raw=group_raw, command_name="chown"
+        )
+        return CommandResult(data={"count": len(operations), "operations": operations})
+
+
+class ChgrpCommand(BaseCommand):
+    """Change file group ownership with dry-run protection."""
+
+    name = "chgrp"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        if args.reference:
+            ref_path = resolve_path(args.reference, strict=True)
+            ref_st = ref_path.lstat()
+            gid = getattr(ref_st, "st_gid", None)
+        elif args.group:
+            gid = resolve_group_id(args.group)
+        else:
+            raise AgentError("invalid_input", "chgrp requires either a group argument or --reference.")
+        if gid is None:
+            raise AgentError("invalid_input", "A group is required.")
+        operations = _apply_chown(args, uid=None, gid=gid, owner_raw=None, group_raw=args.group, command_name="chgrp")
+        return CommandResult(data={"count": len(operations), "operations": operations})
+
+
+def _apply_chown(
+    args: argparse.Namespace,
+    *,
+    uid: int | None,
+    gid: int | None,
+    owner_raw: str | None,
+    group_raw: str | None,
+    command_name: str,
+) -> list[dict[str, Any]]:
+    """Shared platform-check + iterate-paths loop for chown and chgrp."""
     cwd = Path.cwd().resolve()
-    operations = []
     chown = getattr(os, "chown", None)
     supported = callable(chown)
+    operations: list[dict[str, Any]] = []
     for raw in args.paths:
         path = resolve_path(raw, strict=True)
         require_inside_cwd(path, cwd, allow_outside_cwd=False)
         st = path.lstat()
-        operation = {
-            "operation": "chown",
+        operation: dict[str, Any] = {
+            "operation": command_name,
             "path": str(path),
             "owner": owner_raw,
             "group": group_raw,
@@ -834,61 +953,32 @@ def command_chown(args: argparse.Namespace) -> dict[str, Any]:
         operations.append(operation)
         if not args.dry_run:
             if not supported:
-                raise AgentError("invalid_input", "chown is not supported on this platform.", path=str(path))
+                raise AgentError("invalid_input", f"{command_name} is not supported on this platform.", path=str(path))
             assert callable(chown)
             try:
-                chown(path, -1 if uid is None else uid, -1 if gid is None else gid, follow_symlinks=not args.no_follow)
+                chown(
+                    path,
+                    -1 if uid is None else uid,
+                    -1 if gid is None else gid,
+                    follow_symlinks=not args.no_follow,
+                )
             except PermissionError as exc:
                 raise AgentError(
-                    "permission_denied", "Permission denied while changing owner.", path=str(path)
+                    "permission_denied",
+                    f"Permission denied while changing {'owner' if command_name == 'chown' else 'group'}.",
+                    path=str(path),
                 ) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), path=str(path)) from exc
-    return {"count": len(operations), "operations": operations}
+    return operations
+
+
+def command_chown(args: argparse.Namespace) -> dict[str, Any]:
+    return ChownCommand()(args)  # type: ignore[return-value]
 
 
 def command_chgrp(args: argparse.Namespace) -> dict[str, Any]:
-    if args.reference:
-        ref_path = resolve_path(args.reference, strict=True)
-        ref_st = ref_path.lstat()
-        gid = getattr(ref_st, "st_gid", None)
-    elif args.group:
-        gid = resolve_group_id(args.group)
-    else:
-        raise AgentError("invalid_input", "chgrp requires either a group argument or --reference.")
-    if gid is None:
-        raise AgentError("invalid_input", "A group is required.")
-    cwd = Path.cwd().resolve()
-    operations = []
-    chown = getattr(os, "chown", None)
-    supported = callable(chown)
-    for raw in args.paths:
-        path = resolve_path(raw, strict=True)
-        require_inside_cwd(path, cwd, allow_outside_cwd=False)
-        st = path.lstat()
-        operation = {
-            "operation": "chgrp",
-            "path": str(path),
-            "group": args.group,
-            "gid": gid,
-            "old_gid": getattr(st, "st_gid", None),
-            "supported": supported,
-            "dry_run": args.dry_run,
-        }
-        operations.append(operation)
-        if not args.dry_run:
-            if not supported:
-                raise AgentError("invalid_input", "chgrp is not supported on this platform.", path=str(path))
-            assert callable(chown)
-            try:
-                chown(path, -1, gid, follow_symlinks=not args.no_follow)
-            except PermissionError as exc:
-                raise AgentError(
-                    "permission_denied", "Permission denied while changing group.", path=str(path)
-                ) from exc
-            except OSError as exc:
-                raise AgentError("io_error", str(exc), path=str(path)) from exc
-    return {"count": len(operations), "operations": operations}
+    return ChgrpCommand()(args)  # type: ignore[return-value]
 
 
 # ── truncate / mktemp / mkfifo / mknod ─────────────────────────────────
@@ -1080,70 +1170,85 @@ def command_mknod(args: argparse.Namespace) -> dict[str, Any]:
 # ── install ────────────────────────────────────────────────────────────
 
 
-def command_install(args: argparse.Namespace) -> dict[str, Any]:
-    mode = parse_octal_mode(args.mode)
-    operations = []
-    if args.directory:
+class InstallCommand(BaseCommand):
+    """Install files or directories with permission mode — dual mode: --directory vs file copy."""
+
+    name = "install"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        mode = parse_octal_mode(args.mode)
+        operations = self._install_directories(args, mode) if args.directory else self._install_file(args, mode)
+        return CommandResult(data={"count": len(operations), "operations": operations})
+
+    @staticmethod
+    def _install_directories(args: argparse.Namespace, mode: int) -> list[dict[str, Any]]:
         if not args.paths:
             raise AgentError("invalid_input", "install --directory requires at least one directory path.")
+        operations: list[dict[str, Any]] = []
         for raw in args.paths:
             path = resolve_path(raw)
             existed = path.exists()
             if existed and not path.is_dir():
                 raise AgentError("conflict", "Path exists and is not a directory.", path=str(path))
             ensure_parent(path, create=True, dry_run=args.dry_run)
-            operation = {
-                "operation": args.command,
-                "directory": True,
-                "path": str(path),
-                "mode_octal": oct(mode),
-                "created": not existed,
-                "dry_run": args.dry_run,
-            }
-            operations.append(operation)
+            operations.append(
+                {
+                    "operation": args.command,
+                    "directory": True,
+                    "path": str(path),
+                    "mode_octal": oct(mode),
+                    "created": not existed,
+                    "dry_run": args.dry_run,
+                }
+            )
             if not args.dry_run:
                 path.mkdir(parents=True, exist_ok=True)
                 os.chmod(path, mode)
-        return {"count": len(operations), "operations": operations}
+        return operations
 
-    if len(args.paths) != 2:
-        raise AgentError("invalid_input", "install requires SOURCE and DESTINATION unless --directory is used.")
-    source = resolve_path(args.paths[0], strict=True)
-    if source.is_dir():
-        raise AgentError("invalid_input", "install source must be a file.", path=str(source))
-    cwd = Path.cwd().resolve()
-    requested_destination = resolve_path(args.paths[1])
-    destination = destination_inside_directory(source, requested_destination)
-    require_inside_cwd(destination, cwd, allow_outside_cwd=False)
-    ensure_parent(destination, create=args.parents, dry_run=args.dry_run)
-    if destination.exists() and not args.allow_overwrite:
-        raise AgentError(
-            "conflict",
-            "Destination exists.",
-            path=str(destination),
-            suggestion="Pass --allow-overwrite if replacing the destination is intentional.",
-        )
-    operation = {
-        "operation": args.command,
-        "directory": False,
-        "source": str(source),
-        "requested_destination": str(requested_destination),
-        "destination": str(destination),
-        "mode_octal": oct(mode),
-        "dry_run": args.dry_run,
-    }
-    operations.append(operation)
-    if not args.dry_run:
-        try:
-            shutil.copy2(source, destination)
-            os.chmod(destination, mode)
-        except PermissionError as exc:
+    @staticmethod
+    def _install_file(args: argparse.Namespace, mode: int) -> list[dict[str, Any]]:
+        if len(args.paths) != 2:
+            raise AgentError("invalid_input", "install requires SOURCE and DESTINATION unless --directory is used.")
+        source = resolve_path(args.paths[0], strict=True)
+        if source.is_dir():
+            raise AgentError("invalid_input", "install source must be a file.", path=str(source))
+        cwd = Path.cwd().resolve()
+        requested_destination = resolve_path(args.paths[1])
+        destination = destination_inside_directory(source, requested_destination)
+        require_inside_cwd(destination, cwd, allow_outside_cwd=False)
+        ensure_parent(destination, create=args.parents, dry_run=args.dry_run)
+        if destination.exists() and not args.allow_overwrite:
             raise AgentError(
-                "permission_denied", "Permission denied while installing file.", path=str(destination)
-            ) from exc
-        except OSError as exc:
-            raise AgentError("io_error", str(exc), path=str(destination)) from exc
-    return {"count": len(operations), "operations": operations}
+                "conflict",
+                "Destination exists.",
+                path=str(destination),
+                suggestion="Pass --allow-overwrite if replacing the destination is intentional.",
+            )
+        operation: dict[str, Any] = {
+            "operation": args.command,
+            "directory": False,
+            "source": str(source),
+            "requested_destination": str(requested_destination),
+            "destination": str(destination),
+            "mode_octal": oct(mode),
+            "dry_run": args.dry_run,
+        }
+        if not args.dry_run:
+            try:
+                shutil.copy2(source, destination)
+                os.chmod(destination, mode)
+            except PermissionError as exc:
+                raise AgentError(
+                    "permission_denied", "Permission denied while installing file.", path=str(destination)
+                ) from exc
+            except OSError as exc:
+                raise AgentError("io_error", str(exc), path=str(destination)) from exc
+        return [operation]
+
+
+def command_install(args: argparse.Namespace) -> dict[str, Any]:
+    return InstallCommand()(args)  # type: ignore[return-value]
 
 
 # ── tee / rmdir / unlink ───────────────────────────────────────────────
