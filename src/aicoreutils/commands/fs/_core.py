@@ -754,40 +754,47 @@ def command_link(args: argparse.Namespace) -> dict[str, Any]:
 # ── chmod / chown / chgrp ──────────────────────────────────────────────
 
 
-def command_chmod(args: argparse.Namespace) -> dict[str, Any]:
-    import stat as statmod
+class ChmodCommand(MutatingCommand):
+    """Change file mode bits with dry-run protection."""
 
-    if args.reference:
-        ref_path = resolve_path(args.reference, strict=True)
-        ref_mode = statmod.S_IMODE(ref_path.lstat().st_mode)
-        new_mode = ref_mode
-    elif args.mode:
-        new_mode = parse_octal_mode(args.mode)
-    else:
-        raise AgentError("invalid_input", "chmod requires either a mode argument or --reference.")
-    cwd = Path.cwd().resolve()
-    operations = []
-    for raw in args.paths:
-        path = resolve_path(raw, strict=True)
-        require_inside_cwd(path, cwd, allow_outside_cwd=False)
+    name = "chmod"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        import stat as statmod
+
+        if args.reference:
+            ref_path = resolve_path(args.reference, strict=True)
+            self._new_mode = statmod.S_IMODE(ref_path.lstat().st_mode)
+        elif args.mode:
+            self._new_mode = parse_octal_mode(args.mode)
+        else:
+            raise AgentError("invalid_input", "chmod requires either a mode argument or --reference.")
+        return super().execute(args)
+
+    def _execute_one(self, path: Any, args: argparse.Namespace, operations: list[dict[str, Any]]) -> None:
+        import stat as statmod
+
         old_mode = statmod.S_IMODE(path.lstat().st_mode)
         operations.append(
             {
                 "operation": "chmod",
                 "path": str(path),
                 "old_mode_octal": oct(old_mode),
-                "new_mode_octal": oct(new_mode),
+                "new_mode_octal": oct(self._new_mode),
                 "dry_run": args.dry_run,
             }
         )
         if not args.dry_run:
             try:
-                os.chmod(path, new_mode, follow_symlinks=not args.no_follow)
+                os.chmod(path, self._new_mode, follow_symlinks=not args.no_follow)
             except PermissionError as exc:
                 raise AgentError("permission_denied", "Permission denied while changing mode.", path=str(path)) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), path=str(path)) from exc
-    return {"count": len(operations), "operations": operations}
+
+
+def command_chmod(args: argparse.Namespace) -> dict[str, Any]:
+    return ChmodCommand()(args)  # type: ignore[return-value]
 
 
 def command_chown(args: argparse.Namespace) -> dict[str, Any]:
@@ -978,73 +985,84 @@ def command_mktemp(args: argparse.Namespace) -> dict[str, Any]:
     return MktempCommand()(args)  # type: ignore[return-value]
 
 
-def command_mkfifo(args: argparse.Namespace) -> dict[str, Any]:
-    mode = parse_octal_mode(args.mode)
-    cwd = Path.cwd().resolve()
-    operations = []
-    mkfifo = getattr(os, "mkfifo", None)
-    supported = callable(mkfifo)
-    for raw in args.paths:
-        path = resolve_path(raw)
-        require_inside_cwd(path, cwd, allow_outside_cwd=False)
+class MkfifoCommand(MutatingCommand):
+    """Create named pipes (FIFOs) with dry-run protection."""
+
+    name = "mkfifo"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        self._mode = parse_octal_mode(args.mode)
+        self._mkfifo = getattr(os, "mkfifo", None)
+        self._supported = callable(self._mkfifo)
+        return super().execute(args)
+
+    def _execute_one(self, path: Any, args: argparse.Namespace, operations: list[dict[str, Any]]) -> None:
         if path.exists() or path.is_symlink():
             raise AgentError("conflict", "Destination exists.", path=str(path))
         ensure_parent(path, create=args.parents, dry_run=args.dry_run)
-        operation = {
-            "operation": "mkfifo",
-            "path": str(path),
-            "mode_octal": oct(mode),
-            "supported": supported,
-            "dry_run": args.dry_run,
-        }
-        operations.append(operation)
+        operations.append(
+            {
+                "operation": "mkfifo",
+                "path": str(path),
+                "mode_octal": oct(self._mode),
+                "supported": self._supported,
+                "dry_run": args.dry_run,
+            }
+        )
         if not args.dry_run:
-            if not supported:
+            if not self._supported:
                 raise AgentError(
                     "invalid_input",
                     "mkfifo is not supported on this platform.",
                     path=str(path),
                     suggestion="Use --dry-run for planning or run on a platform with os.mkfifo support.",
                 )
-            assert callable(mkfifo)
+            assert callable(self._mkfifo)
             try:
-                mkfifo(path, mode)
+                self._mkfifo(path, self._mode)
             except PermissionError as exc:
                 raise AgentError("permission_denied", "Permission denied while creating FIFO.", path=str(path)) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), path=str(path)) from exc
-    return {"count": len(operations), "operations": operations}
 
 
-def command_mknod(args: argparse.Namespace) -> dict[str, Any]:
-    mode = parse_octal_mode(args.mode)
-    cwd = Path.cwd().resolve()
-    operations = []
-    for raw in args.paths:
-        path = resolve_path(raw)
-        require_inside_cwd(path, cwd, allow_outside_cwd=False)
+def command_mkfifo(args: argparse.Namespace) -> dict[str, Any]:
+    return MkfifoCommand()(args)  # type: ignore[return-value]
+
+
+class MknodCommand(MutatingCommand):
+    """Create device nodes or regular files with dry-run protection."""
+
+    name = "mknod"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        self._mode = parse_octal_mode(args.mode)
+        self._mkfifo = getattr(os, "mkfifo", None)
+        self._supported = args.node_type == "regular" or callable(self._mkfifo)
+        return super().execute(args)
+
+    def _execute_one(self, path: Any, args: argparse.Namespace, operations: list[dict[str, Any]]) -> None:
         if path.exists() or path.is_symlink():
             raise AgentError("conflict", "Destination exists.", path=str(path))
         ensure_parent(path, create=args.parents, dry_run=args.dry_run)
-        mkfifo = getattr(os, "mkfifo", None)
-        supported = args.node_type == "regular" or callable(mkfifo)
-        operation = {
-            "operation": "mknod",
-            "path": str(path),
-            "type": args.node_type,
-            "mode_octal": oct(mode),
-            "supported": supported,
-            "dry_run": args.dry_run,
-        }
-        operations.append(operation)
+        operations.append(
+            {
+                "operation": "mknod",
+                "path": str(path),
+                "type": args.node_type,
+                "mode_octal": oct(self._mode),
+                "supported": self._supported,
+                "dry_run": args.dry_run,
+            }
+        )
         if not args.dry_run:
             try:
                 if args.node_type == "regular":
                     with path.open("xb"):
                         pass
-                    os.chmod(path, mode)
-                elif args.node_type == "fifo" and callable(mkfifo):
-                    mkfifo(path, mode)
+                    os.chmod(path, self._mode)
+                elif args.node_type == "fifo" and callable(self._mkfifo):
+                    self._mkfifo(path, self._mode)
                 else:
                     raise AgentError(
                         "invalid_input", "Requested node type is not supported on this platform.", path=str(path)
@@ -1053,7 +1071,10 @@ def command_mknod(args: argparse.Namespace) -> dict[str, Any]:
                 raise AgentError("permission_denied", "Permission denied while creating node.", path=str(path)) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), path=str(path)) from exc
-    return {"count": len(operations), "operations": operations}
+
+
+def command_mknod(args: argparse.Namespace) -> dict[str, Any]:
+    return MknodCommand()(args)  # type: ignore[return-value]
 
 
 # ── install ────────────────────────────────────────────────────────────
