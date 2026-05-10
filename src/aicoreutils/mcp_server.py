@@ -26,6 +26,7 @@ import sys
 from typing import Any, cast
 
 from . import __version__
+from .core.encoding import decode_bytes
 from .parser._parser import build_parser
 from .registry.tool_schema import _EXPLICIT_ALLOW_TOOLS, _READ_ONLY_TOOLS, _WORKSPACE_WRITE_TOOLS, _command_tools
 
@@ -200,7 +201,8 @@ def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         result = raw_result
 
     if isinstance(result, bytes):
-        result = {"raw_output": result.decode("utf-8", errors="replace")}
+        decoded = decode_bytes(result, encoding="utf-8", errors="replace")
+        result = {"raw_output": decoded.text}
     elif isinstance(result, dict):
         result["_exit_code"] = exit_code
     return result

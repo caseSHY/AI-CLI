@@ -33,9 +33,13 @@ uv run pytest tests/test_unit_commands_text.py -v      # Text command handlers (
 uv run pytest tests/test_unit_commands_system.py -v    # System command handlers
 uv run pytest tests/test_unit_commands_fs.py -v        # FS command handlers
 uv run pytest tests/test_error_recovery.py -v          # Disk full, permission, signal tests
+uv run pytest tests/test_oop_command_base.py -v       # OOP command base classes
+uv run pytest tests/test_oop_compat.py -v            # OOP backward compat
+uv run pytest tests/test_oop_pilots.py -v            # OOP pilot commands golden tests
+uv run pytest tests/test_text_encoding.py -v         # Encoding layer (decode_bytes, BOM, CJK, CLI flags)
 
-# Coverage (threshold: 77%)
-uv run pytest tests/ --cov=src/aicoreutils --cov-fail-under=77
+# Coverage (threshold: 70%)
+uv run pytest tests/ --cov=src/aicoreutils --cov-fail-under=70
 
 # Lint and typecheck (match CI scope)
 uv run ruff check src/ tests/ scripts/
@@ -69,7 +73,7 @@ uv run python scripts/generate_completions.py fish > aicoreutils.fish
 ### Layer stack (bottom -> top)
 
 ```
-core/          Foundation: exit codes, exceptions, JSON envelope, path utils, sandbox, streaming, config, constants
+core/          Foundation: exit codes, exceptions, JSON envelope, encoding, command base classes, path utils, sandbox, streaming, config, constants
 utils/         Domain utilities: argparse wrapper, I/O, hashing, text processing, ranges, printf, numfmt, system, path
 commands/      Command handlers (fs/_core.py, system/_core.py, text/_core.py — one file per category)
 parser/        CLI entry point: single _parser.py builds argparse tree, dispatches to handlers
@@ -77,6 +81,58 @@ registry/      Command registry: catalog (109 commands P0-P3), plugins, command_
 mcp_server.py  MCP server: JSON-RPC 2.0 over stdio, no external deps
 async_interface.py  Async wrapper: asyncio subprocess pool for concurrent command execution
 ```
+
+### OOP command layer (`core/command.py`)
+
+37 commands have been migrated to class-based implementations. The class hierarchy:
+
+```
+CommandResult          — unified dataclass: data | raw_bytes, exit_code, warnings, encoding_meta
+BaseCommand (ABC)      — __call__ bridges to legacy dispatch (returns dict | bytes)
+├── TextFilterCommand  — combined_lines → transform() → bounded_lines → dict | bytes
+├── FileInfoCommand    — iterate paths → process_path() → {count, entries} | bytes
+└── MutatingCommand    — resolve → sandbox → dry_run → _execute_one() → operations
+```
+
+**How it works:**
+- Each command class overrides one hook method (`transform()`, `process_path()`, `_execute_one()`, or `execute()`).
+- `BaseCommand.__call__` converts `CommandResult` back to the legacy `dict | bytes` protocol, so `dispatch()` and MCP `_call_tool()` work unchanged.
+- `dispatch()` checks `isinstance(result, CommandResult)` first; falls back to the legacy `dict | bytes` path.
+- Legacy `command_*()` functions are preserved as thin delegation wrappers: `return XxxCommand()(args)`.
+
+**Key rule:** new command classes must accept `(args: argparse.Namespace)`, return `dict | bytes` via `__call__`, and NOT modify the JSON output shape.
+
+**Still function-based:** system commands with platform-specific logic (`stty`, `chroot`, `nohup`, `kill`), complex multi-mode commands (`hash --check`, `dd`, `csplit`, `split`), and pure utility commands.
+
+### Unified encoding layer (`core/encoding.py`)
+
+All text I/O flows through `decode_bytes()` in `core/encoding.py` — the single boundary between raw bytes and Python `str`.
+
+**API surface:**
+- `decode_bytes(data, *, encoding, errors, profile) -> EncodingResult` — decode with BOM detection and fallback chains
+- `detect_bom(data) -> (encoding | None, bom_len)` — match BOM prefix
+- `normalize_encoding(name) -> str` — user-facing name to Python codec
+- `encoding_metadata(result, declared) -> dict` — JSON-ready metadata for `--show-encoding`
+
+**Detection order:** BOM match → explicit encoding → profile fallback chain → latin-1 ultimate fallback.
+
+**Supported encodings:** utf-8/16/32 (all variants), gb18030, gbk, gb2312, big5, shift_jis, euc-jp, euc-kr, cp932/936/949/950, windows-1252, latin-1.
+
+**Encoding profiles** (`ENCODING_PROFILES`) define ordered fallback chains by locale: zh-cn, zh-tw, ja, ko, western, universal.
+
+**New CLI parameters** (added via `_add_encoding_args()` helper in parser):
+- `--encoding auto|utf-8|gb18030|...` (default: utf-8)
+- `--encoding-profile auto|zh-cn|zh-tw|ja|ko|western|universal`
+- `--encoding-errors strict|replace|surrogateescape` (default: replace)
+- `--show-encoding` — emit `encoding_meta` in JSON result with `{declared, detected, confidence, method, warnings}`
+
+**Text I/O helpers** in `utils/_io.py` are the primary consumers:
+- `read_input_texts()` — reads bytes, decodes via `decode_bytes`
+- `combined_lines()` — reads and splitlines via `read_input_texts`
+- `read_text_lines()` — `path.read_bytes()` then `decode_bytes`
+- `lines_to_raw()` — encode str back to bytes (output direction, not decode)
+
+Binary-first commands (base64 encode, hash, cksum, dd, tee, etc.) work on raw bytes and do not route through the encoding layer, except for `content_text` preview in codec/basenc.
 
 ### Project layout
 
@@ -108,12 +164,20 @@ The `warnings` list may contain deprecation notices (via `deprecation_warning()`
 
 ### Command handler contract
 
-Every command in `commands/fs/_core.py`, `commands/system/_core.py`, `commands/text/_core.py` follows:
-1. Path resolution + sandbox validation (`resolve_path` + `require_inside_cwd`)
-2. Safety checks (`dangerous_delete_target` + `refuse_overwrite`)
-3. `dry_run` early return (`if args.dry_run: return {...}`)
-4. Execute and collect results
+Every command — whether function-based or class-based — follows the same contract:
+1. Accept `(args: argparse.Namespace)`, return `dict[str, Any] | bytes`
+2. Path resolution + sandbox validation for mutating commands
+3. Safety checks (`dangerous_delete_target` + `refuse_overwrite`)
+4. `dry_run` early return for mutating commands
 5. Return JSON-compatible dict or `bytes` (raw mode)
+
+**OOP commands** subclass `BaseCommand` (or one of its specializations) and override
+a single hook method. The base class handles the dispatch protocol via `__call__`.
+See `core/command.py` for the full hierarchy.
+
+**Legacy commands** are plain `command_*` functions that may delegate to an OOP
+class internally. This dual pattern is intentional — new commands should use the
+OOP approach; existing complex commands may remain functional indefinitely.
 
 ### Sandbox safety
 

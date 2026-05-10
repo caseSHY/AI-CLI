@@ -27,6 +27,11 @@ class AgentConfig:
     max_preview_bytes: int = 4_096
     max_depth: int = 8
 
+    # ── 编码 ──
+    encoding: str = "utf-8"
+    encoding_errors: str = "replace"
+    encoding_profile: str | None = None
+
     # ── 文本处理 ──
     tab_size: int = 8
     default_width: int = 80

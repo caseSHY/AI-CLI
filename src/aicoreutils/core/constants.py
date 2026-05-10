@@ -38,6 +38,47 @@ DEFAULT_MAX_ITEMS: int = 10_000
 #  文本处理 / Text processing
 # ═══════════════════════════════════════════════════════════════════════
 
+# ── 编码 / Encoding ──
+
+# 默认文本编码。适用于所有支持 --encoding 参数的命令。
+DEFAULT_ENCODING: str = "utf-8"
+
+# 默认编码错误处理策略：replace 静默替换无效字节为 U+FFFD。
+DEFAULT_ENCODING_ERRORS: str = "replace"
+
+# 支持的编码名称列表（用于 --encoding choices）。
+ENCODING_CHOICES: list[str] = [
+    "auto",
+    "utf-8",
+    "utf-8-sig",
+    "utf-16",
+    "utf-16-le",
+    "utf-16-be",
+    "utf-32",
+    "utf-32-le",
+    "utf-32-be",
+    "gb18030",
+    "gbk",
+    "gb2312",
+    "big5",
+    "big5-hkscs",
+    "shift_jis",
+    "euc-jp",
+    "euc-kr",
+    "cp949",
+    "cp932",
+    "cp936",
+    "cp950",
+    "latin-1",
+    "windows-1252",
+]
+
+# 编码检测 profile 选项（用于 --encoding-profile choices）。
+ENCODING_PROFILE_CHOICES: list[str] = ["auto", "zh-cn", "zh-tw", "ja", "ko", "western", "universal"]
+
+# 编码错误处理策略选项（用于 --encoding-errors choices）。
+ENCODING_ERRORS_CHOICES: list[str] = ["strict", "replace", "surrogateescape"]
+
 # 默认制表符宽度。适用于 expand/unexpand 命令。
 DEFAULT_TAB_SIZE: int = 8
 

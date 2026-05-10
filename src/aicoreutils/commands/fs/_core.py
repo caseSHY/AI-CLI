@@ -28,6 +28,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from ...core.command import BaseCommand, CommandResult, FileInfoCommand, MutatingCommand
 from ...core.constants import DD_DEFAULT_BLOCK_SIZE
 from ...core.stream import StreamWriter, is_stream_mode
 from ...utils import (
@@ -62,21 +63,38 @@ from ...utils import (
 # ── pwd / realpath / readlink ──────────────────────────────────────────
 
 
+class PwdCommand(BaseCommand):
+    """Return the current working directory."""
+
+    name = "pwd"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        return CommandResult(data={"path": str(Path.cwd().resolve())})
+
+
 def command_pwd(args: argparse.Namespace) -> dict[str, Any]:
-    cwd = Path.cwd().resolve()
-    return {"path": str(cwd)}
+    return PwdCommand()(args)  # type: ignore[return-value]
+
+
+class RealpathCommand(BaseCommand):
+    """Resolve paths to their absolute canonical form."""
+
+    name = "realpath"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        paths = [
+            {
+                "input": raw,
+                "path": str(resolve_path(raw, strict=args.strict)),
+                "exists": Path(raw).expanduser().exists(),
+            }
+            for raw in args.paths
+        ]
+        return CommandResult(data={"paths": paths})
 
 
 def command_realpath(args: argparse.Namespace) -> dict[str, Any]:
-    paths = [
-        {
-            "input": raw,
-            "path": str(resolve_path(raw, strict=args.strict)),
-            "exists": Path(raw).expanduser().exists(),
-        }
-        for raw in args.paths
-    ]
-    return {"paths": paths}
+    return RealpathCommand()(args)  # type: ignore[return-value]
 
 
 def command_readlink(args: argparse.Namespace) -> dict[str, Any] | bytes:
@@ -114,39 +132,43 @@ def command_readlink(args: argparse.Namespace) -> dict[str, Any] | bytes:
         entries.append(entry)
         raw_lines.append(target)
     if args.raw:
-        return lines_to_raw(raw_lines, encoding="utf-8")
+        return lines_to_raw(raw_lines, encoding=getattr(args, "encoding", "utf-8"))
     return {"count": len(entries), "entries": entries}
 
 
 # ── basename / dirname ─────────────────────────────────────────────────
 
 
-def command_basename(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    entries = []
-    raw_lines = []
-    for raw in args.paths:
+class BasenameCommand(FileInfoCommand):
+    """Return the base name of each path."""
+
+    name = "basename"
+
+    def process_path(self, raw: str, args: argparse.Namespace) -> tuple[dict[str, Any], str]:
         name = Path(raw).name
         if args.suffix and name.endswith(args.suffix):
             name = name[: -len(args.suffix)]
-        entries.append({"input": raw, "basename": name})
-        raw_lines.append(name)
-    if args.raw:
-        return lines_to_raw(raw_lines, encoding="utf-8")
-    return {"count": len(entries), "entries": entries}
+        return {"input": raw, "basename": name}, name
 
 
-def command_dirname(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    entries = []
-    raw_lines = []
-    for raw in args.paths:
+class DirnameCommand(FileInfoCommand):
+    """Return the directory name of each path."""
+
+    name = "dirname"
+
+    def process_path(self, raw: str, args: argparse.Namespace) -> tuple[dict[str, Any], str]:
         parent = str(Path(raw).parent)
         if parent == "":
             parent = "."
-        entries.append({"input": raw, "dirname": parent})
-        raw_lines.append(parent)
-    if args.raw:
-        return lines_to_raw(raw_lines, encoding="utf-8")
-    return {"count": len(entries), "entries": entries}
+        return {"input": raw, "dirname": parent}, parent
+
+
+def command_basename(args: argparse.Namespace) -> dict[str, Any] | bytes:
+    return BasenameCommand()(args)
+
+
+def command_dirname(args: argparse.Namespace) -> dict[str, Any] | bytes:
+    return DirnameCommand()(args)
 
 
 # ── ls / dir / vdir ────────────────────────────────────────────────────
@@ -214,29 +236,46 @@ def command_vdir(args: argparse.Namespace) -> dict[str, Any] | bytes:
 # ── stat ───────────────────────────────────────────────────────────────
 
 
+class StatCommand(BaseCommand):
+    """Return metadata for paths as JSON."""
+
+    name = "stat"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        entries = [stat_entry(resolve_path(raw, strict=True)) for raw in args.paths]
+        return CommandResult(data={"count": len(entries), "entries": entries})
+
+
 def command_stat(args: argparse.Namespace) -> dict[str, Any]:
-    entries = [stat_entry(resolve_path(raw, strict=True)) for raw in args.paths]
-    return {"count": len(entries), "entries": entries}
+    return StatCommand()(args)  # type: ignore[return-value]
 
 
 # ── cat / head / tail ──────────────────────────────────────────────────
 
 
 def command_cat(args: argparse.Namespace) -> dict[str, Any] | bytes:
+    from ...core.encoding import decode_bytes, encoding_metadata
+
     path = resolve_path(args.path, strict=True)
     data, truncated, size = read_bytes(path, max_bytes=args.max_bytes, offset=args.offset)
     if args.raw:
         return data
-    text = data.decode(args.encoding, errors="replace")
-    return {
+    enc = getattr(args, "encoding", "utf-8")
+    errors = getattr(args, "encoding_errors", "replace")
+    profile = getattr(args, "encoding_profile", None)
+    decoded = decode_bytes(data, encoding=enc, errors=errors, profile=profile)
+    result: dict[str, Any] = {
         "path": str(path),
-        "encoding": args.encoding,
+        "encoding": enc,
         "offset": args.offset,
         "size_bytes": size,
         "returned_bytes": len(data),
         "truncated": truncated,
-        "content": text,
+        "content": decoded.text,
     }
+    if getattr(args, "show_encoding", False):
+        result["_encoding_info"] = encoding_metadata(decoded, declared=enc)
+    return result
 
 
 def command_head(args: argparse.Namespace) -> dict[str, Any] | bytes:
@@ -292,8 +331,9 @@ def command_wc(args: argparse.Namespace) -> dict[str, Any] | bytes:
     totals = {"bytes": 0, "chars": 0, "lines": 0, "words": 0}
     paths: list[str] = list(args.paths) if args.paths else []
     if args.files0_from:
+        enc = getattr(args, "encoding", "utf-8")
         with open(args.files0_from, "rb") as fh:
-            paths += [p for p in fh.read().decode("utf-8", errors="replace").split("\0") if p]
+            paths += [p for p in fh.read().decode(enc, errors="replace").split("\0") if p]
     if not paths:
         paths = ["-"]  # default to stdin
     for raw in paths:
@@ -328,16 +368,17 @@ def command_wc(args: argparse.Namespace) -> dict[str, Any] | bytes:
 def command_hash(args: argparse.Namespace) -> dict[str, Any]:
     # --check mode: verify checksums from checksum files
     if getattr(args, "check", False):
+        enc = getattr(args, "encoding", "utf-8")
         entries = []
         ok_count = 0
         fail_count = 0
         for raw in args.paths or ["-"]:
             if raw == "-":
-                content = read_stdin_bytes().decode("utf-8", errors="replace")
+                content = read_stdin_bytes().decode(enc, errors="replace")
                 source = "-"
             else:
                 path = resolve_path(raw, strict=True)
-                content = path.read_text(encoding="utf-8", errors="replace")
+                content = path.read_text(encoding=enc, errors="replace")
                 source = str(path)
             for line in content.splitlines():
                 line = line.strip()
@@ -430,7 +471,7 @@ def command_cksum(args: argparse.Namespace) -> dict[str, Any] | bytes:
         entries.append(entry)
         raw_lines.append(f"{checksum} {len(data)} {label}")
     if args.raw:
-        return lines_to_raw(raw_lines, encoding="utf-8")
+        return lines_to_raw(raw_lines, encoding=getattr(args, "encoding", "utf-8"))
     return {"count": len(entries), "entries": entries}
 
 
@@ -456,19 +497,19 @@ def command_sum(args: argparse.Namespace) -> dict[str, Any] | bytes:
         entries.append(entry)
         raw_lines.append(f"{checksum} {blocks} {label}")
     if args.raw:
-        return lines_to_raw(raw_lines, encoding="utf-8")
+        return lines_to_raw(raw_lines, encoding=getattr(args, "encoding", "utf-8"))
     return {"count": len(entries), "entries": entries}
 
 
 # ── mkdir / touch ──────────────────────────────────────────────────────
 
 
-def command_mkdir(args: argparse.Namespace) -> dict[str, Any]:
-    cwd = Path.cwd().resolve()
-    operations = []
-    for raw in args.paths:
-        path = resolve_path(raw)
-        require_inside_cwd(path, cwd, allow_outside_cwd=False)
+class MkdirCommand(MutatingCommand):
+    """Create directories with dry-run protection."""
+
+    name = "mkdir"
+
+    def _execute_one(self, path: Any, args: argparse.Namespace, operations: list[dict[str, Any]]) -> None:
         exists = path.exists()
         if exists and not (args.exist_ok or args.parents):
             raise AgentError(
@@ -484,21 +525,34 @@ def command_mkdir(args: argparse.Namespace) -> dict[str, Any]:
         operations.append({"operation": "mkdir", "path": str(path), "created": not exists, "dry_run": args.dry_run})
         if not args.dry_run and not exists:
             path.mkdir(parents=args.parents, exist_ok=args.exist_ok)
-    return {"count": len(operations), "operations": operations}
+
+
+def command_mkdir(args: argparse.Namespace) -> dict[str, Any]:
+    return MkdirCommand()(args)  # type: ignore[return-value]
+
+
+class TouchCommand(MutatingCommand):
+    """Touch: create or update file timestamps with dry-run protection."""
+
+    name = "touch"
+
+    def _execute_one(self, path: Any, args: argparse.Namespace, operations: list[dict[str, Any]]) -> None:
+        existed = path.exists()
+        ensure_parent(path, create=args.parents, dry_run=args.dry_run)
+        operations.append(
+            {
+                "operation": "touch",
+                "path": str(path),
+                "created": not existed,
+                "dry_run": args.dry_run,
+            }
+        )
+        if not args.dry_run:
+            path.touch(exist_ok=True)
 
 
 def command_touch(args: argparse.Namespace) -> dict[str, Any]:
-    cwd = Path.cwd().resolve()
-    operations = []
-    for raw in args.paths:
-        path = resolve_path(raw)
-        require_inside_cwd(path, cwd, allow_outside_cwd=False)
-        existed = path.exists()
-        ensure_parent(path, create=args.parents, dry_run=args.dry_run)
-        operations.append({"operation": "touch", "path": str(path), "created": not existed, "dry_run": args.dry_run})
-        if not args.dry_run:
-            path.touch(exist_ok=True)
-    return {"count": len(operations), "operations": operations}
+    return TouchCommand()(args)  # type: ignore[return-value]
 
 
 # ── cp / mv ────────────────────────────────────────────────────────────
@@ -1049,12 +1103,12 @@ def command_tee(args: argparse.Namespace) -> dict[str, Any] | bytes:
     }
 
 
-def command_rmdir(args: argparse.Namespace) -> dict[str, Any]:
-    cwd = Path.cwd().resolve()
-    operations = []
-    for raw in args.paths:
-        path = resolve_path(raw, strict=True)
-        require_inside_cwd(path, cwd, allow_outside_cwd=False)
+class RmdirCommand(MutatingCommand):
+    """Remove empty directories with dry-run protection."""
+
+    name = "rmdir"
+
+    def _execute_one(self, path: Any, args: argparse.Namespace, operations: list[dict[str, Any]]) -> None:
         if not path.is_dir() or path.is_symlink():
             raise AgentError("invalid_input", "Path is not a directory.", path=str(path))
         operations.append({"operation": "rmdir", "path": str(path), "dry_run": args.dry_run})
@@ -1068,21 +1122,20 @@ def command_rmdir(args: argparse.Namespace) -> dict[str, Any]:
                     path=str(path),
                     details={"message": str(exc)},
                 ) from exc
-    return {"count": len(operations), "operations": operations}
 
 
-def command_unlink(args: argparse.Namespace) -> dict[str, Any]:
-    cwd = Path.cwd().resolve()
-    operations = []
-    for raw in args.paths:
-        path = resolve_path(raw)
-        require_inside_cwd(path, cwd, allow_outside_cwd=False)
+class UnlinkCommand(MutatingCommand):
+    """Remove files with dry-run protection and force option."""
+
+    name = "unlink"
+
+    def _execute_one(self, path: Any, args: argparse.Namespace, operations: list[dict[str, Any]]) -> None:
         if not path.exists() and not path.is_symlink():
             if args.force:
                 operations.append(
                     {"operation": "unlink", "path": str(path), "status": "missing_ignored", "dry_run": args.dry_run}
                 )
-                continue
+                return
             raise AgentError("not_found", "Path does not exist.", path=str(path))
         if path.is_dir() and not path.is_symlink():
             raise AgentError("invalid_input", "unlink refuses to remove directories.", path=str(path))
@@ -1097,34 +1150,49 @@ def command_unlink(args: argparse.Namespace) -> dict[str, Any]:
                 ) from exc
             except OSError as exc:
                 raise AgentError("io_error", str(exc), path=str(path)) from exc
-    return {"count": len(operations), "operations": operations}
 
 
-# ── rm / shred ─────────────────────────────────────────────────────────
+class RmCommand(BaseCommand):
+    """Remove files or directories with safety checks."""
+
+    name = "rm"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        from pathlib import Path
+
+        cwd = Path.cwd().resolve()
+        operations = []
+        for raw in args.paths:
+            path = resolve_path(raw)
+            if not path.exists() and not path.is_symlink():
+                if args.force:
+                    operations.append(
+                        {"operation": "rm", "path": str(path), "status": "missing_ignored", "dry_run": args.dry_run}
+                    )
+                    continue
+                raise AgentError("not_found", "Path does not exist.", path=str(path))
+            reason = dangerous_delete_target(path, cwd)
+            if reason:
+                raise AgentError("unsafe_operation", reason, path=str(path))
+            require_inside_cwd(path, cwd, allow_outside_cwd=args.allow_outside_cwd)
+            if args.dry_run:
+                status = "would_remove_directory" if path.is_dir() and not path.is_symlink() else "would_remove_file"
+            else:
+                status = remove_one(path, recursive=args.recursive, force=args.force)
+            operations.append({"operation": "rm", "path": str(path), "status": status, "dry_run": args.dry_run})
+        return CommandResult(data={"count": len(operations), "operations": operations})
+
+
+def command_rmdir(args: argparse.Namespace) -> dict[str, Any]:
+    return RmdirCommand()(args)  # type: ignore[return-value]
+
+
+def command_unlink(args: argparse.Namespace) -> dict[str, Any]:
+    return UnlinkCommand()(args)  # type: ignore[return-value]
 
 
 def command_rm(args: argparse.Namespace) -> dict[str, Any]:
-    cwd = Path.cwd().resolve()
-    operations = []
-    for raw in args.paths:
-        path = resolve_path(raw)
-        if not path.exists() and not path.is_symlink():
-            if args.force:
-                operations.append(
-                    {"operation": "rm", "path": str(path), "status": "missing_ignored", "dry_run": args.dry_run}
-                )
-                continue
-            raise AgentError("not_found", "Path does not exist.", path=str(path))
-        reason = dangerous_delete_target(path, cwd)
-        if reason:
-            raise AgentError("unsafe_operation", reason, path=str(path))
-        require_inside_cwd(path, cwd, allow_outside_cwd=args.allow_outside_cwd)
-        if args.dry_run:
-            status = "would_remove_directory" if path.is_dir() and not path.is_symlink() else "would_remove_file"
-        else:
-            status = remove_one(path, recursive=args.recursive, force=args.force)
-        operations.append({"operation": "rm", "path": str(path), "status": status, "dry_run": args.dry_run})
-    return {"count": len(operations), "operations": operations}
+    return RmCommand()(args)  # type: ignore[return-value]
 
 
 def command_shred(args: argparse.Namespace) -> dict[str, Any]:

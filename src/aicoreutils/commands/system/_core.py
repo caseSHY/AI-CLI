@@ -35,6 +35,7 @@ import time as timemod
 from pathlib import Path
 from typing import Any, cast
 
+from ...core.command import BaseCommand, CommandResult
 from ...utils import (
     EXIT,
     AgentError,
@@ -59,7 +60,7 @@ from ...utils import (
 def command_coreutils(args: argparse.Namespace) -> dict[str, Any] | bytes:
     commands = list(getattr(args, "implemented_commands", []) or [])
     if args.raw or args.list:
-        return lines_to_raw(commands, encoding="utf-8")
+        return lines_to_raw(commands, encoding=getattr(args, "encoding", "utf-8"))
     return {
         "implementation": "aicoreutils",
         "compatible_with": "GNU Coreutils inspired subset",
@@ -97,7 +98,7 @@ def command_date(args: argparse.Namespace) -> dict[str, Any] | bytes:
         "formatted": formatted,
     }
     if args.raw:
-        return (formatted + "\n").encode("utf-8")
+        return (formatted + "\n").encode(getattr(args, "encoding", "utf-8"))
     return result
 
 
@@ -108,7 +109,7 @@ def command_env(args: argparse.Namespace) -> dict[str, Any] | bytes:
     env = selected_environment(args.names)
     if args.raw:
         lines = [f"{key}={value}" for key, value in env.items()]
-        return lines_to_raw(lines, encoding="utf-8")
+        return lines_to_raw(lines, encoding=getattr(args, "encoding", "utf-8"))
     missing = [name for name in (args.names or []) if name not in os.environ]
     return {"count": len(env), "environment": env, "missing": missing}
 
@@ -120,7 +121,7 @@ def command_printenv(args: argparse.Namespace) -> dict[str, Any] | bytes:
             lines = [env[name] for name in args.names if name in env]
         else:
             lines = [f"{key}={value}" for key, value in env.items()]
-        return lines_to_raw(lines, encoding="utf-8")
+        return lines_to_raw(lines, encoding=getattr(args, "encoding", "utf-8"))
     missing = [name for name in (args.names or []) if name not in os.environ]
     return {"count": len(env), "values": env, "missing": missing}
 
@@ -128,10 +129,19 @@ def command_printenv(args: argparse.Namespace) -> dict[str, Any] | bytes:
 # ── whoami / groups / id ───────────────────────────────────────────────
 
 
-def command_whoami(args: argparse.Namespace) -> dict[str, Any]:
-    import getpass
+class WhoamiCommand(BaseCommand):
+    """Return the current user."""
 
-    return {"user": getpass.getuser()}
+    name = "whoami"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        import getpass
+
+        return CommandResult(data={"user": getpass.getuser()})
+
+
+def command_whoami(args: argparse.Namespace) -> dict[str, Any]:
+    return WhoamiCommand()(args)  # type: ignore[return-value]
 
 
 def command_groups(args: argparse.Namespace) -> dict[str, Any] | bytes:
@@ -155,7 +165,7 @@ def command_groups(args: argparse.Namespace) -> dict[str, Any] | bytes:
     except ImportError:
         group_names = [str(gid) for gid in group_ids]
     if args.raw:
-        return (" ".join(group_names) + "\n").encode("utf-8")
+        return (" ".join(group_names) + "\n").encode(getattr(args, "encoding", "utf-8"))
     return {
         "user": user,
         "groups": [{"id": gid, "name": name} for gid, name in zip(group_ids, group_names, strict=True)],
@@ -217,23 +227,50 @@ def command_uname(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.raw:
         return (
             " ".join(str(result[key]) for key in ("system", "node", "release", "version", "machine")) + "\n"
-        ).encode("utf-8")
+        ).encode(getattr(args, "encoding", "utf-8"))
     return result
 
 
+class ArchCommand(BaseCommand):
+    """Return machine architecture."""
+
+    name = "arch"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        return CommandResult(data={"architecture": platform.machine()})
+
+
 def command_arch(args: argparse.Namespace) -> dict[str, Any]:
-    return {"architecture": platform.machine()}
+    return ArchCommand()(args)  # type: ignore[return-value]
+
+
+class HostnameCommand(BaseCommand):
+    """Return the host name."""
+
+    name = "hostname"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        return CommandResult(data={"hostname": platform.node()})
 
 
 def command_hostname(args: argparse.Namespace) -> dict[str, Any]:
-    return {"hostname": platform.node()}
+    return HostnameCommand()(args)  # type: ignore[return-value]
+
+
+class HostidCommand(BaseCommand):
+    """Return a deterministic host identifier derived from hostname."""
+
+    name = "hostid"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        host_id = hex(abs(hash(platform.node())) & 0xFFFFFFFF)[2:].zfill(8)
+        if args.raw:
+            return CommandResult(raw_bytes=(host_id + "\n").encode(getattr(args, "encoding", "utf-8")))
+        return CommandResult(data={"hostid": host_id, "hostname": platform.node()})
 
 
 def command_hostid(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    host_id = hex(abs(hash(platform.node())) & 0xFFFFFFFF)[2:].zfill(8)
-    if args.raw:
-        return (host_id + "\n").encode("utf-8")
-    return {"hostid": host_id, "hostname": platform.node()}
+    return HostidCommand()(args)
 
 
 def command_logname(args: argparse.Namespace) -> dict[str, Any]:
@@ -276,7 +313,7 @@ def command_pinky(args: argparse.Namespace) -> dict[str, Any] | bytes:
             ).rstrip()
             for entry in normalized
         ]
-        return lines_to_raw(lines, encoding="utf-8")
+        return lines_to_raw(lines, encoding=getattr(args, "encoding", "utf-8"))
     return {"count": len(normalized), "long": args.long, "entries": normalized}
 
 
@@ -291,7 +328,7 @@ def command_tty(args: argparse.Namespace) -> dict[str, Any] | bytes:
     is_tty = sys.stdin.isatty()
     name = stdin_tty_name()
     if args.raw:
-        return ((name or "not a tty") + "\n").encode("utf-8")
+        return ((name or "not a tty") + "\n").encode(getattr(args, "encoding", "utf-8"))
     result: dict[str, Any] = {"stdin_is_tty": is_tty, "tty": name}
     if args.exit_code and not is_tty:
         result["_exit_code"] = EXIT["predicate_false"]
@@ -302,7 +339,7 @@ def command_users(args: argparse.Namespace) -> dict[str, Any] | bytes:
     entries = active_user_entries()
     users = sorted({entry["user"] for entry in entries})
     if args.raw:
-        return (" ".join(users) + "\n").encode("utf-8")
+        return (" ".join(users) + "\n").encode(getattr(args, "encoding", "utf-8"))
     return {"count": len(users), "users": users, "entries": entries}
 
 
@@ -459,7 +496,7 @@ def command_stty(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
     if args.raw:
         status = " ".join(settings) if settings else ("tty" if is_tty else "not a tty")
-        return (status + "\n").encode("utf-8")
+        return (status + "\n").encode(getattr(args, "encoding", "utf-8"))
 
     if not settings:
         return result
@@ -699,7 +736,10 @@ def command_chcon(args: argparse.Namespace) -> dict[str, Any] | bytes:
         for path in targets
     ]
     if args.raw:
-        return lines_to_raw([f"{args.context}\t{operation['path']}" for operation in operations], encoding="utf-8")
+        return lines_to_raw(
+            [f"{args.context}\t{operation['path']}" for operation in operations],
+            encoding=getattr(args, "encoding", "utf-8"),
+        )
     if args.dry_run:
         return {"count": len(operations), "operations": operations}
     if not args.allow_context:
@@ -711,7 +751,7 @@ def command_chcon(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if not hasattr(os, "setxattr"):
         raise AgentError("invalid_input", "SELinux context changes are not supported on this platform.")
 
-    encoded = args.context.encode("utf-8")
+    encoded = args.context.encode(getattr(args, "encoding", "utf-8"))
     for path in targets:
         try:
             try:
@@ -807,8 +847,17 @@ def command_sleep(args: argparse.Namespace) -> dict[str, Any]:
 # ── true / false ───────────────────────────────────────────────────────
 
 
+class TrueCommand(BaseCommand):
+    """Return true (always succeeds)."""
+
+    name = "true"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        return CommandResult(data={"value": True})
+
+
 def command_true(args: argparse.Namespace) -> dict[str, Any]:
-    return {"value": True}
+    return TrueCommand()(args)  # type: ignore[return-value]
 
 
 def command_false(args: argparse.Namespace) -> dict[str, Any]:
@@ -838,7 +887,7 @@ def command_pathchk(args: argparse.Namespace) -> dict[str, Any] | bytes:
         entries.append({"path": raw, "valid": valid, "issues": issues})
         raw_lines.append(f"{'valid' if valid else 'invalid'}\t{','.join(issues)}\t{raw}")
     if args.raw:
-        return lines_to_raw(raw_lines, encoding="utf-8")
+        return lines_to_raw(raw_lines, encoding=getattr(args, "encoding", "utf-8"))
     result: dict[str, Any] = {"count": len(entries), "valid": all_valid, "entries": entries}
     if args.exit_code and not all_valid:
         result["_exit_code"] = EXIT["predicate_false"]
@@ -868,7 +917,7 @@ def command_factor(args: argparse.Namespace) -> dict[str, Any] | bytes:
         suffix = " " + " ".join(str(factor) for factor in factors) if factors else ""
         raw_lines.append(f"{value}:{suffix}")
     if args.raw:
-        return lines_to_raw(raw_lines, encoding="utf-8")
+        return lines_to_raw(raw_lines, encoding=getattr(args, "encoding", "utf-8"))
     return {"count": len(entries), "entries": entries}
 
 
@@ -892,7 +941,7 @@ def command_expr(args: argparse.Namespace) -> dict[str, Any] | bytes:
     truthy = expression_truthy(value)
     if args.raw:
         rendered = ("1" if value else "0") if isinstance(value, bool) else str(value)
-        return (rendered + "\n").encode("utf-8")
+        return (rendered + "\n").encode(getattr(args, "encoding", "utf-8"))
     result = {"expression": expression, "value": value, "truthy": truthy, "type": type(value).__name__}
     if args.exit_code and not truthy:
         result["_exit_code"] = EXIT["predicate_false"]

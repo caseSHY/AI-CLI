@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from ..core import AgentError, ensure_exists, resolve_path
+from ..core.encoding import EncodingResult, decode_bytes
 
 
 def read_stdin_bytes() -> bytes:
@@ -34,28 +35,52 @@ def read_input_bytes(raw: str) -> tuple[str, bytes]:
         raise AgentError("io_error", str(exc), path=str(path)) from exc
 
 
-def read_input_texts(paths: list[str], *, encoding: str) -> list[dict[str, str]]:
+def read_input_texts(
+    paths: list[str],
+    *,
+    encoding: str,
+    errors: str = "replace",
+    profile: str | None = None,
+    show_encoding: bool = False,
+) -> list[dict[str, Any]]:
     """读取多个文件或 stdin 并解码为文本。
 
     Returns:
         [{"path": 来源, "text": 文本内容}, ...]
+        当 show_encoding=True 时，额外包含 "_encoding_info" 键。
     """
     if not paths:
         paths = ["-"]  # 无参数时默认读取 stdin
-    sources: list[dict[str, str]] = []
+    sources: list[dict[str, Any]] = []
     for raw in paths:
         label, data = read_input_bytes(raw)
-        sources.append({"path": label, "text": data.decode(encoding, errors="replace")})
+        result: EncodingResult = decode_bytes(data, encoding=encoding, errors=errors, profile=profile)
+        entry: dict[str, Any] = {"path": label, "text": result.text}
+        if show_encoding and result.warnings:
+            entry["_encoding_info"] = {
+                "detected": result.encoding_used,
+                "confidence": result.confidence,
+                "method": result.method,
+                "warnings": result.warnings,
+            }
+        sources.append(entry)
     return sources
 
 
-def combined_lines(paths: list[str], *, encoding: str) -> tuple[list[str], list[str]]:
+def combined_lines(
+    paths: list[str],
+    *,
+    encoding: str,
+    errors: str = "replace",
+    profile: str | None = None,
+    show_encoding: bool = False,
+) -> tuple[list[str], list[str]]:
     """读取多个文件/文本，返回合并后的行列表和来源列表。
 
     Returns:
         (所有行的列表, 来源路径列表)。行去除了 \\n 分隔符。
     """
-    sources = read_input_texts(paths, encoding=encoding)
+    sources = read_input_texts(paths, encoding=encoding, errors=errors, profile=profile, show_encoding=show_encoding)
     lines: list[str] = []
     for source in sources:
         lines.extend(source["text"].splitlines())
@@ -88,8 +113,21 @@ def read_text_lines(path: Path, *, encoding: str) -> list[str]:
     ensure_exists(path)
     if path.is_dir():
         raise AgentError("invalid_input", "Path is a directory, not a file.", path=str(path))
-    with path.open("r", encoding=encoding, errors="replace", newline="") as handle:
-        return handle.read().splitlines()
+    raw_bytes = path.read_bytes()
+    result = decode_bytes(raw_bytes, encoding=encoding, errors="replace")
+    return result.text.splitlines()
+
+
+def attach_encoding_info(result: dict[str, Any], sources: list[dict[str, Any]]) -> None:
+    """从 sources 提取第一个来源的编码元数据，附加到 result 字典中。
+
+    用于 --show-encoding 模式下将编码检测信息注入 JSON 输出。
+    """
+    for src in sources:
+        info = src.pop("_encoding_info", None)
+        if info:
+            result["encoding"] = info
+            return
 
 
 def read_bytes(path: Path, *, max_bytes: int, offset: int = 0) -> tuple[bytes, bool, int]:

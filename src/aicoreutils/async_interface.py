@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any
 
 from .core.constants import ASYNC_DEFAULT_CONCURRENCY
+from .core.encoding import decode_bytes
 
 
 async def run_async(
@@ -75,14 +76,14 @@ async def run_async(
     import json
 
     if proc.returncode != 0:
-        error_text = stderr.decode("utf-8", errors="replace")
+        error_text = decode_bytes(stderr, encoding="utf-8", errors="replace").text
         try:
             error_data = json.loads(error_text)
         except json.JSONDecodeError:
             error_data = {"error": error_text}
         raise RuntimeError(f"Command failed with exit code {proc.returncode}: {error_data}")
 
-    data: object = json.loads(stdout.decode("utf-8", errors="replace"))
+    data: object = json.loads(decode_bytes(stdout, encoding="utf-8", errors="replace").text)
     if not isinstance(data, dict):
         raise RuntimeError("Command returned non-object JSON.")
     return {str(key): value for key, value in data.items()}

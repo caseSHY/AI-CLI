@@ -17,11 +17,14 @@ aicoreutils.core 是项目的核心基础层，提供所有命令实现公用的
 
 from __future__ import annotations
 
+from .command import BaseCommand, CommandResult, FileInfoCommand, MutatingCommand, TextFilterCommand
 from .config import DEFAULT_CONFIG, AgentConfig
 from .constants import (
     ASYNC_DEFAULT_CONCURRENCY,
     ASYNC_DEFAULT_TIMEOUT,
     DD_DEFAULT_BLOCK_SIZE,
+    DEFAULT_ENCODING,
+    DEFAULT_ENCODING_ERRORS,
     DEFAULT_MAX_BYTES,
     DEFAULT_MAX_DEPTH,
     DEFAULT_MAX_ITEMS,
@@ -31,9 +34,13 @@ from .constants import (
     DEFAULT_MAX_PREVIEW_BYTES,
     DEFAULT_TAB_SIZE,
     DEFAULT_WIDTH,
+    ENCODING_CHOICES,
+    ENCODING_ERRORS_CHOICES,
+    ENCODING_PROFILE_CHOICES,
     FACTOR_MAX,
     HASH_CHUNK_SIZE,
 )
+from .encoding import EncodingResult, decode_bytes, detect_bom, detect_encoding, encoding_metadata, normalize_encoding
 from .envelope import deprecation_warning, envelope, error_envelope, utc_iso, write_json
 from .exceptions import AgentError
 from .exit_codes import EXIT
@@ -60,11 +67,15 @@ from .stream import NullStream, StreamWriter, is_stream_mode
 __all__ = [
     "AgentConfig",
     "ASYNC_DEFAULT_CONCURRENCY",
+    "BaseCommand",
     "ASYNC_DEFAULT_TIMEOUT",
     "AgentError",
     "CommandFunc",
+    "CommandResult",
     "DD_DEFAULT_BLOCK_SIZE",
     "DEFAULT_CONFIG",
+    "DEFAULT_ENCODING",
+    "DEFAULT_ENCODING_ERRORS",
     "DEFAULT_MAX_BYTES",
     "DEFAULT_MAX_DEPTH",
     "DEFAULT_MAX_ITEMS",
@@ -74,17 +85,29 @@ __all__ = [
     "DEFAULT_MAX_PREVIEW_BYTES",
     "DEFAULT_TAB_SIZE",
     "DEFAULT_WIDTH",
+    "ENCODING_CHOICES",
+    "ENCODING_ERRORS_CHOICES",
+    "ENCODING_PROFILE_CHOICES",
     "EXIT",
+    "EncodingResult",
     "FACTOR_MAX",
+    "FileInfoCommand",
     "HASH_CHUNK_SIZE",
+    "MutatingCommand",
     "NullStream",
+    "normalize_encoding",
     "PluginRegistry",
     "StreamWriter",
+    "TextFilterCommand",
     "dangerous_delete_target",
+    "decode_bytes",
     "deprecation_warning",
     "destination_inside_directory",
+    "detect_bom",
+    "detect_encoding",
     "directory_size",
     "disk_usage_entry",
+    "encoding_metadata",
     "envelope",
     "ensure_exists",
     "ensure_parent",

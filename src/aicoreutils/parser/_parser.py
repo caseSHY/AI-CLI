@@ -116,6 +116,8 @@ from ..commands.text import (
     command_yes,
 )
 from ..core.constants import (
+    DEFAULT_ENCODING,
+    DEFAULT_ENCODING_ERRORS,
     DEFAULT_MAX_BYTES,
     DEFAULT_MAX_ITEMS,
     DEFAULT_MAX_LINES,
@@ -123,6 +125,9 @@ from ..core.constants import (
     DEFAULT_MAX_PATH_LENGTH,
     DEFAULT_MAX_PREVIEW_BYTES,
     DEFAULT_TAB_SIZE,
+    ENCODING_CHOICES,
+    ENCODING_ERRORS_CHOICES,
+    ENCODING_PROFILE_CHOICES,
     FACTOR_MAX,
 )
 from ..registry.catalog import get_commands_by_priority, get_priority, priority_catalog
@@ -283,6 +288,34 @@ def command_tool_list(args: argparse.Namespace) -> dict[str, Any] | bytes:
 # ═══════════════════════════════════════════════════════════════════════
 
 
+def _add_encoding_args(p: argparse.ArgumentParser, *, for_output: bool = False) -> None:
+    """Add --encoding, --encoding-errors, --encoding-profile, --show-encoding to a subparser."""
+    desc_prefix = "Output encoding" if for_output else "Text encoding"
+    p.add_argument(
+        "--encoding",
+        default=DEFAULT_ENCODING,
+        choices=ENCODING_CHOICES,
+        help=f"{desc_prefix} (default: {DEFAULT_ENCODING}). Use 'auto' for BOM/autodetection.",
+    )
+    p.add_argument(
+        "--encoding-errors",
+        default=DEFAULT_ENCODING_ERRORS,
+        choices=ENCODING_ERRORS_CHOICES,
+        help=f"How to handle encoding errors (default: {DEFAULT_ENCODING_ERRORS}).",
+    )
+    p.add_argument(
+        "--encoding-profile",
+        default=None,
+        choices=ENCODING_PROFILE_CHOICES,
+        help="Locale-aware encoding fallback profile for auto-detection.",
+    )
+    p.add_argument(
+        "--show-encoding",
+        action="store_true",
+        help="Include encoding detection metadata in JSON result.",
+    )
+
+
 def build_parser() -> AgentArgumentParser:
     parser = AgentArgumentParser(
         prog="aicoreutils",
@@ -424,7 +457,7 @@ def build_parser() -> AgentArgumentParser:
 
     p = add_subparser("cat", help="Read a file with bounded JSON output by default.")
     p.add_argument("path", help="File to read.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding for JSON content.")
+    _add_encoding_args(p)
     p.add_argument("--max-bytes", type=int, default=DEFAULT_MAX_BYTES, help="Maximum bytes to return.")
     p.add_argument("--offset", type=int, default=0, help="Byte offset to start reading from.")
     p.add_argument("--raw", action="store_true", help="Write raw bytes to stdout without a JSON envelope.")
@@ -434,14 +467,14 @@ def build_parser() -> AgentArgumentParser:
         p = add_subparser(name, help=f"Return {name} lines as JSON.")
         p.add_argument("path", help="File to read.")
         p.add_argument("--lines", "-n", type=int, default=10, help="Number of lines.")
-        p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+        _add_encoding_args(p)
         p.add_argument("--raw", action="store_true", help="Write raw selected lines without a JSON envelope.")
         p.set_defaults(func=line_func)
 
     p = add_subparser("wc", help="Count bytes, chars, lines, and words as JSON.")
     p.add_argument("paths", nargs="*", help="Files to count, or '-' for stdin.")
     p.add_argument("--files0-from", type=str, default=None, help="Read NUL-separated file list from FILE.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding for char/word counts.")
+    _add_encoding_args(p)
     p.add_argument("--raw", action="store_true", help="Write GNU-style count lines without a JSON envelope.")
     p.set_defaults(func=command_wc)
 
@@ -458,28 +491,32 @@ def build_parser() -> AgentArgumentParser:
         p = add_subparser(command_name, help=f"Hash files as JSON using {algorithm}.")
         p.add_argument("paths", nargs="*", help="Files to hash, or '-' for stdin (omit with --check).")
         p.add_argument("--check", "-c", action="store_true", help="Read checksums from FILE(s) and verify them.")
+        _add_encoding_args(p)
         p.set_defaults(func=command_hash, algorithm=algorithm)
 
     p = add_subparser("hash", help="Hash files as JSON.")
     p.add_argument("paths", nargs="*", help="Files to hash, or '-' for stdin (omit with --check).")
     p.add_argument("--algorithm", default="sha256", choices=sorted(HASH_ALGORITHMS), help="Hash algorithm.")
     p.add_argument("--check", "-c", action="store_true", help="Read checksums from FILE(s) and verify them.")
+    _add_encoding_args(p)
     p.set_defaults(func=command_hash)
 
     p = add_subparser("cksum", help="Return CRC32 checksums for files or stdin.")
     p.add_argument("paths", nargs="*", help="Files to checksum, or '-' for stdin. Defaults to stdin.")
+    _add_encoding_args(p, for_output=True)
     p.add_argument("--raw", action="store_true", help="Write checksum size path lines without a JSON envelope.")
     p.set_defaults(func=command_cksum)
 
     p = add_subparser("sum", help="Return simple 16-bit byte sums for files or stdin.")
     p.add_argument("paths", nargs="*", help="Files to checksum, or '-' for stdin. Defaults to stdin.")
     p.add_argument("--block-size", type=int, default=1024, help="Block size used for reported block counts.")
+    _add_encoding_args(p, for_output=True)
     p.add_argument("--raw", action="store_true", help="Write checksum blocks path lines without a JSON envelope.")
     p.set_defaults(func=command_sum)
 
     p = add_subparser("sort", help="Sort text lines from files or stdin.")
     p.add_argument("paths", nargs="*", help="Files to sort, or '-' for stdin. Defaults to stdin.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--reverse", "-r", action="store_true", help="Reverse the sort order.")
     p.add_argument("--unique", "-u", action="store_true", help="Emit only the first of equal sorted lines.")
     p.add_argument("--numeric", "-n", action="store_true", help="Sort by the first numeric token.")
@@ -495,7 +532,7 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--suppress-1", action="store_true", help="Suppress records unique to the first file.")
     p.add_argument("--suppress-2", action="store_true", help="Suppress records unique to the second file.")
     p.add_argument("--suppress-3", action="store_true", help="Suppress records common to both files.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON records to emit.")
     p.add_argument("--raw", action="store_true", help="Write column-tab-line text without a JSON envelope.")
     p.set_defaults(func=command_comm)
@@ -506,7 +543,7 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--field2", type=int, default=1, help="1-based join field for the second file.")
     p.add_argument("--delimiter", help="Input delimiter. Defaults to any whitespace.")
     p.add_argument("--output-delimiter", default=" ", help="Delimiter for output fields.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON records to emit.")
     p.add_argument("--raw", action="store_true", help="Write joined text without a JSON envelope.")
     p.set_defaults(func=command_join)
@@ -514,7 +551,7 @@ def build_parser() -> AgentArgumentParser:
     p = add_subparser("paste", help="Merge corresponding lines from files.")
     p.add_argument("paths", nargs="*", help="Files to merge, or '-' for stdin. Defaults to stdin.")
     p.add_argument("--delimiter", "-d", default="\t", help="Delimiter inserted between columns.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON lines to emit.")
     p.add_argument("--raw", action="store_true", help="Write pasted text without a JSON envelope.")
     p.set_defaults(func=command_paste)
@@ -523,14 +560,14 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("paths", nargs="*", help="Files to shuffle, or '-' for stdin. Defaults to stdin.")
     p.add_argument("--count", "-n", type=int, help="Maximum lines to output.")
     p.add_argument("--seed", type=int, help="Seed for deterministic shuffling.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON lines to emit.")
     p.add_argument("--raw", action="store_true", help="Write shuffled text without a JSON envelope.")
     p.set_defaults(func=command_shuf)
 
     p = add_subparser("tac", help="Reverse input lines from files or stdin.")
     p.add_argument("paths", nargs="*", help="Files to reverse, or '-' for stdin. Defaults to stdin.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON lines to emit.")
     p.add_argument("--raw", action="store_true", help="Write reversed text without a JSON envelope.")
     p.set_defaults(func=command_tac)
@@ -542,7 +579,7 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--increment", type=int, default=1, help="Line number increment.")
     p.add_argument("--width", type=int, default=6, help="Minimum number width.")
     p.add_argument("--separator", "-s", default="\t", help="Separator between number and line.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON records to emit.")
     p.add_argument("--raw", action="store_true", help="Write numbered text without a JSON envelope.")
     p.set_defaults(func=command_nl)
@@ -551,7 +588,7 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("paths", nargs="*", help="Files to fold, or '-' for stdin. Defaults to stdin.")
     p.add_argument("--width", "-w", type=int, default=80, help="Maximum line width.")
     p.add_argument("--break-words", "-b", action="store_true", help="Break words longer than the width.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON lines to emit.")
     p.add_argument("--raw", action="store_true", help="Write folded text without a JSON envelope.")
     p.set_defaults(func=command_fold)
@@ -559,7 +596,7 @@ def build_parser() -> AgentArgumentParser:
     p = add_subparser("fmt", help="Reflow paragraphs to a fixed width.")
     p.add_argument("paths", nargs="*", help="Files to format, or '-' for stdin. Defaults to stdin.")
     p.add_argument("--width", "-w", type=int, default=75, help="Maximum output line width.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON lines to emit.")
     p.add_argument("--raw", action="store_true", help="Write formatted text without a JSON envelope.")
     p.set_defaults(func=command_fmt)
@@ -572,7 +609,7 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--max-splits", type=int, default=0, help="Maximum regex matches to split at; 0 means all.")
     p.add_argument("--output-dir", default=".", help="Directory for split outputs.")
     p.add_argument("--allow-overwrite", action="store_true", help="Allow replacing existing outputs.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--dry-run", action="store_true", help="Report split outputs without writing files.")
     p.set_defaults(func=command_csplit)
 
@@ -597,6 +634,7 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--offset", "-j", type=int, default=0, help="Start offset in bytes.")
     p.add_argument("--max-bytes", "-N", type=int, default=1024, help="Maximum bytes to dump.")
     p.add_argument("--bytes-per-line", type=int, default=16, help="Bytes per output row.")
+    _add_encoding_args(p, for_output=True)
     p.add_argument("--raw", action="store_true", help="Write dump rows without a JSON envelope.")
     p.set_defaults(func=command_od)
 
@@ -606,12 +644,13 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--to-unit", choices=["none", "si", "iec"], default="none", help="Output unit system.")
     p.add_argument("--precision", type=int, default=3, help="Digits after the decimal point before trimming zeros.")
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON records to emit.")
+    _add_encoding_args(p, for_output=True)
     p.add_argument("--raw", action="store_true", help="Write converted numbers without a JSON envelope.")
     p.set_defaults(func=command_numfmt)
 
     p = add_subparser("tsort", help="Topologically sort whitespace-separated dependency pairs.")
     p.add_argument("paths", nargs="*", help="Files to sort, or '-' for stdin. Defaults to stdin.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON lines to emit.")
     p.add_argument("--raw", action="store_true", help="Write sorted nodes without a JSON envelope.")
     p.set_defaults(func=command_tsort)
@@ -621,7 +660,7 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--width", "-w", type=int, default=72, help="Maximum output line width.")
     p.add_argument("--page-length", "-l", type=int, default=66, help="Input lines per page.")
     p.add_argument("--header", help="Optional page header.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON lines to emit.")
     p.add_argument("--raw", action="store_true", help="Write paginated text without a JSON envelope.")
     p.set_defaults(func=command_pr)
@@ -632,14 +671,14 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--ignore", action="append", default=[], help="Ignore a keyword. Repeatable.")
     p.add_argument("--only", action="append", default=[], help="Only include this keyword. Repeatable.")
     p.add_argument("--ignore-case", action="store_true", help="Compare filters case-insensitively.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON records to emit.")
     p.add_argument("--raw", action="store_true", help="Write index rows without a JSON envelope.")
     p.set_defaults(func=command_ptx)
 
     p = add_subparser("uniq", help="Collapse adjacent duplicate lines from files or stdin.")
     p.add_argument("paths", nargs="*", help="Files to read, or '-' for stdin. Defaults to stdin.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--count", "-c", action="store_true", help="Include duplicate counts in raw output.")
     p.add_argument("--repeated", "-d", action="store_true", help="Emit only repeated groups.")
     p.add_argument("--unique-only", "-u", action="store_true", help="Emit only non-repeated groups.")
@@ -656,7 +695,7 @@ def build_parser() -> AgentArgumentParser:
     selector.add_argument("--bytes", "-b", help="1-based byte ranges like '1,3-5'.")
     p.add_argument("--delimiter", "-d", default="\t", help="Field delimiter.")
     p.add_argument("--output-delimiter", default="\t", help="Delimiter for selected fields.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON lines to emit.")
     p.add_argument("--raw", action="store_true", help="Write plain transformed text to stdout.")
     p.set_defaults(func=command_cut)
@@ -667,7 +706,7 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--path", dest="paths", action="append", default=[], help="Input file. Repeat for multiple files.")
     p.add_argument("--delete", "-d", action="store_true", help="Delete characters in SET1.")
     p.add_argument("--squeeze-repeats", "-s", action="store_true", help="Squeeze repeated output characters.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON lines to emit.")
     p.add_argument("--raw", action="store_true", help="Write plain transformed text to stdout.")
     p.set_defaults(func=command_tr)
@@ -675,7 +714,7 @@ def build_parser() -> AgentArgumentParser:
     p = add_subparser("expand", help="Convert tabs to spaces in files or stdin.")
     p.add_argument("paths", nargs="*", help="Files to read, or '-' for stdin. Defaults to stdin.")
     p.add_argument("--tabs", "-t", type=int, default=DEFAULT_TAB_SIZE, help="Tab stop width.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON lines to emit.")
     p.add_argument("--raw", action="store_true", help="Write expanded text without a JSON envelope.")
     p.set_defaults(func=command_expand)
@@ -684,7 +723,7 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("paths", nargs="*", help="Files to read, or '-' for stdin. Defaults to stdin.")
     p.add_argument("--tabs", "-t", type=int, default=DEFAULT_TAB_SIZE, help="Tab stop width.")
     p.add_argument("--all", "-a", action="store_true", help="Convert all blank runs, not only leading spaces.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding.")
+    _add_encoding_args(p)
     p.add_argument("--max-lines", type=int, default=DEFAULT_MAX_LINES, help="Maximum JSON lines to emit.")
     p.add_argument("--raw", action="store_true", help="Write unexpanded text without a JSON envelope.")
     p.set_defaults(func=command_unexpand)
@@ -693,7 +732,7 @@ def build_parser() -> AgentArgumentParser:
         p = add_subparser(command_name, help=f"Encode or decode {command_name} data.")
         p.add_argument("paths", nargs="*", help="Files to read, or '-' for stdin. Defaults to stdin.")
         p.add_argument("--decode", "-d", action="store_true", help="Decode instead of encode.")
-        p.add_argument("--encoding", default="utf-8", help="Text encoding for decoded JSON preview.")
+        _add_encoding_args(p, for_output=True)
         p.add_argument("--max-output-bytes", type=int, default=DEFAULT_MAX_BYTES, help="Maximum JSON bytes to emit.")
         p.add_argument("--raw", action="store_true", help="Write raw encoded/decoded bytes to stdout.")
         p.set_defaults(func=command_codec, codec=command_name)
@@ -704,7 +743,7 @@ def build_parser() -> AgentArgumentParser:
         "--base", choices=["base16", "base32", "base64", "base64url"], default="base64", help="Base encoding."
     )
     p.add_argument("--decode", "-d", action="store_true", help="Decode instead of encode.")
-    p.add_argument("--encoding", default="utf-8", help="Text encoding for decoded JSON preview.")
+    _add_encoding_args(p, for_output=True)
     p.add_argument("--max-output-bytes", type=int, default=DEFAULT_MAX_BYTES, help="Maximum JSON bytes to emit.")
     p.add_argument("--raw", action="store_true", help="Write raw encoded/decoded bytes to stdout.")
     p.set_defaults(func=command_basenc)
@@ -831,13 +870,14 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("--separator", "-s", default="\n", help="Raw output separator.")
     p.add_argument("--format", "-f", help="printf-style numeric format, for example %%.2f.")
     p.add_argument("--max-items", type=int, default=DEFAULT_MAX_ITEMS, help="Maximum items to generate.")
+    _add_encoding_args(p, for_output=True)
     p.add_argument("--raw", action="store_true", help="Write sequence text without a JSON envelope.")
     p.set_defaults(func=command_seq)
 
     p = add_subparser("printf", help="Format text with a deterministic printf-style subset.")
     p.add_argument("format_string", help="Printf-style format string.")
     p.add_argument("values", nargs="*", help="Values used by format conversions.")
-    p.add_argument("--encoding", default="utf-8", help="Output encoding.")
+    _add_encoding_args(p, for_output=True)
     p.add_argument("--raw", action="store_true", help="Write formatted text without a JSON envelope.")
     p.set_defaults(func=command_printf)
 
@@ -845,7 +885,7 @@ def build_parser() -> AgentArgumentParser:
     p.add_argument("words", nargs="*", help="Words to emit.")
     p.add_argument("--no-newline", "-n", action="store_true", help="Do not append a newline.")
     p.add_argument("--escapes", "-e", action="store_true", help="Interpret common backslash escapes.")
-    p.add_argument("--encoding", default="utf-8", help="Output encoding.")
+    _add_encoding_args(p, for_output=True)
     p.add_argument("--raw", action="store_true", help="Write echo text without a JSON envelope.")
     p.set_defaults(func=command_echo)
 
@@ -988,6 +1028,7 @@ def build_parser() -> AgentArgumentParser:
     p = add_subparser("yes", help="Generate a bounded repeated line.")
     p.add_argument("words", nargs="*", help="Words to repeat. Defaults to 'y'.")
     p.add_argument("--count", "-n", type=int, default=10, help="Number of lines to generate.")
+    _add_encoding_args(p, for_output=True)
     p.add_argument("--raw", action="store_true", help="Write repeated lines without a JSON envelope.")
     p.set_defaults(func=command_yes)
 
@@ -1176,9 +1217,25 @@ def build_parser() -> AgentArgumentParser:
 
 def dispatch(args: argparse.Namespace) -> tuple[int, dict[str, Any] | bytes]:
     result = args.func(args)
+    # OO path: CommandResult from BaseCommand subclasses
+    from ..core.command import CommandResult
+
+    if isinstance(result, CommandResult):
+        if result.is_raw:
+            return EXIT["ok"], result.raw_bytes  # type: ignore[return-value]
+        d = result.to_dict()
+        code = d.pop("_exit_code", EXIT["ok"])
+        if getattr(args, "show_encoding", False) and result.encoding_meta:
+            d.setdefault("encoding_meta", result.encoding_meta)
+        return code, envelope(args.command, d)
+    # Legacy path: dict | bytes from classic command_* functions
     if isinstance(result, bytes):
         return EXIT["ok"], result
     code = result.pop("_exit_code", EXIT["ok"]) if isinstance(result, dict) else EXIT["ok"]
+    if isinstance(result, dict) and getattr(args, "show_encoding", False):
+        info = result.pop("_encoding_info", None)
+        if info is not None:
+            result.setdefault("encoding_meta", info)
     return code, envelope(args.command, result)
 
 
