@@ -133,16 +133,25 @@ def command_env(args: argparse.Namespace) -> dict[str, Any] | bytes:
     return EnvCommand()(args)
 
 
+class PrintenvCommand(BaseCommand):
+    """Print environment variable values."""
+
+    name = "printenv"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        env = selected_environment(args.names)
+        if args.raw:
+            if args.names:
+                lines = [env[name] for name in args.names if name in env]
+            else:
+                lines = [f"{key}={value}" for key, value in env.items()]
+            return CommandResult(raw_bytes=lines_to_raw(lines, encoding=getattr(args, "encoding", "utf-8")))
+        missing = [name for name in (args.names or []) if name not in os.environ]
+        return CommandResult(data={"count": len(env), "values": env, "missing": missing})
+
+
 def command_printenv(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    env = selected_environment(args.names)
-    if args.raw:
-        if args.names:
-            lines = [env[name] for name in args.names if name in env]
-        else:
-            lines = [f"{key}={value}" for key, value in env.items()]
-        return lines_to_raw(lines, encoding=getattr(args, "encoding", "utf-8"))
-    missing = [name for name in (args.names or []) if name not in os.environ]
-    return {"count": len(env), "values": env, "missing": missing}
+    return PrintenvCommand()(args)
 
 
 # ── whoami / groups / id ───────────────────────────────────────────────
@@ -163,71 +172,91 @@ def command_whoami(args: argparse.Namespace) -> dict[str, Any]:
     return WhoamiCommand()(args)  # type: ignore[return-value]
 
 
+class GroupsCommand(BaseCommand):
+    """Return group memberships for a user."""
+
+    name = "groups"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        import getpass
+
+        user = args.user or getpass.getuser()
+        getgroups = getattr(os, "getgroups", None)
+        group_ids = [int(gid) for gid in getgroups()] if callable(getgroups) else []
+        group_names: list[str] = []
+        try:
+            grp_module = importlib.import_module("grp")
+            getgrgid = getattr(grp_module, "getgrgid", None)
+            if not callable(getgrgid):
+                raise ImportError("grp.getgrgid is unavailable")
+            for gid in group_ids:
+                try:
+                    group_names.append(str(cast(Any, getgrgid(gid)).gr_name))
+                except KeyError:
+                    group_names.append(str(gid))
+        except ImportError:
+            group_names = [str(gid) for gid in group_ids]
+        if args.raw:
+            return CommandResult(raw_bytes=(" ".join(group_names) + "\n").encode(getattr(args, "encoding", "utf-8")))
+        return CommandResult(
+            data={
+                "user": user,
+                "groups": [{"id": gid, "name": name} for gid, name in zip(group_ids, group_names, strict=True)],
+            }
+        )
+
+
 def command_groups(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    import getpass
+    return GroupsCommand()(args)
 
-    user = args.user or getpass.getuser()
-    getgroups = getattr(os, "getgroups", None)
-    group_ids = [int(gid) for gid in getgroups()] if callable(getgroups) else []
-    group_names: list[str] = []
-    try:
-        grp_module = importlib.import_module("grp")
-        getgrgid = getattr(grp_module, "getgrgid", None)
-        if not callable(getgrgid):
-            raise ImportError("grp.getgrgid is unavailable")
 
-        for gid in group_ids:
-            try:
-                group_names.append(str(cast(Any, getgrgid(gid)).gr_name))
-            except KeyError:
-                group_names.append(str(gid))
-    except ImportError:
-        group_names = [str(gid) for gid in group_ids]
-    if args.raw:
-        return (" ".join(group_names) + "\n").encode(getattr(args, "encoding", "utf-8"))
-    return {
-        "user": user,
-        "groups": [{"id": gid, "name": name} for gid, name in zip(group_ids, group_names, strict=True)],
-    }
+class IdCommand(BaseCommand):
+    """Return user and group identity."""
+
+    name = "id"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        import getpass
+
+        username = getpass.getuser()
+        uid_val: int | None = None
+        gid_val: int | None = None
+        group_ids: list[int] = []
+        group_names: list[str] = []
+        getuid = getattr(os, "getuid", None)
+        getgid = getattr(os, "getgid", None)
+        getgroups = getattr(os, "getgroups", None)
+        if callable(getuid):
+            uid_val = int(getuid())
+        if callable(getgid):
+            gid_val = int(getgid())
+        if callable(getgroups):
+            group_ids = [int(gid) for gid in getgroups()]
+        try:
+            grp_module = importlib.import_module("grp")
+            getgrgid = getattr(grp_module, "getgrgid", None)
+            if not callable(getgrgid):
+                raise ImportError("grp.getgrgid is unavailable")
+            for gid in group_ids:
+                try:
+                    group_names.append(str(cast(Any, getgrgid(gid)).gr_name))
+                except KeyError:
+                    group_names.append(str(gid))
+        except ImportError:
+            group_names = [str(gid) for gid in group_ids]
+        return CommandResult(
+            data={
+                "user": username,
+                "uid": uid_val,
+                "gid": gid_val,
+                "groups": group_names,
+                "gids": group_ids,
+            }
+        )
 
 
 def command_id(args: argparse.Namespace) -> dict[str, Any]:
-    import getpass
-
-    username = getpass.getuser()
-    uid_val: int | None = None
-    gid_val: int | None = None
-    group_ids: list[int] = []
-    group_names: list[str] = []
-    getuid = getattr(os, "getuid", None)
-    getgid = getattr(os, "getgid", None)
-    getgroups = getattr(os, "getgroups", None)
-    if callable(getuid):
-        uid_val = int(getuid())
-    if callable(getgid):
-        gid_val = int(getgid())
-    if callable(getgroups):
-        group_ids = [int(gid) for gid in getgroups()]
-    try:
-        grp_module = importlib.import_module("grp")
-        getgrgid = getattr(grp_module, "getgrgid", None)
-        if not callable(getgrgid):
-            raise ImportError("grp.getgrgid is unavailable")
-
-        for gid in group_ids:
-            try:
-                group_names.append(str(cast(Any, getgrgid(gid)).gr_name))
-            except KeyError:
-                group_names.append(str(gid))
-    except ImportError:
-        group_names = [str(gid) for gid in group_ids]
-    return {
-        "user": username,
-        "uid": uid_val,
-        "gid": gid_val,
-        "groups": group_names,
-        "gids": group_ids,
-    }
+    return IdCommand()(args)  # type: ignore[return-value]
 
 
 # ── uname / arch / hostname / hostid / logname ─────────────────────────
@@ -300,10 +329,19 @@ def command_hostid(args: argparse.Namespace) -> dict[str, Any] | bytes:
     return HostidCommand()(args)
 
 
-def command_logname(args: argparse.Namespace) -> dict[str, Any]:
-    import getpass
+class LognameCommand(BaseCommand):
+    """Return the login name of the current user."""
 
-    return {"login": os.environ.get("LOGNAME") or getpass.getuser()}
+    name = "logname"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        import getpass
+
+        return CommandResult(data={"login": os.environ.get("LOGNAME") or getpass.getuser()})
+
+
+def command_logname(args: argparse.Namespace) -> dict[str, Any]:
+    return LognameCommand()(args)  # type: ignore[return-value]
 
 
 def command_pinky(args: argparse.Namespace) -> dict[str, Any] | bytes:
@@ -360,36 +398,54 @@ def command_uptime(args: argparse.Namespace) -> dict[str, Any]:
     return UptimeCommand()(args)  # type: ignore[return-value]
 
 
+class TtyCommand(BaseCommand):
+    """Return the terminal name connected to stdin."""
+
+    name = "tty"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        is_tty = sys.stdin.isatty()
+        name = stdin_tty_name()
+        if args.raw:
+            return CommandResult(raw_bytes=((name or "not a tty") + "\n").encode(getattr(args, "encoding", "utf-8")))
+        exit_code = EXIT["predicate_false"] if args.exit_code and not is_tty else 0
+        return CommandResult(data={"stdin_is_tty": is_tty, "tty": name}, exit_code=exit_code)
+
+
 def command_tty(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    is_tty = sys.stdin.isatty()
-    name = stdin_tty_name()
-    if args.raw:
-        return ((name or "not a tty") + "\n").encode(getattr(args, "encoding", "utf-8"))
-    result: dict[str, Any] = {"stdin_is_tty": is_tty, "tty": name}
-    if args.exit_code and not is_tty:
-        result["_exit_code"] = EXIT["predicate_false"]
-    return result
+    return TtyCommand()(args)
+
+
+class UsersCommand(BaseCommand):
+    """List currently logged-in users."""
+
+    name = "users"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        entries = active_user_entries()
+        users = sorted({entry["user"] for entry in entries})
+        if args.raw:
+            return CommandResult(raw_bytes=(" ".join(users) + "\n").encode(getattr(args, "encoding", "utf-8")))
+        return CommandResult(data={"count": len(users), "users": users, "entries": entries})
 
 
 def command_users(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    entries = active_user_entries()
-    users = sorted({entry["user"] for entry in entries})
-    if args.raw:
-        return (" ".join(users) + "\n").encode(getattr(args, "encoding", "utf-8"))
-    return {"count": len(users), "users": users, "entries": entries}
+    return UsersCommand()(args)
+
+
+class WhoCommand(BaseCommand):
+    """Show who is logged on."""
+
+    name = "who"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        user_list = active_user_entries()
+        entries = [{"user": e["user"], "terminal": e["terminal"], "time": e.get("time", "")} for e in user_list]
+        return CommandResult(data={"count": len(entries), "entries": entries})
 
 
 def command_who(args: argparse.Namespace) -> dict[str, Any]:
-    user_list = active_user_entries()
-    entries = [
-        {
-            "user": entry["user"],
-            "terminal": entry["terminal"],
-            "time": entry.get("time", ""),
-        }
-        for entry in user_list
-    ]
-    return {"count": len(entries), "entries": entries}
+    return WhoCommand()(args)  # type: ignore[return-value]
 
 
 # ── nproc ──────────────────────────────────────────────────────────────
@@ -930,85 +986,113 @@ def command_false(args: argparse.Namespace) -> dict[str, Any]:
 # ── pathchk ────────────────────────────────────────────────────────────
 
 
+class PathchkCommand(BaseCommand):
+    """Validate path components against portability constraints."""
+
+    name = "pathchk"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        if args.max_path_length < 1:
+            raise AgentError("invalid_input", "--max-path-length must be >= 1.")
+        if args.max_component_length < 1:
+            raise AgentError("invalid_input", "--max-component-length must be >= 1.")
+        entries = []
+        raw_lines = []
+        all_valid = True
+        for raw in args.paths:
+            issues = path_issues(
+                raw,
+                max_path_length=args.max_path_length,
+                max_component_length=args.max_component_length,
+                portable=args.portable,
+            )
+            valid = not issues
+            all_valid = all_valid and valid
+            entries.append({"path": raw, "valid": valid, "issues": issues})
+            raw_lines.append(f"{'valid' if valid else 'invalid'}\t{','.join(issues)}\t{raw}")
+        if args.raw:
+            return CommandResult(raw_bytes=lines_to_raw(raw_lines, encoding=getattr(args, "encoding", "utf-8")))
+        exit_code = EXIT["predicate_false"] if args.exit_code and not all_valid else 0
+        return CommandResult(data={"count": len(entries), "valid": all_valid, "entries": entries}, exit_code=exit_code)
+
+
 def command_pathchk(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    if args.max_path_length < 1:
-        raise AgentError("invalid_input", "--max-path-length must be >= 1.")
-    if args.max_component_length < 1:
-        raise AgentError("invalid_input", "--max-component-length must be >= 1.")
-    entries = []
-    raw_lines = []
-    all_valid = True
-    for raw in args.paths:
-        issues = path_issues(
-            raw,
-            max_path_length=args.max_path_length,
-            max_component_length=args.max_component_length,
-            portable=args.portable,
-        )
-        valid = not issues
-        all_valid = all_valid and valid
-        entries.append({"path": raw, "valid": valid, "issues": issues})
-        raw_lines.append(f"{'valid' if valid else 'invalid'}\t{','.join(issues)}\t{raw}")
-    if args.raw:
-        return lines_to_raw(raw_lines, encoding=getattr(args, "encoding", "utf-8"))
-    result: dict[str, Any] = {"count": len(entries), "valid": all_valid, "entries": entries}
-    if args.exit_code and not all_valid:
-        result["_exit_code"] = EXIT["predicate_false"]
-    return result
+    return PathchkCommand()(args)
 
 
 # ── factor ─────────────────────────────────────────────────────────────
 
 
+class FactorCommand(BaseCommand):
+    """Compute prime factors of integers."""
+
+    name = "factor"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        raw_values = args.numbers or sys.stdin.read().split()
+        entries = []
+        raw_lines = []
+        for raw in raw_values:
+            try:
+                value = int(raw, 0)
+            except ValueError as exc:
+                raise AgentError("invalid_input", "factor inputs must be integers.", details={"value": raw}) from exc
+            if abs(value) > args.max_value:
+                raise AgentError(
+                    "unsafe_operation",
+                    "factor input exceeds --max-value.",
+                    details={"value": value, "max_value": args.max_value},
+                )
+            factors = prime_factors(value) if abs(value) > 1 else []
+            entries.append({"input": raw, "value": value, "factors": factors})
+            suffix = " " + " ".join(str(f) for f in factors) if factors else ""
+            raw_lines.append(f"{value}:{suffix}")
+        if args.raw:
+            return CommandResult(raw_bytes=lines_to_raw(raw_lines, encoding=getattr(args, "encoding", "utf-8")))
+        return CommandResult(data={"count": len(entries), "entries": entries})
+
+
 def command_factor(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    raw_values = args.numbers or sys.stdin.read().split()
-    entries = []
-    raw_lines = []
-    for raw in raw_values:
-        try:
-            value = int(raw, 0)
-        except ValueError as exc:
-            raise AgentError("invalid_input", "factor inputs must be integers.", details={"value": raw}) from exc
-        if abs(value) > args.max_value:
-            raise AgentError(
-                "unsafe_operation",
-                "factor input exceeds --max-value.",
-                details={"value": value, "max_value": args.max_value},
-            )
-        factors = prime_factors(value) if abs(value) > 1 else []
-        entries.append({"input": raw, "value": value, "factors": factors})
-        suffix = " " + " ".join(str(factor) for factor in factors) if factors else ""
-        raw_lines.append(f"{value}:{suffix}")
-    if args.raw:
-        return lines_to_raw(raw_lines, encoding=getattr(args, "encoding", "utf-8"))
-    return {"count": len(entries), "entries": entries}
+    return FactorCommand()(args)
 
 
 # ── expr ───────────────────────────────────────────────────────────────
 
 
+class ExprCommand(BaseCommand):
+    """Evaluate arithmetic and string expressions."""
+
+    name = "expr"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        expression = " ".join("==" if token == "=" else token for token in args.tokens)
+        try:
+            tree = ast.parse(expression, mode="eval")
+        except SyntaxError as exc:
+            raise AgentError(
+                "invalid_input", "Expression syntax is invalid.", details={"expression": expression}
+            ) from exc
+        try:
+            value = safe_eval_expr_node(tree)
+        except TypeError as exc:
+            raise AgentError(
+                "invalid_input",
+                "Expression operands are incompatible for the requested operation.",
+                details={"expression": expression},
+            ) from exc
+        truthy = expression_truthy(value)
+        if args.raw:
+            rendered = ("1" if value else "0") if isinstance(value, bool) else str(value)
+            return CommandResult(raw_bytes=(rendered + "\n").encode(getattr(args, "encoding", "utf-8")))
+        exit_code = EXIT["predicate_false"] if args.exit_code and not truthy else 0
+        return CommandResult(
+            data={"expression": expression, "value": value, "truthy": truthy, "type": type(value).__name__},
+            exit_code=exit_code,
+        )
+
+
 def command_expr(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    expression = " ".join("==" if token == "=" else token for token in args.tokens)
-    try:
-        tree = ast.parse(expression, mode="eval")
-    except SyntaxError as exc:
-        raise AgentError("invalid_input", "Expression syntax is invalid.", details={"expression": expression}) from exc
-    try:
-        value = safe_eval_expr_node(tree)
-    except TypeError as exc:
-        raise AgentError(
-            "invalid_input",
-            "Expression operands are incompatible for the requested operation.",
-            details={"expression": expression},
-        ) from exc
-    truthy = expression_truthy(value)
-    if args.raw:
-        rendered = ("1" if value else "0") if isinstance(value, bool) else str(value)
-        return (rendered + "\n").encode(getattr(args, "encoding", "utf-8"))
-    result = {"expression": expression, "value": value, "truthy": truthy, "type": type(value).__name__}
-    if args.exit_code and not truthy:
-        result["_exit_code"] = EXIT["predicate_false"]
-    return result
+    return ExprCommand()(args)
 
 
 def safe_eval_expr_node(tree: ast.AST) -> Any:
