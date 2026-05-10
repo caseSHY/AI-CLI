@@ -5,7 +5,7 @@
 [![PyPI](https://img.shields.io/pypi/v/aicoreutils)](https://pypi.org/project/aicoreutils/)
 
 [![CI](https://github.com/caseSHY/AI-CLI/actions/workflows/ci.yml/badge.svg)](https://github.com/caseSHY/AI-CLI/actions/workflows/ci.yml)
-[![LTS](https://img.shields.io/badge/LTS-1.2.1-blue)](https://github.com/caseSHY/AI-CLI/blob/master/CHANGELOG.md)
+[![LTS](https://img.shields.io/badge/LTS-1.2.2-blue)](https://github.com/caseSHY/AI-CLI/blob/master/CHANGELOG.md)
 > **Glama 92%** | TDQS A 级 (均值 4.6) | 114 工具全部 A 级 | CI 全平台通过 | Production/Stable
 
 🤖 MCP 目录已收录：**Glama** · **ModelScope** · **awesome-mcp-servers**
@@ -256,4 +256,4 @@ aicoreutils 从 v1.0.0 起采用语义化版本控制，承诺如下：
 - **Minor (1.x.0)**：新增命令、新增参数。已有命令的 JSON 输出结构保持向后兼容。
 - **Major (x.0.0)**：破坏性变更 — JSON schema 变化、命令重命名、MCP tool schema 变化。
 
-⚠️ **Stability note**: JSON envelope (`ok`, `result`, `error`, `command`, `version`), MCP tool schema, and semantic exit codes are stable. Production use: pin the version (`pip install aicoreutils==1.2.1`). **v1.2.1 LTS** — critical bug and security fixes backported for at least 12 months. CLI internal argument parsing may evolve across minor versions. See [Stability & SemVer](#stability-and-semver).
+⚠️ **Stability note**: JSON envelope (`ok`, `result`, `error`, `command`, `version`), MCP tool schema, and semantic exit codes are stable. Production use: pin the version (`pip install aicoreutils==1.2.2`). **v1.2.2 LTS** — critical bug and security fixes backported for at least 12 months. CLI internal argument parsing may evolve across minor versions. See [Stability & SemVer](#stability-and-semver).
