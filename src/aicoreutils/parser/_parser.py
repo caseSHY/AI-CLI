@@ -115,6 +115,7 @@ from ..commands.text import (
     command_uniq,
     command_yes,
 )
+from ..core.command import BaseCommand, CommandResult
 from ..core.constants import (
     DEFAULT_ENCODING,
     DEFAULT_ENCODING_ERRORS,
@@ -162,125 +163,148 @@ def schema_command_names(args: argparse.Namespace) -> list[str]:
 # ═══════════════════════════════════════════════════════════════════════
 
 
+class CatalogCommand(BaseCommand):
+    """List commands organized by priority categories with optional filtering."""
+
+    name = "catalog"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        data: dict[str, Any] = priority_catalog()
+        categories: list[dict[str, Any]] = list(data.get("categories", []))
+        if args.category:
+            cat_filter = args.category.lower()
+            categories = [c for c in categories if cat_filter in str(c.get("category", "")).lower()]
+        if args.search:
+            keyword = args.search.lower()
+            matched: list[dict[str, Any]] = []
+            for cat in categories:
+                cat_tools: Any = cat.get("tools", [])
+                tools: list[str] = list(cat_tools)
+                matching_tools = [t for t in tools if keyword in t.lower()]
+                if (
+                    matching_tools
+                    or keyword in str(cat.get("category", "")).lower()
+                    or keyword in str(cat.get("why", "")).lower()
+                ):
+                    cat_copy = dict(cat)
+                    cat_copy["tools"] = matching_tools if matching_tools else tools
+                    matched.append(cat_copy)
+            categories = matched
+        data["categories"] = categories
+        return CommandResult(data=data)
+
+
 def command_catalog(args: argparse.Namespace) -> dict[str, Any]:
-    data: dict[str, Any] = priority_catalog()
-    categories_raw: Any = data.get("categories", [])
-    categories: list[dict[str, Any]] = list(categories_raw)
-    if args.category:
-        cat_filter = args.category.lower()
-        categories = [c for c in categories if cat_filter in str(c.get("category", "")).lower()]
-    if args.search:
-        keyword = args.search.lower()
-        matched: list[dict[str, Any]] = []
-        for cat in categories:
-            cat_tools: Any = cat.get("tools", [])
-            tools: list[str] = list(cat_tools)
-            matching_tools = [t for t in tools if keyword in t.lower()]
-            if (
-                matching_tools
-                or keyword in str(cat.get("category", "")).lower()
-                or keyword in str(cat.get("why", "")).lower()
-            ):
-                cat_copy = dict(cat)
-                cat_copy["tools"] = matching_tools if matching_tools else tools
-                matched.append(cat_copy)
-        categories = matched
-    data["categories"] = categories
-    return data
+    return CatalogCommand()(args)  # type: ignore[return-value]
+
+
+class SchemaCommand(BaseCommand):
+    """Return the full JSON protocol specification and safety model."""
+
+    name = "schema"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        implemented_commands = schema_command_names(args)
+        prioritized = get_commands_by_priority()
+        return CommandResult(
+            data={
+                "protocol": {
+                    "stdout_success": {
+                        "ok": True,
+                        "tool": "aicoreutils",
+                        "version": __version__,
+                        "command": "<subcommand>",
+                        "result": {},
+                        "warnings": [],
+                    },
+                    "stderr_error": {
+                        "ok": False,
+                        "tool": "aicoreutils",
+                        "version": __version__,
+                        "command": "<subcommand>",
+                        "error": {
+                            "code": "<semantic_code>",
+                            "message": "<clear human and machine readable message>",
+                            "path": "<optional path>",
+                            "suggestion": "<optional fix>",
+                        },
+                    },
+                },
+                "exit_codes": EXIT,
+                "command_count": len(implemented_commands),
+                "implemented_commands": implemented_commands,
+                "commands_by_priority": prioritized,
+                "safety": {
+                    "json_default": True,
+                    "colors": False,
+                    "progress_bars": False,
+                    "mutation_commands_support_dry_run": True,
+                    "overwrite_requires_explicit_flag": True,
+                    "recursive_rm_outside_cwd_requires_explicit_flag": True,
+                    "raw_pipeline_output_requires_explicit_flag": True,
+                },
+            }
+        )
 
 
 def command_schema(args: argparse.Namespace) -> dict[str, Any]:
-    implemented_commands = schema_command_names(args)
-    prioritized = get_commands_by_priority()
-    return {
-        "protocol": {
-            "stdout_success": {
-                "ok": True,
-                "tool": "aicoreutils",
-                "version": __version__,
-                "command": "<subcommand>",
-                "result": {},
-                "warnings": [],
-            },
-            "stderr_error": {
-                "ok": False,
-                "tool": "aicoreutils",
-                "version": __version__,
-                "command": "<subcommand>",
-                "error": {
-                    "code": "<semantic_code>",
-                    "message": "<clear human and machine readable message>",
-                    "path": "<optional path>",
-                    "suggestion": "<optional fix>",
-                },
-            },
-        },
-        "exit_codes": EXIT,
-        "command_count": len(implemented_commands),
-        "implemented_commands": implemented_commands,
-        "commands_by_priority": prioritized,
-        "safety": {
-            "json_default": True,
-            "colors": False,
-            "progress_bars": False,
-            "mutation_commands_support_dry_run": True,
-            "overwrite_requires_explicit_flag": True,
-            "recursive_rm_outside_cwd_requires_explicit_flag": True,
-            "raw_pipeline_output_requires_explicit_flag": True,
-        },
-    }
+    return SchemaCommand()(args)  # type: ignore[return-value]
 
 
-def command_tool_list(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    """Return a tool list suitable for LLM function-calling context.
+class ToolListCommand(BaseCommand):
+    """Return tool schemas in aicoreutils/OpenAI/Anthropic format for LLM function-calling."""
 
-    Supports three formats:
-      - default (aicoreutils): compact name+priority list
-      - openai: OpenAI function calling format
-      - anthropic: Anthropic tool use format
-    """
-    include_risk = bool(getattr(args, "include_risk", False))
-    if getattr(args, "format", "aicoreutils") in ("openai", "anthropic"):
-        from ..registry.tool_schema import _command_tools, tools_anthropic, tools_openai
-        from ._parser import build_parser as _build
+    name = "tool-list"
 
-        tools = _command_tools(_build())
-        formatted = (
-            tools_openai(tools, include_risk=include_risk)
-            if args.format == "openai"
-            else tools_anthropic(tools, include_risk=include_risk)
-        )
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        include_risk = bool(getattr(args, "include_risk", False))
+        fmt = getattr(args, "format", "aicoreutils")
+
+        if fmt in ("openai", "anthropic"):
+            from ..registry.tool_schema import _command_tools, tools_anthropic, tools_openai
+            from ._parser import build_parser as _build
+
+            tools = _command_tools(_build())
+            formatted = (
+                tools_openai(tools, include_risk=include_risk)
+                if fmt == "openai"
+                else tools_anthropic(tools, include_risk=include_risk)
+            )
+            if args.raw:
+                import json as _json
+
+                return CommandResult(raw_bytes=_json.dumps(formatted, ensure_ascii=False).encode("utf-8"))
+            fmt_payload: dict[str, Any] = {"tools": formatted, "count": len(formatted), "format": fmt}
+            if include_risk:
+                fmt_payload["includeRisk"] = True
+            return CommandResult(data=fmt_payload)
+
+        # Default format: name + priority
+        from ..registry.tool_schema import tool_risk_metadata
+
+        implemented = schema_command_names(args)
+        prioritized = get_commands_by_priority()
+        result: list[dict[str, Any]] = []
+        for name in sorted(implemented):
+            entry: dict[str, Any] = {"name": name, "priority": get_priority(name)}
+            if include_risk:
+                entry.update(tool_risk_metadata(name))
+            result.append(entry)
         if args.raw:
             import json as _json
 
-            return _json.dumps(formatted, ensure_ascii=False).encode("utf-8")
-        payload: dict[str, Any] = {"tools": formatted, "count": len(formatted), "format": args.format}
+            raw_data: dict[str, Any] = {"tools": result, "count": len(result)}
+            if include_risk:
+                raw_data["includeRisk"] = True
+            return CommandResult(raw_bytes=_json.dumps(raw_data, ensure_ascii=False).encode("utf-8"))
+        payload: dict[str, Any] = {"tools": result, "count": len(result), "priorities": prioritized}
         if include_risk:
             payload["includeRisk"] = True
-        return payload
+        return CommandResult(data=payload)
 
-    # Default format: name + priority
-    from ..registry.tool_schema import tool_risk_metadata
 
-    implemented = schema_command_names(args)
-    prioritized = get_commands_by_priority()
-    result: list[dict[str, Any]] = []
-    for name in sorted(implemented):
-        entry: dict[str, Any] = {"name": name, "priority": get_priority(name)}
-        if include_risk:
-            entry.update(tool_risk_metadata(name))
-        result.append(entry)
-    if args.raw:
-        import json as _json
-
-        payload = {"tools": result, "count": len(result)}
-        if include_risk:
-            payload["includeRisk"] = True
-        return _json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    payload = {"tools": result, "count": len(result), "priorities": prioritized}
-    if include_risk:
-        payload["includeRisk"] = True
-    return payload
+def command_tool_list(args: argparse.Namespace) -> dict[str, Any] | bytes:
+    return ToolListCommand()(args)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1218,8 +1242,6 @@ def build_parser() -> AgentArgumentParser:
 def dispatch(args: argparse.Namespace) -> tuple[int, dict[str, Any] | bytes]:
     result = args.func(args)
     # OO path: CommandResult from BaseCommand subclasses
-    from ..core.command import CommandResult
-
     if isinstance(result, CommandResult):
         if result.is_raw:
             return EXIT["ok"], result.raw_bytes  # type: ignore[return-value]
