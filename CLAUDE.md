@@ -84,25 +84,32 @@ async_interface.py  Async wrapper: asyncio subprocess pool for concurrent comman
 
 ### OOP command layer (`core/command.py`)
 
-37 commands have been migrated to class-based implementations. The class hierarchy:
+75 of 114 commands are class-based (66%). The class hierarchy:
 
 ```
 CommandResult          — unified dataclass: data | raw_bytes, exit_code, warnings, encoding_meta
 BaseCommand (ABC)      — __call__ bridges to legacy dispatch (returns dict | bytes)
-├── TextFilterCommand  — combined_lines → transform() → bounded_lines → dict | bytes
-├── FileInfoCommand    — iterate paths → process_path() → {count, entries} | bytes
-└── MutatingCommand    — resolve → sandbox → dry_run → _execute_one() → operations
+├── TextFilterCommand  — combined_lines → transform() → bounded_lines (7 commands)
+├── FileInfoCommand    — iterate paths → process_path() → {count, entries} (4 commands)
+└── MutatingCommand    — resolve → sandbox → dry_run → _execute_one() → operations (10 commands)
 ```
 
 **How it works:**
 - Each command class overrides one hook method (`transform()`, `process_path()`, `_execute_one()`, or `execute()`).
 - `BaseCommand.__call__` converts `CommandResult` back to the legacy `dict | bytes` protocol, so `dispatch()` and MCP `_call_tool()` work unchanged.
 - `dispatch()` checks `isinstance(result, CommandResult)` first; falls back to the legacy `dict | bytes` path.
-- Legacy `command_*()` functions are preserved as thin delegation wrappers: `return XxxCommand()(args)`.
+- All 75 OOP commands retain `command_*()` wrappers: `return XxxCommand()(args)`.
 
 **Key rule:** new command classes must accept `(args: argparse.Namespace)`, return `dict | bytes` via `__call__`, and NOT modify the JSON output shape.
 
-**Still function-based:** system commands with platform-specific logic (`stty`, `chroot`, `nohup`, `kill`), complex multi-mode commands (`hash --check`, `dd`, `csplit`, `split`), and pure utility commands.
+**Still function-based (39 commands):**
+- Complex multi-mode: `ls/dir/vdir` (stream mode), `hash --check`, `csplit`, `split`, `dd`, `install`
+- Platform-specific / subprocess: `cp`, `mv`, `ln`, `link`, `chown`, `chgrp`, `shred`, `bracket`, `coreutils`, `pinky`, `timeout`, `nice`, `stdbuf`, `stty`, `nohup`, `chroot`, `chcon`, `runcon`, `kill`
+- Binary-first: `od`, `codec`, `basenc`
+
+### MCP server security (`mcp_server.py`)
+
+`MCPSecurityPolicy` class encapsulates the security profile, allow/deny list merging, and access checking into a single immutable value object with `check_access(name) -> dict | None`.
 
 ### Unified encoding layer (`core/encoding.py`)
 
