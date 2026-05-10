@@ -1327,41 +1327,42 @@ def command_shred(args: argparse.Namespace) -> dict[str, Any]:
 # ── test / [ ────────────────────────────────────────────────────────────
 
 
-def command_test(args: argparse.Namespace) -> dict[str, Any]:
-    from ...utils import evaluate_test_predicates
+class TestCommand(BaseCommand):
+    """Evaluate file predicates on a path."""
 
-    path = Path(args.path).expanduser()
-    predicates = []
-    if args.exists:
-        predicates.append("exists")
-    if args.file:
-        predicates.append("file")
-    if args.directory:
-        predicates.append("directory")
-    if args.symlink:
-        predicates.append("symlink")
-    if args.readable:
-        predicates.append("readable")
-    if args.writable:
-        predicates.append("writable")
-    if args.executable:
-        predicates.append("executable")
-    if args.empty:
-        predicates.append("empty")
-    if args.non_empty:
-        predicates.append("non_empty")
-    if not predicates:
-        predicates.append("exists")
-    checks = evaluate_test_predicates(path, predicates)
-    matches = all(check["matches"] for check in checks)
-    result: dict[str, Any] = {
-        "path": str(path),
-        "matches": matches,
-        "checks": checks,
-    }
-    if args.exit_code and not matches:
-        result["_exit_code"] = EXIT["predicate_false"]
-    return result
+    name = "test"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        from ...utils import evaluate_test_predicates
+
+        path = Path(args.path).expanduser()
+        predicates = []
+        for flag, name in [
+            (args.exists, "exists"),
+            (args.file, "file"),
+            (args.directory, "directory"),
+            (args.symlink, "symlink"),
+            (args.readable, "readable"),
+            (args.writable, "writable"),
+            (args.executable, "executable"),
+            (args.empty, "empty"),
+            (args.non_empty, "non_empty"),
+        ]:
+            if flag:
+                predicates.append(name)
+        if not predicates:
+            predicates.append("exists")
+        checks = evaluate_test_predicates(path, predicates)
+        matches = all(check["matches"] for check in checks)
+        data: dict[str, Any] = {"path": str(path), "matches": matches, "checks": checks}
+        exit_code = 0
+        if args.exit_code and not matches:
+            exit_code = EXIT["predicate_false"]
+        return CommandResult(data=data, exit_code=exit_code)
+
+
+def command_test(args: argparse.Namespace) -> dict[str, Any]:
+    return TestCommand()(args)  # type: ignore[return-value]
 
 
 def command_bracket(args: argparse.Namespace) -> dict[str, Any]:
@@ -1452,25 +1453,36 @@ def command_df(args: argparse.Namespace) -> dict[str, Any]:
     return DfCommand()(args)  # type: ignore[return-value]
 
 
+class DuCommand(BaseCommand):
+    """Estimate directory space usage recursively."""
+
+    name = "du"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        if args.max_depth < 0:
+            raise AgentError("invalid_input", "--max-depth must be >= 0.")
+        entries = []
+        total = 0
+        for raw in args.paths or ["."]:
+            path = resolve_path(raw, strict=True)
+            size, count, truncated = directory_size(
+                path, max_depth=args.max_depth, follow_symlinks=args.follow_symlinks
+            )
+            total += size
+            entries.append(
+                {
+                    "path": str(path),
+                    "size_bytes": size,
+                    "entries_counted": count,
+                    "max_depth": args.max_depth,
+                    "truncated_by_depth": truncated,
+                }
+            )
+        return CommandResult(data={"count": len(entries), "total_bytes": total, "entries": entries})
+
+
 def command_du(args: argparse.Namespace) -> dict[str, Any]:
-    if args.max_depth < 0:
-        raise AgentError("invalid_input", "--max-depth must be >= 0.")
-    entries = []
-    total = 0
-    for raw in args.paths or ["."]:
-        path = resolve_path(raw, strict=True)
-        size, count, truncated = directory_size(path, max_depth=args.max_depth, follow_symlinks=args.follow_symlinks)
-        total += size
-        entries.append(
-            {
-                "path": str(path),
-                "size_bytes": size,
-                "entries_counted": count,
-                "max_depth": args.max_depth,
-                "truncated_by_depth": truncated,
-            }
-        )
-    return {"count": len(entries), "total_bytes": total, "entries": entries}
+    return DuCommand()(args)  # type: ignore[return-value]
 
 
 def command_dd(args: argparse.Namespace) -> dict[str, Any] | bytes:

@@ -74,44 +74,63 @@ def command_coreutils(args: argparse.Namespace) -> dict[str, Any] | bytes:
 # ── date ───────────────────────────────────────────────────────────────
 
 
+class DateCommand(BaseCommand):
+    """Return the current or specified date/time."""
+
+    name = "date"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        timestamp = args.timestamp if args.timestamp is not None else timemod.time()
+        tz = dt.UTC if args.utc else None
+        value = dt.datetime.fromtimestamp(timestamp, tz=tz).astimezone(dt.UTC if args.utc else None)
+        if args.format:
+            formatted = value.strftime(args.format)
+        elif args.iso_8601 == "date":
+            formatted = value.date().isoformat()
+        else:
+            formatted = value.isoformat()
+        tzname = value.tzname()
+        if tzname is not None:
+            try:
+                tzname.encode("ascii")
+            except UnicodeEncodeError:
+                tzname = str(value.utcoffset()) if value.utcoffset() is not None else "unknown"
+        if args.raw:
+            return CommandResult(raw_bytes=(formatted + "\n").encode(getattr(args, "encoding", "utf-8")))
+        return CommandResult(
+            data={
+                "timestamp": timestamp,
+                "iso": value.isoformat(),
+                "utc": args.utc,
+                "timezone": tzname,
+                "formatted": formatted,
+            }
+        )
+
+
 def command_date(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    timestamp = args.timestamp if args.timestamp is not None else timemod.time()
-    tz = dt.UTC if args.utc else None
-    value = dt.datetime.fromtimestamp(timestamp, tz=tz).astimezone(dt.UTC if args.utc else None)
-    if args.format:
-        formatted = value.strftime(args.format)
-    elif args.iso_8601 == "date":
-        formatted = value.date().isoformat()
-    else:
-        formatted = value.isoformat()
-    tzname = value.tzname()
-    if tzname is not None:
-        try:
-            tzname.encode("ascii")
-        except UnicodeEncodeError:
-            tzname = str(value.utcoffset()) if value.utcoffset() is not None else "unknown"
-    result: dict[str, Any] = {
-        "timestamp": timestamp,
-        "iso": value.isoformat(),
-        "utc": args.utc,
-        "timezone": tzname,
-        "formatted": formatted,
-    }
-    if args.raw:
-        return (formatted + "\n").encode(getattr(args, "encoding", "utf-8"))
-    return result
+    return DateCommand()(args)
 
 
 # ── env / printenv ─────────────────────────────────────────────────────
 
 
+class EnvCommand(BaseCommand):
+    """Query or list environment variables."""
+
+    name = "env"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        env = selected_environment(args.names)
+        if args.raw:
+            lines = [f"{key}={value}" for key, value in env.items()]
+            return CommandResult(raw_bytes=lines_to_raw(lines, encoding=getattr(args, "encoding", "utf-8")))
+        missing = [name for name in (args.names or []) if name not in os.environ]
+        return CommandResult(data={"count": len(env), "environment": env, "missing": missing})
+
+
 def command_env(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    env = selected_environment(args.names)
-    if args.raw:
-        lines = [f"{key}={value}" for key, value in env.items()]
-        return lines_to_raw(lines, encoding=getattr(args, "encoding", "utf-8"))
-    missing = [name for name in (args.names or []) if name not in os.environ]
-    return {"count": len(env), "environment": env, "missing": missing}
+    return EnvCommand()(args)
 
 
 def command_printenv(args: argparse.Namespace) -> dict[str, Any] | bytes:
@@ -214,21 +233,29 @@ def command_id(args: argparse.Namespace) -> dict[str, Any]:
 # ── uname / arch / hostname / hostid / logname ─────────────────────────
 
 
+class UnameCommand(BaseCommand):
+    """Return system information."""
+
+    name = "uname"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        info = platform.uname()
+        data = {
+            "system": info.system,
+            "node": info.node,
+            "release": info.release,
+            "version": info.version,
+            "machine": info.machine,
+            "processor": info.processor,
+        }
+        if args.raw:
+            raw = " ".join(str(data[k]) for k in ("system", "node", "release", "version", "machine")) + "\n"
+            return CommandResult(raw_bytes=raw.encode(getattr(args, "encoding", "utf-8")))
+        return CommandResult(data=data)
+
+
 def command_uname(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    info = platform.uname()
-    result = {
-        "system": info.system,
-        "node": info.node,
-        "release": info.release,
-        "version": info.version,
-        "machine": info.machine,
-        "processor": info.processor,
-    }
-    if args.raw:
-        return (
-            " ".join(str(result[key]) for key in ("system", "node", "release", "version", "machine")) + "\n"
-        ).encode(getattr(args, "encoding", "utf-8"))
-    return result
+    return UnameCommand()(args)
 
 
 class ArchCommand(BaseCommand):
@@ -320,8 +347,17 @@ def command_pinky(args: argparse.Namespace) -> dict[str, Any] | bytes:
 # ── uptime / tty / users / who ─────────────────────────────────────────
 
 
+class UptimeCommand(BaseCommand):
+    """Return system uptime in seconds."""
+
+    name = "uptime"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        return CommandResult(data={"uptime_seconds": system_uptime_seconds()})
+
+
 def command_uptime(args: argparse.Namespace) -> dict[str, Any]:
-    return {"uptime_seconds": system_uptime_seconds()}
+    return UptimeCommand()(args)  # type: ignore[return-value]
 
 
 def command_tty(args: argparse.Namespace) -> dict[str, Any] | bytes:
@@ -359,15 +395,24 @@ def command_who(args: argparse.Namespace) -> dict[str, Any]:
 # ── nproc ──────────────────────────────────────────────────────────────
 
 
+class NprocCommand(BaseCommand):
+    """Return the number of available processors."""
+
+    name = "nproc"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        try:
+            sched_getaffinity = getattr(os, "sched_getaffinity", None)
+            if not callable(sched_getaffinity):
+                raise AttributeError("os.sched_getaffinity is unavailable")
+            count = len(sched_getaffinity(0))
+        except (AttributeError, NotImplementedError):
+            count = os.cpu_count() or 1
+        return CommandResult(data={"count": count})
+
+
 def command_nproc(args: argparse.Namespace) -> dict[str, Any]:
-    try:
-        sched_getaffinity = getattr(os, "sched_getaffinity", None)
-        if not callable(sched_getaffinity):
-            raise AttributeError("os.sched_getaffinity is unavailable")
-        count = len(sched_getaffinity(0))
-    except (AttributeError, NotImplementedError):
-        count = os.cpu_count() or 1
-    return {"count": count}
+    return NprocCommand()(args)  # type: ignore[return-value]
 
 
 # ── timeout ────────────────────────────────────────────────────────────
@@ -830,18 +875,27 @@ def command_kill(args: argparse.Namespace) -> dict[str, Any]:
 # ── sleep ──────────────────────────────────────────────────────────────
 
 
+class SleepCommand(BaseCommand):
+    """Sleep for a bounded duration with dry-run support."""
+
+    name = "sleep"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        if args.seconds < 0:
+            raise AgentError("invalid_input", "seconds must be >= 0.")
+        if args.seconds > args.max_seconds:
+            raise AgentError(
+                "unsafe_operation",
+                "Sleep duration exceeds --max-seconds.",
+                details={"seconds": args.seconds, "max_seconds": args.max_seconds},
+            )
+        if not args.dry_run:
+            timemod.sleep(args.seconds)
+        return CommandResult(data={"seconds": args.seconds, "slept": not args.dry_run, "dry_run": args.dry_run})
+
+
 def command_sleep(args: argparse.Namespace) -> dict[str, Any]:
-    if args.seconds < 0:
-        raise AgentError("invalid_input", "seconds must be >= 0.")
-    if args.seconds > args.max_seconds:
-        raise AgentError(
-            "unsafe_operation",
-            "Sleep duration exceeds --max-seconds.",
-            details={"seconds": args.seconds, "max_seconds": args.max_seconds},
-        )
-    if not args.dry_run:
-        timemod.sleep(args.seconds)
-    return {"seconds": args.seconds, "slept": not args.dry_run, "dry_run": args.dry_run}
+    return SleepCommand()(args)  # type: ignore[return-value]
 
 
 # ── true / false ───────────────────────────────────────────────────────
@@ -860,8 +914,17 @@ def command_true(args: argparse.Namespace) -> dict[str, Any]:
     return TrueCommand()(args)  # type: ignore[return-value]
 
 
+class FalseCommand(BaseCommand):
+    """Return false (always fails with predicate_false exit code)."""
+
+    name = "false"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        return CommandResult(data={"value": False}, exit_code=EXIT["predicate_false"])
+
+
 def command_false(args: argparse.Namespace) -> dict[str, Any]:
-    return {"value": False, "_exit_code": EXIT["predicate_false"]}
+    return FalseCommand()(args)  # type: ignore[return-value]
 
 
 # ── pathchk ────────────────────────────────────────────────────────────
