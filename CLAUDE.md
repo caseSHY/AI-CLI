@@ -38,8 +38,8 @@ uv run pytest tests/test_oop_compat.py -v            # OOP backward compat
 uv run pytest tests/test_oop_pilots.py -v            # OOP pilot commands golden tests
 uv run pytest tests/test_text_encoding.py -v         # Encoding layer (decode_bytes, BOM, CJK, CLI flags)
 
-# Coverage (threshold: 70%)
-uv run pytest tests/ --cov=src/aicoreutils --cov-fail-under=70
+# Coverage (threshold: 77% matching CI)
+uv run pytest tests/ --cov=src/aicoreutils --cov-fail-under=77
 
 # Lint and typecheck (match CI scope)
 uv run ruff check src/ tests/ scripts/
@@ -139,7 +139,7 @@ Binary-first commands (base64 encode, hash, cksum, dd, tee, etc.) work on raw by
 ```
 src/aicoreutils/    Python package (core -> utils -> commands -> parser, with registry/)
 docs/               Documentation (reference, guides, architecture, development, status, audits; QUICKSTART.md, COMPATIBILITY.md)
-tests/              Test suite (42 test files, ~837 tests, stress/, support/, golden/)
+tests/              Test suite (46 test files, 937 tests, stress/, support/, golden/)
 examples/           Examples and agent tasks
 scripts/            CI audit, release gate, bump version, generate status
 .github/scripts/    WSL CI helpers and golden output updater
