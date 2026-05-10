@@ -1374,17 +1374,27 @@ def command_yes(args: argparse.Namespace) -> dict[str, Any] | bytes:
 # ── dircolors ──────────────────────────────────────────────────────────
 
 
+class DircolorsCommand(BaseCommand):
+    """Return LS_COLORS configuration (always disabled for machine readability)."""
+
+    name = "dircolors"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        if args.raw:
+            shell = args.shell
+            if shell in ("bash", "zsh", "sh"):
+                return CommandResult(raw_bytes=b"LS_COLORS=''; export LS_COLORS\n")
+            if shell == "fish":
+                return CommandResult(raw_bytes=b"set -gx LS_COLORS ''\n")
+            return CommandResult(raw_bytes=b"LS_COLORS=\n")
+        return CommandResult(
+            data={
+                "colors_enabled": False,
+                "ls_colors": "",
+                "reason": "aicoreutils disables color by default to keep output machine-readable.",
+            }
+        )
+
+
 def command_dircolors(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    result = {
-        "colors_enabled": False,
-        "ls_colors": "",
-        "reason": "aicoreutils disables color by default to keep output machine-readable.",
-    }
-    if args.raw:
-        shell = args.shell
-        if shell in ("bash", "zsh", "sh"):
-            return b"LS_COLORS=''; export LS_COLORS\n"
-        if shell == "fish":
-            return b"set -gx LS_COLORS ''\n"
-        return b"LS_COLORS=\n"
-    return result
+    return DircolorsCommand()(args)
