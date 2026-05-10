@@ -33,24 +33,74 @@ from .registry.tool_schema import _EXPLICIT_ALLOW_TOOLS, _READ_ONLY_TOOLS, _WORK
 _PROFILE_CHOICES = ("readonly", "workspace-write", "explicit-danger")
 
 
-def _profile_allow_list(profile: str | None) -> set[str] | None:
-    """Return the allow-list implied by a named security profile."""
-    if profile is None:
+class MCPSecurityPolicy:
+    """Immutable security policy for MCP tool access control.
+
+    Merges profile-based allow/deny lists with explicit command-level
+    overrides and provides a single check_access() entry point.
+    """
+
+    def __init__(
+        self,
+        *,
+        profile: str | None = None,
+        read_only: bool = False,
+        allow_commands: set[str] | None = None,
+        deny_commands: set[str] | None = None,
+    ) -> None:
+        # Resolve profile-based allow list
+        profile_allow: set[str] | None = None
+        if profile is not None:
+            if profile == "readonly":
+                profile_allow = set(_READ_ONLY_TOOLS)
+            elif profile == "workspace-write":
+                profile_allow = set(_READ_ONLY_TOOLS) | set(_WORKSPACE_WRITE_TOOLS)
+            elif profile == "explicit-danger":
+                profile_allow = None
+            else:
+                raise ValueError(f"Unknown MCP security profile: {profile}")
+
+        # Resolve profile-based deny list
+        profile_deny = set(_EXPLICIT_ALLOW_TOOLS) if profile == "workspace-write" else set()
+
+        # Merge explicit overrides
+        merged_allow = set(profile_allow) if profile_allow is not None else None
+        if allow_commands:
+            merged_allow = set(allow_commands) if merged_allow is None else merged_allow | allow_commands
+
+        merged_deny = profile_deny | (deny_commands or set())
+
+        self._allow: frozenset[str] | None = frozenset(merged_allow) if merged_allow is not None else None
+        self._deny: frozenset[str] = frozenset(merged_deny)
+        self._read_only: bool = read_only or profile == "readonly"
+
+    def check_access(self, name: str) -> dict[str, Any] | None:
+        """Return None if access is granted, or an error dict if denied."""
+        if name in self._deny:
+            return {
+                "ok": False,
+                "error": {"code": "SECURITY_DENIED", "command": name, "reason": "Command is in the deny list."},
+            }
+        if self._allow is not None:
+            if name in self._allow:
+                return None
+            return {
+                "ok": False,
+                "error": {"code": "SECURITY_DENIED", "command": name, "reason": "Command is not in the allow list."},
+            }
+        if self._read_only and name not in _READ_ONLY_TOOLS:
+            return {
+                "ok": False,
+                "error": {
+                    "code": "SECURITY_DENIED",
+                    "command": name,
+                    "reason": "Read-only mode is active; this command may modify files or state.",
+                },
+            }
         return None
-    if profile == "readonly":
-        return set(_READ_ONLY_TOOLS)
-    if profile == "workspace-write":
-        return set(_READ_ONLY_TOOLS) | set(_WORKSPACE_WRITE_TOOLS)
-    if profile == "explicit-danger":
-        return None
-    raise ValueError(f"Unknown MCP security profile: {profile}")
 
 
-def _profile_deny_list(profile: str | None) -> set[str]:
-    """Return commands denied by a named security profile."""
-    if profile == "workspace-write":
-        return set(_EXPLICIT_ALLOW_TOOLS)
-    return set()
+# ── Legacy compatibility wrappers (kept for test imports) ────────────
 
 
 def _merge_security_policy(
@@ -60,23 +110,11 @@ def _merge_security_policy(
     allow_commands: set[str] | None = None,
     deny_commands: set[str] | None = None,
 ) -> tuple[bool, set[str] | None, set[str] | None]:
-    """Merge profile, legacy read-only, allow-list, and deny-list settings."""
-    profile_allow = _profile_allow_list(profile)
-    profile_deny = _profile_deny_list(profile)
-
-    merged_allow = set(profile_allow) if profile_allow is not None else None
-    if allow_commands:
-        if merged_allow is None:
-            merged_allow = set(allow_commands)
-        else:
-            merged_allow.update(allow_commands)
-
-    merged_deny = set(profile_deny)
-    if deny_commands:
-        merged_deny.update(deny_commands)
-
-    effective_read_only = read_only or profile == "readonly"
-    return effective_read_only, merged_allow, merged_deny or None
+    """Legacy wrapper — prefer MCPSecurityPolicy directly."""
+    policy = MCPSecurityPolicy(
+        profile=profile, read_only=read_only, allow_commands=allow_commands, deny_commands=deny_commands
+    )
+    return policy._read_only, set(policy._allow) if policy._allow is not None else None, set(policy._deny) or None
 
 
 def _check_tool_access(
@@ -86,40 +124,9 @@ def _check_tool_access(
     allow_commands: set[str] | None = None,
     deny_commands: set[str] | None = None,
 ) -> dict[str, Any] | None:
-    """Check whether a tool can be accessed under the current security policy.
-
-    Returns None if access is granted, or a JSON error dict if denied.
-    """
-    if deny_commands and name in deny_commands:
-        return {
-            "ok": False,
-            "error": {
-                "code": "SECURITY_DENIED",
-                "command": name,
-                "reason": "Command is in the deny list.",
-            },
-        }
-    if allow_commands is not None:
-        if name in allow_commands:
-            return None  # allow list permits this command (overrides read-only)
-        return {
-            "ok": False,
-            "error": {
-                "code": "SECURITY_DENIED",
-                "command": name,
-                "reason": "Command is not in the allow list.",
-            },
-        }
-    if read_only and name not in _READ_ONLY_TOOLS:
-        return {
-            "ok": False,
-            "error": {
-                "code": "SECURITY_DENIED",
-                "command": name,
-                "reason": "Read-only mode is active; this command may modify files or state.",
-            },
-        }
-    return None
+    """Legacy wrapper — prefer MCPSecurityPolicy.check_access() directly."""
+    policy = MCPSecurityPolicy(read_only=read_only, allow_commands=allow_commands, deny_commands=deny_commands)
+    return policy.check_access(name)
 
 
 def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -235,15 +242,8 @@ def server_loop(
     allow_commands: set[str] | None = None,
     deny_commands: set[str] | None = None,
 ) -> None:
-    """Run the MCP JSON-RPC server loop on stdio with optional security controls.
-
-    Args:
-        profile: Named security profile to apply before explicit allow/deny settings.
-        read_only: If True, only read-only tools are callable unless allow_commands permits more.
-        allow_commands: If set, only these commands are callable (overrides read_only check).
-        deny_commands: If set, these commands are blocked (applied first).
-    """
-    effective_read_only, effective_allow_commands, effective_deny_commands = _merge_security_policy(
+    """Run the MCP JSON-RPC server loop on stdio with optional security controls."""
+    policy = MCPSecurityPolicy(
         profile=profile,
         read_only=read_only,
         allow_commands=allow_commands,
@@ -285,12 +285,7 @@ def server_loop(
             tool_args = params.get("arguments", {})
 
             # Security gate — check before execution
-            access_denied = _check_tool_access(
-                tool_name,
-                read_only=effective_read_only,
-                allow_commands=effective_allow_commands,
-                deny_commands=effective_deny_commands,
-            )
+            access_denied = policy.check_access(tool_name)
             if access_denied is not None:
                 content = json.dumps(access_denied, ensure_ascii=False, sort_keys=True)
                 _send(
