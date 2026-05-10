@@ -486,51 +486,64 @@ def command_hash(args: argparse.Namespace) -> dict[str, Any]:
     return {"count": len(entries), "entries": entries}
 
 
-def command_cksum(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    import zlib
+class CksumCommand(BaseCommand):
+    """Compute CRC32 checksums for files or stdin."""
 
-    entries = []
-    raw_lines = []
-    for raw in args.paths or ["-"]:
-        label, data = read_input_bytes(raw)
-        checksum = zlib.crc32(data) & 0xFFFFFFFF
-        entry = {
-            "path": label,
-            "algorithm": "crc32",
-            "checksum": checksum,
-            "size_bytes": len(data),
-        }
-        entries.append(entry)
-        raw_lines.append(f"{checksum} {len(data)} {label}")
-    if args.raw:
-        return lines_to_raw(raw_lines, encoding=getattr(args, "encoding", "utf-8"))
-    return {"count": len(entries), "entries": entries}
+    name = "cksum"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        import zlib
+
+        entries = []
+        raw_lines = []
+        for raw in args.paths or ["-"]:
+            label, data = read_input_bytes(raw)
+            checksum = zlib.crc32(data) & 0xFFFFFFFF
+            entry = {"path": label, "algorithm": "crc32", "checksum": checksum, "size_bytes": len(data)}
+            entries.append(entry)
+            raw_lines.append(f"{checksum} {len(data)} {label}")
+        if args.raw:
+            return CommandResult(raw_bytes=lines_to_raw(raw_lines, encoding=getattr(args, "encoding", "utf-8")))
+        return CommandResult(data={"count": len(entries), "entries": entries})
+
+
+def command_cksum(args: argparse.Namespace) -> dict[str, Any] | bytes:
+    return CksumCommand()(args)
+
+
+class SumCommand(BaseCommand):
+    """Compute 16-bit BSD-style checksums for files or stdin."""
+
+    name = "sum"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        from ...utils import simple_sum16
+
+        if args.block_size < 1:
+            raise AgentError("invalid_input", "--block-size must be >= 1.")
+        entries = []
+        raw_lines = []
+        for raw in args.paths or ["-"]:
+            label, data = read_input_bytes(raw)
+            checksum = simple_sum16(data)
+            blocks = (len(data) + args.block_size - 1) // args.block_size
+            entry = {
+                "path": label,
+                "algorithm": "byte-sum-16",
+                "checksum": checksum,
+                "blocks": blocks,
+                "block_size": args.block_size,
+                "size_bytes": len(data),
+            }
+            entries.append(entry)
+            raw_lines.append(f"{checksum} {blocks} {label}")
+        if args.raw:
+            return CommandResult(raw_bytes=lines_to_raw(raw_lines, encoding=getattr(args, "encoding", "utf-8")))
+        return CommandResult(data={"count": len(entries), "entries": entries})
 
 
 def command_sum(args: argparse.Namespace) -> dict[str, Any] | bytes:
-    from ...utils import simple_sum16
-
-    if args.block_size < 1:
-        raise AgentError("invalid_input", "--block-size must be >= 1.")
-    entries = []
-    raw_lines = []
-    for raw in args.paths or ["-"]:
-        label, data = read_input_bytes(raw)
-        checksum = simple_sum16(data)
-        blocks = (len(data) + args.block_size - 1) // args.block_size
-        entry = {
-            "path": label,
-            "algorithm": "byte-sum-16",
-            "checksum": checksum,
-            "blocks": blocks,
-            "block_size": args.block_size,
-            "size_bytes": len(data),
-        }
-        entries.append(entry)
-        raw_lines.append(f"{checksum} {blocks} {label}")
-    if args.raw:
-        return lines_to_raw(raw_lines, encoding=getattr(args, "encoding", "utf-8"))
-    return {"count": len(entries), "entries": entries}
+    return SumCommand()(args)
 
 
 # ── mkdir / touch ──────────────────────────────────────────────────────
@@ -1424,10 +1437,19 @@ def command_bracket(args: argparse.Namespace) -> dict[str, Any]:
 # ── df / du / dd / sync ────────────────────────────────────────────────
 
 
+class DfCommand(BaseCommand):
+    """Report filesystem disk space usage for paths."""
+
+    name = "df"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        paths = args.paths or ["."]
+        entries = [disk_usage_entry(resolve_path(raw, strict=True)) for raw in paths]
+        return CommandResult(data={"count": len(entries), "entries": entries})
+
+
 def command_df(args: argparse.Namespace) -> dict[str, Any]:
-    paths = args.paths or ["."]
-    entries = [disk_usage_entry(resolve_path(raw, strict=True)) for raw in paths]
-    return {"count": len(entries), "entries": entries}
+    return DfCommand()(args)  # type: ignore[return-value]
 
 
 def command_du(args: argparse.Namespace) -> dict[str, Any]:
@@ -1524,18 +1546,29 @@ def command_dd(args: argparse.Namespace) -> dict[str, Any] | bytes:
     }
 
 
+class SyncCommand(BaseCommand):
+    """Flush filesystem buffers to disk."""
+
+    name = "sync"
+
+    def execute(self, args: argparse.Namespace) -> CommandResult:
+        sync = getattr(os, "sync", None)
+        supported = callable(sync)
+        if not args.dry_run and supported:
+            assert callable(sync)
+            try:
+                sync()
+            except OSError as exc:
+                raise AgentError("io_error", str(exc)) from exc
+        return CommandResult(
+            data={
+                "operation": "sync",
+                "supported": supported,
+                "synced": bool(supported and not args.dry_run),
+                "dry_run": args.dry_run,
+            }
+        )
+
+
 def command_sync(args: argparse.Namespace) -> dict[str, Any]:
-    sync = getattr(os, "sync", None)
-    supported = callable(sync)
-    if not args.dry_run and supported:
-        assert callable(sync)
-        try:
-            sync()
-        except OSError as exc:
-            raise AgentError("io_error", str(exc)) from exc
-    return {
-        "operation": "sync",
-        "supported": supported,
-        "synced": bool(supported and not args.dry_run),
-        "dry_run": args.dry_run,
-    }
+    return SyncCommand()(args)  # type: ignore[return-value]
