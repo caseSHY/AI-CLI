@@ -492,6 +492,8 @@ def command_nproc(args: argparse.Namespace) -> dict[str, Any]:
 
 
 # ── timeout ────────────────────────────────────────────────────────────
+# Stays function-based: subprocess wrapper with timeout and output capture.
+# The subprocess lifecycle (launch, wait, timeout, capture) is inherently procedural.
 
 
 def command_timeout(args: argparse.Namespace) -> dict[str, Any]:
@@ -513,6 +515,8 @@ def command_timeout(args: argparse.Namespace) -> dict[str, Any]:
 
 
 # ── nice ───────────────────────────────────────────────────────────────
+# Stays function-based: subprocess wrapper with niceness adjustment.
+# The preexec_fn + capture_output pattern is inherently procedural.
 
 
 def command_nice(args: argparse.Namespace) -> dict[str, Any]:
@@ -560,6 +564,8 @@ def _validate_stdbuf_mode(raw: str | None, *, name: str) -> str | None:
     )
 
 
+# Stays function-based: subprocess wrapper that sets environment-level buffering
+# hints. The env manipulation + subprocess pattern is inherently procedural.
 def command_stdbuf(args: argparse.Namespace) -> dict[str, Any]:
     buffering = {
         "stdin": _validate_stdbuf_mode(args.input, name="stdin"),
@@ -598,6 +604,8 @@ def command_stdbuf(args: argparse.Namespace) -> dict[str, Any]:
     return result
 
 
+# Stays function-based: termios manipulation with platform-specific fd handling
+# and --allow-change safety gate. The file-descriptor lifecycle is inherently procedural.
 def command_stty(args: argparse.Namespace) -> dict[str, Any] | bytes:
     settings = list(args.settings)
     if settings and settings[0] == "--":
@@ -695,6 +703,8 @@ def command_stty(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 # ── nohup ──────────────────────────────────────────────────────────────
+# Stays function-based: starts a background subprocess with redirected output.
+# Requires --allow-background gate; the Popen lifecycle is inherently procedural.
 
 
 def command_nohup(args: argparse.Namespace) -> dict[str, Any]:
@@ -783,6 +793,8 @@ def _consume_remainder_execution_options(args: argparse.Namespace, *, allow_flag
     return command_args[index:]
 
 
+# Stays function-based: chroot jail with --allow-chroot gate. The chroot() +
+# preexec_fn pattern is platform-specific and inherently procedural.
 def command_chroot(args: argparse.Namespace) -> dict[str, Any]:
     root = resolve_path(args.root, strict=True)
     if not root.is_dir():
@@ -843,6 +855,8 @@ def _context_targets(paths: list[str], *, recursive: bool) -> list[Path]:
     return targets
 
 
+# Stays function-based: SELinux security context via xattr. Platform-specific
+# (requires os.setxattr + "security.selinux"); --allow-context gate.
 def command_chcon(args: argparse.Namespace) -> dict[str, Any] | bytes:
     targets = _context_targets(args.paths, recursive=args.recursive)
     operations = [
@@ -888,6 +902,8 @@ def command_chcon(args: argparse.Namespace) -> dict[str, Any] | bytes:
     return {"count": len(operations), "operations": operations}
 
 
+# Stays function-based: SELinux runcon subprocess wrapper. Platform-specific
+# (requires runcon executable); --allow-context gate.
 def command_runcon(args: argparse.Namespace) -> dict[str, Any]:
     command = normalize_command_args(_consume_remainder_execution_options(args, allow_flag="--allow-context"))
     if args.dry_run:

@@ -512,6 +512,8 @@ def command_fmt(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 # ── csplit ─────────────────────────────────────────────────────────────
+# Stays function-based: multi-file output + regex boundary detection creates a unique
+# control flow that doesn't map cleanly to any template-method base class.
 
 
 def command_csplit(args: argparse.Namespace) -> dict[str, Any]:
@@ -598,6 +600,8 @@ def split_chunks_by_bytes(data: bytes, bytes_per_file: int) -> list[tuple[bytes,
     return [(data[index : index + bytes_per_file], 0) for index in range(0, len(data), bytes_per_file)]
 
 
+# Stays function-based: multi-file output with configurable chunking (by lines or bytes).
+# The flow diverges significantly from the standard text pipeline.
 def command_split(args: argparse.Namespace) -> dict[str, Any]:
     if args.lines is None and args.bytes is None:
         args.lines = 1000
@@ -660,6 +664,8 @@ def command_split(args: argparse.Namespace) -> dict[str, Any]:
 
 
 # ── od ─────────────────────────────────────────────────────────────────
+# Stays function-based: binary-first command. Reads raw bytes and renders them in
+# hex/octal/decimal/char format — does not route through the text encoding layer.
 
 
 def command_od(args: argparse.Namespace) -> dict[str, Any] | bytes:
@@ -1091,6 +1097,9 @@ def command_unexpand(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 # ── codec commands (base64, base32, basenc) ────────────────────────────
+# Both stay function-based: binary-first commands operating on raw bytes via
+# Python's base64 module. The encode/decode path does not route through the text
+# encoding layer, except for content_text preview on decode.
 
 
 def command_codec(args: argparse.Namespace) -> dict[str, Any] | bytes:
@@ -1139,6 +1148,7 @@ def command_codec(args: argparse.Namespace) -> dict[str, Any] | bytes:
     return result
 
 
+# Same rationale as command_codec: binary-first, multi-base encode/decode.
 def command_basenc(args: argparse.Namespace) -> dict[str, Any] | bytes:
     inputs = args.paths or ["-"]
     chunks = []

@@ -163,6 +163,9 @@ def command_dirname(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 # ── ls / dir / vdir ────────────────────────────────────────────────────
+# command_ls stays function-based: --stream mode writes NDJSON directly to stdout
+# via StreamWriter, bypassing the CommandResult pipeline. This architectural
+# necessity doesn't fit any template-method base class.
 
 
 def command_ls(args: argparse.Namespace) -> dict[str, Any] | bytes:
@@ -1398,6 +1401,9 @@ def command_rm(args: argparse.Namespace) -> dict[str, Any]:
     return RmCommand()(args)  # type: ignore[return-value]
 
 
+# Stays function-based: requires explicit --allow-destructive flag with multi-pass
+# overwrite + optional remove. The safety gate and unique multi-pass I/O pattern don't
+# map cleanly to any template-method base class.
 def command_shred(args: argparse.Namespace) -> dict[str, Any]:
     if args.passes < 1:
         raise AgentError("invalid_input", "--passes must be >= 1.")
@@ -1491,6 +1497,8 @@ def command_test(args: argparse.Namespace) -> dict[str, Any]:
     return TestCommand()(args)  # type: ignore[return-value]
 
 
+# Stays function-based: compatibility shell for [ / test syntax. Delegates
+# to TestCommand after re-parsing token-based arguments into flag-based args.
 def command_bracket(args: argparse.Namespace) -> dict[str, Any]:
     tokens = list(args.tokens)
     for flag_name, flag in (
@@ -1611,6 +1619,9 @@ def command_du(args: argparse.Namespace) -> dict[str, Any]:
     return DuCommand()(args)  # type: ignore[return-value]
 
 
+# Stays function-based: complex conv= option chain (sync/notrunc/noerror/fsync)
+# combined with skip/seek block-level I/O. Each conv mode modifies the I/O path
+# differently — the resulting control flow is inherently procedural.
 def command_dd(args: argparse.Namespace) -> dict[str, Any] | bytes:
     if args.bs < 1:
         raise AgentError("invalid_input", "--bs must be >= 1.")
