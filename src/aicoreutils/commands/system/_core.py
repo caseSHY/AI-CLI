@@ -499,7 +499,31 @@ def command_nproc(args: argparse.Namespace) -> dict[str, Any]:
 def command_timeout(args: argparse.Namespace) -> dict[str, Any]:
     if args.seconds <= 0:
         raise AgentError("invalid_input", "timeout seconds must be > 0.")
-    command = normalize_command_args(args.command_args)
+    # Re-extract --dry-run and --max-output-bytes that may appear
+    # after the command name in the REMAINDER (e.g. timeout 1 true --dry-run).
+    # argparse.REMAINDER captures everything after the last recognized flag;
+    # this gives a second chance to extract execution-control flags.
+    remainder: list[str] = list(args.command_args)
+    clean_remainder: list[str] = []
+    i = 0
+    while i < len(remainder):
+        token = remainder[i]
+        if token == "--dry-run":
+            args.dry_run = True
+            i += 1
+        elif token == "--max-output-bytes" and i + 1 < len(remainder):
+            try:
+                args.max_output_bytes = int(remainder[i + 1])
+            except ValueError as exc:
+                raise AgentError("invalid_input", "--max-output-bytes must be an integer.") from exc
+            i += 2
+        elif token == "--":
+            clean_remainder.extend(remainder[i + 1 :])
+            break
+        else:
+            clean_remainder.append(token)
+            i += 1
+    command = normalize_command_args(clean_remainder)
     if args.dry_run:
         return {"command": command, "timeout_seconds": args.seconds, "dry_run": True}
     completed, timed_out = run_subprocess_capture(

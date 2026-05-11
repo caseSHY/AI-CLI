@@ -997,12 +997,20 @@ def command_cut(args: argparse.Namespace) -> dict[str, Any] | bytes:
 
 
 class TrCommand(BaseCommand):
-    """Translate or delete literal characters from files or stdin."""
+    """Translate or delete literal characters from files or stdin.
+
+    Supports --input TEXT for inline input (no file/stdin needed).
+    When --input is provided, it takes priority over stdin and --path.
+    """
 
     name = "tr"
 
     def execute(self, args: argparse.Namespace) -> CommandResult:
-        sources = read_input_texts(args.paths, encoding=args.encoding)
+        input_text = getattr(args, "input", None)
+        if input_text is not None:
+            sources = [{"path": "<input>", "text": input_text}]
+        else:
+            sources = read_input_texts(args.paths, encoding=args.encoding)
         output = "".join(transform_text(args, source["text"]) for source in sources)
         if args.raw:
             return CommandResult(raw_bytes=output.encode(args.encoding))

@@ -121,3 +121,45 @@ Follows [Semantic Versioning](https://semver.org/):
 - **MAJOR**: breaking change
 - **MINOR**: new functionality (backward-compatible)
 - **PATCH**: bug fixes
+
+### GNU Coreutils Compatibility Notes / GNU 兼容性说明
+
+#### dd — GNU-style key=value operands
+
+dd 支持传统 GNU `key=value` 语法，同时也保留 argparse `--input`/`--output` 标志：
+
+```bash
+# GNU style (supported since v1.2.2)
+aicoreutils dd if=input.bin of=output.bin bs=1024 count=1
+aicoreutils dd if=/dev/zero of=out.bin bs=1K count=10
+
+# argparse style (original API, unchanged)
+aicoreutils dd --input input.bin --output output.bin --bs 512 --count 2
+
+# Mixed style (operands override argparse flags)
+aicoreutils dd --bs 512 bs=1024 if=input.bin of=output.bin
+```
+
+Supported operands: `if=`, `of=`, `bs=`, `count=`, `skip=`, `seek=`, `conv=`, `status=`.
+
+| Operand | Maps to | Notes |
+|---------|---------|-------|
+| `if=PATH` | `--input` | Input file, `-` for stdin |
+| `of=PATH` | `--output` | Output file, `-` for stdout |
+| `bs=SIZE` | `--bs` | Block size; supports IEC suffixes (K/M/G) |
+| `count=N` | `--count` | Number of blocks to copy |
+| `skip=N` | `--skip` | Input blocks to skip |
+| `seek=N` | `--seek` | Output blocks to seek |
+| `conv=LIST` | `--conv` | Comma-separated: sync, notrunc, noerror, fsync |
+| `status=VALUE` | ignored | Accepted for compatibility; no progress bar in aicoreutils |
+
+#### tr — inline input
+
+tr supports `--input TEXT` for inline text (no file or pipe needed):
+
+```bash
+aicoreutils tr --input "abc" "a-c" "A-C"
+```
+
+When `--input` is provided, it takes priority over stdin and `--path`.
+When omitted, tr reads from `--path` files or stdin (unchanged behavior).

@@ -118,6 +118,41 @@ class TrCommandTests(unittest.TestCase):
             result = args.func(args)
             self.assertEqual(result["lines"], ["hll"])
 
+    def test_tr_input_translate(self) -> None:
+        args = _parser.parse_args(["tr", "--input", "abc", "a-z", "A-Z"])
+        result = args.func(args)
+        self.assertEqual(result["lines"], ["ABC"])
+
+    def test_tr_input_delete(self) -> None:
+        args = _parser.parse_args(["tr", "--input", "hello", "--delete", "aeiou"])
+        result = args.func(args)
+        self.assertEqual(result["lines"], ["hll"])
+
+    def test_tr_input_unicode(self) -> None:
+        args = _parser.parse_args(["tr", "--input", "héllo", "a-z", "A-Z"])
+        result = args.func(args)
+        self.assertEqual(result["content"], "HéLLO")
+
+    def test_tr_input_empty(self) -> None:
+        args = _parser.parse_args(["tr", "--input", "", "a-z", "A-Z"])
+        result = args.func(args)
+        self.assertEqual(result["content"], "")
+
+    def test_tr_input_raw_mode(self) -> None:
+        args = _parser.parse_args(["tr", "--input", "abc", "--raw", "a-c", "A-C"])
+        result = args.func(args)
+        self.assertIsInstance(result, bytes)
+        self.assertEqual(result, b"ABC")
+
+    def test_tr_stdin_still_works(self) -> None:
+        """File path via --path still works when --input is not used."""
+        with TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "f.txt").write_text("xyz\n", encoding="utf-8")
+            args = _parser.parse_args(["tr", "a-z", "A-Z", "--path", str(root / "f.txt")])
+            result = args.func(args)
+            self.assertEqual(result["lines"], ["XYZ"])
+
 
 class CodecCommandTests(unittest.TestCase):
     def test_base64_encode(self) -> None:

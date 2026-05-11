@@ -727,6 +727,7 @@ def build_parser() -> AgentArgumentParser:
     p = add_subparser("tr", help="Translate or delete literal characters from files or stdin.")
     p.add_argument("set1", help="Literal source/delete character set. GNU bracket/range syntax is not expanded.")
     p.add_argument("set2", nargs="?", help="Literal replacement character set for translation.")
+    p.add_argument("--input", help="Input text. When provided, takes priority over stdin and --path.")
     p.add_argument("--path", dest="paths", action="append", default=[], help="Input file. Repeat for multiple files.")
     p.add_argument("--delete", "-d", action="store_true", help="Delete characters in SET1.")
     p.add_argument("--squeeze-repeats", "-s", action="store_true", help="Squeeze repeated output characters.")
@@ -875,6 +876,9 @@ def build_parser() -> AgentArgumentParser:
     )
     p.add_argument("--dry-run", action="store_true", help="Report without writing output.")
     p.add_argument("--raw", action="store_true", help="Write selected input bytes without a JSON envelope.")
+    p.add_argument(
+        "operands", nargs=argparse.REMAINDER, help="GNU-style key=value operands (if=, of=, bs=, count=, ...)."
+    )
     p.set_defaults(func=command_dd)
 
     p = add_subparser("sync", help="Flush filesystem buffers where supported.")

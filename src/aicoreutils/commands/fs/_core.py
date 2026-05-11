@@ -44,6 +44,7 @@ from ...utils import (
     ensure_parent,
     iter_directory,
     lines_to_raw,
+    parse_numfmt_value,
     parse_octal_mode,
     read_bytes,
     read_input_bytes,
@@ -1627,10 +1628,64 @@ def command_du(args: argparse.Namespace) -> dict[str, Any]:
     return DuCommand()(args)  # type: ignore[return-value]
 
 
+def _parse_dd_operands(operands: list[str]) -> dict[str, Any]:
+    """Parse GNU-style dd key=value operands (if=, of=, bs=, count=, skip=, seek=, conv=).
+
+    Returns a dict of overrides that should be applied to the argparse namespace.
+    Unknown keys raise AgentError.  Size values (bs) accept suffixes via
+    parse_numfmt_value (K/M/G etc.).
+    """
+    overrides: dict[str, Any] = {}
+    for op in operands:
+        if "=" not in op:
+            raise AgentError("invalid_input", f"Unknown dd operand: {op}")
+        key, _, value = op.partition("=")
+        key = key.strip()
+        value = value.strip()
+        if key == "if":
+            overrides["input"] = value
+        elif key == "of":
+            overrides["output"] = value
+        elif key == "bs":
+            try:
+                overrides["bs"] = int(parse_numfmt_value(value, "iec"))
+            except (ValueError, TypeError) as exc:
+                raise AgentError("invalid_input", f"Invalid dd bs value: {value}") from exc
+        elif key == "count":
+            try:
+                overrides["count"] = int(value)
+            except ValueError as exc:
+                raise AgentError("invalid_input", f"Invalid dd count value: {value}") from exc
+        elif key == "skip":
+            try:
+                overrides["skip"] = int(value)
+            except ValueError as exc:
+                raise AgentError("invalid_input", f"Invalid dd skip value: {value}") from exc
+        elif key == "seek":
+            try:
+                overrides["seek"] = int(value)
+            except ValueError as exc:
+                raise AgentError("invalid_input", f"Invalid dd seek value: {value}") from exc
+        elif key == "conv":
+            overrides["conv"] = value
+        elif key == "status":
+            pass  # accept but ignore (no progress bar in aicoreutils)
+        else:
+            raise AgentError("invalid_input", f"Unknown dd operand: {op}")
+    return overrides
+
+
 # Stays function-based: complex conv= option chain (sync/notrunc/noerror/fsync)
 # combined with skip/seek block-level I/O. Each conv mode modifies the I/O path
 # differently — the resulting control flow is inherently procedural.
 def command_dd(args: argparse.Namespace) -> dict[str, Any] | bytes:
+    # Merge GNU-style key=value operands with argparse namespace.
+    # Operands from the command line override argparse defaults.
+    operands = getattr(args, "operands", None) or []
+    if operands:
+        overrides = _parse_dd_operands(operands)
+        for k, v in overrides.items():
+            setattr(args, k, v)
     if args.bs < 1:
         raise AgentError("invalid_input", "--bs must be >= 1.")
     if args.count is not None and args.count < 0:

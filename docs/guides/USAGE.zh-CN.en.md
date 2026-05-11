@@ -34,13 +34,13 @@ stderr，退出码稳定明确，修改文件的命令支持 `--dry-run`。
 查看完整分类：
 
 ```powershell
-python -m agentutils catalog --pretty
+aicoreutils catalog --pretty
 ```
 
 查看 JSON 协议和退出码：
 
 ```powershell
-python -m agentutils schema --pretty
+aicoreutils schema --pretty
 ```
 
 ### 常用示例
@@ -48,236 +48,250 @@ python -m agentutils schema --pretty
 列出当前目录：
 
 ```powershell
-python -m agentutils ls .
-python -m agentutils dir .
-python -m agentutils vdir .
+aicoreutils ls .
+aicoreutils dir .
+aicoreutils vdir .
 ```
 
 递归列出目录，但限制深度和数量：
 
 ```powershell
-python -m agentutils ls . --recursive --max-depth 2 --limit 100
+aicoreutils ls . --recursive --max-depth 2 --limit 100
 ```
 
 读取文件前 4096 字节：
 
 ```powershell
-python -m agentutils cat docs/reference/AGENTUTILS.md --max-bytes 4096
+aicoreutils cat docs/reference/AGENTUTILS.md --max-bytes 4096
 ```
 
 统计文件行数、词数、字符数和字节数：
 
 ```powershell
-python -m agentutils wc docs/reference/AGENTUTILS.md
+aicoreutils wc docs/reference/AGENTUTILS.md
 ```
 
 判断路径是否是非空文件：
 
 ```powershell
-python -m agentutils test docs/reference/AGENTUTILS.md --file --non-empty
-python -m agentutils [ -f docs/reference/AGENTUTILS.md ]
+aicoreutils test docs/reference/AGENTUTILS.md --file --non-empty
+aicoreutils [ -f docs/reference/AGENTUTILS.md ]
 ```
 
 解析路径：
 
 ```powershell
-python -m agentutils readlink --canonicalize docs/reference/AGENTUTILS.md
+aicoreutils readlink --canonicalize docs/reference/AGENTUTILS.md
 ```
 
 提取路径组件：
 
 ```powershell
-python -m agentutils basename src/aicoreutils/cli.py --suffix .py
-python -m agentutils dirname src/aicoreutils/cli.py
+aicoreutils basename src/aicoreutils/cli.py --suffix .py
+aicoreutils dirname src/aicoreutils/cli.py
 ```
 
 计算 SHA-256：
 
 ```powershell
-python -m agentutils sha256sum docs/reference/AGENTUTILS.md
-python -m agentutils cksum payload.bin
-python -m agentutils sum payload.bin
+aicoreutils sha256sum docs/reference/AGENTUTILS.md
+aicoreutils cksum payload.bin
+aicoreutils sum payload.bin
 ```
 
 排序文本行：
 
 ```powershell
-python -m agentutils sort data.txt --numeric
+aicoreutils sort data.txt --numeric
 ```
 
 比较、连接或按列合并文本：
 
 ```powershell
-python -m agentutils comm left.txt right.txt
-python -m agentutils join people.txt roles.txt --raw
-python -m agentutils paste a.txt b.txt --delimiter "|"
+aicoreutils comm left.txt right.txt
+aicoreutils join people.txt roles.txt --raw
+aicoreutils paste a.txt b.txt --delimiter "|"
 ```
 
 打乱、反转或转换制表符：
 
 ```powershell
-python -m agentutils shuf data.txt --seed 42
-python -m agentutils tac data.txt --raw
-python -m agentutils expand data.txt --tabs 4
-python -m agentutils unexpand data.txt --tabs 4 --all
+aicoreutils shuf data.txt --seed 42
+aicoreutils tac data.txt --raw
+aicoreutils expand data.txt --tabs 4
+aicoreutils unexpand data.txt --tabs 4 --all
 ```
 
 编号、折行、重排段落、查看字节或格式化数字：
 
 ```powershell
-python -m agentutils nl data.txt --raw
-python -m agentutils fold data.txt --width 80
-python -m agentutils fmt notes.txt --width 72
-python -m agentutils csplit data.txt --pattern "^---$" --prefix part- --dry-run
-python -m agentutils pr notes.txt --page-length 60 --header Report --raw
-python -m agentutils ptx notes.txt --ignore-case --only agent
-python -m agentutils od payload.bin --format hex --max-bytes 64
-python -m agentutils numfmt 1536 --to-unit iec
-python -m agentutils tsort deps.txt
+aicoreutils nl data.txt --raw
+aicoreutils fold data.txt --width 80
+aicoreutils fmt notes.txt --width 72
+aicoreutils csplit data.txt --pattern "^---$" --prefix part- --dry-run
+aicoreutils pr notes.txt --page-length 60 --header Report --raw
+aicoreutils ptx notes.txt --ignore-case --only agent
+aicoreutils od payload.bin --format hex --max-bytes 64
+aicoreutils numfmt 1536 --to-unit iec
+aicoreutils tsort deps.txt
 ```
 
 折叠相邻重复行：
 
 ```powershell
-python -m agentutils uniq data.txt --count
+aicoreutils uniq data.txt --count
 ```
 
 选择 TSV 的第 1 和第 3 列：
 
 ```powershell
-python -m agentutils cut data.tsv --fields 1,3
+aicoreutils cut data.tsv --fields 1,3
 ```
 
-替换文本中的字面字符：
+替换文本中的字面字符（支持 stdin、文件、内联输入）：
 
 ```powershell
-python -m agentutils tr abc ABC --path data.txt
+aicoreutils tr --input "abc" "a-c" "A-C"
+aicoreutils tr abc ABC --path data.txt
+echo "hello" | aicoreutils tr --delete "aeiou"
 ```
 
 编码文件内容：
 
 ```powershell
-python -m agentutils base64 payload.bin
-python -m agentutils basenc --base base64url payload.bin
+aicoreutils base64 payload.bin
+aicoreutils basenc --base base64url payload.bin
 ```
 
 查看时间、环境和系统上下文：
 
 ```powershell
-python -m agentutils date --utc
-python -m agentutils env PYTHONPATH
-python -m agentutils whoami
-python -m agentutils groups
-python -m agentutils id
-python -m agentutils uname
-python -m agentutils arch
-python -m agentutils hostname
-python -m agentutils hostid
-python -m agentutils logname
-python -m agentutils uptime
-python -m agentutils tty
-python -m agentutils users
-python -m agentutils who
-python -m agentutils nproc
-python -m agentutils df .
-python -m agentutils du . --max-depth 2
+aicoreutils date --utc
+aicoreutils env PYTHONPATH
+aicoreutils whoami
+aicoreutils groups
+aicoreutils id
+aicoreutils uname
+aicoreutils arch
+aicoreutils hostname
+aicoreutils hostid
+aicoreutils logname
+aicoreutils uptime
+aicoreutils tty
+aicoreutils users
+aicoreutils who
+aicoreutils nproc
+aicoreutils df .
+aicoreutils du . --max-depth 2
 ```
 
 复制字节、同步文件系统或输出无颜色配置：
 
 ```powershell
-python -m agentutils dd --input payload.bin --output copy.bin --count 1 --dry-run
-python -m agentutils sync --dry-run
-python -m agentutils dircolors --raw
+# dd: GNU 传统风格 key=value operands（也支持 --input/--output 标志）
+aicoreutils dd if=source.bin of=copy.bin bs=1024 count=1
+aicoreutils dd --input source.bin --output copy.bin --bs 512 --count 2
+aicoreutils dd if=source.bin of=copy.bin --dry-run
+aicoreutils sync --dry-run
+aicoreutils dircolors --raw
 ```
 
 生成有界序列或重复文本：
 
 ```powershell
-python -m agentutils seq 1 2 9
-python -m agentutils printf "row:%s:%03d\n" alpha 7 --raw
-python -m agentutils echo hello agent --raw
-python -m agentutils factor 84
-python -m agentutils expr 3 ">" 2
-python -m agentutils pathchk "safe/path.txt" --portable
-python -m agentutils yes ok --count 3
-python -m agentutils sleep 1 --dry-run
-python -m agentutils timeout 5 -- python -c "print('ok')"
-python -m agentutils nice --dry-run -- python -c "print('ok')"
-python -m agentutils nohup --output agent.log --dry-run -- python -c "print('ok')"
-python -m agentutils kill 12345 --signal TERM --dry-run
+aicoreutils seq 1 2 9
+aicoreutils printf "row:%s:%03d\n" alpha 7 --raw
+aicoreutils echo hello agent --raw
+aicoreutils factor 84
+aicoreutils expr 3 ">" 2
+aicoreutils pathchk "safe/path.txt" --portable
+aicoreutils yes ok --count 3
+aicoreutils sleep 1 --dry-run
+aicoreutils timeout 5 -- python -c "print('ok')"
+aicoreutils nice --dry-run -- python -c "print('ok')"
+aicoreutils nohup --output agent.log --dry-run -- python -c "print('ok')"
+aicoreutils kill 12345 --signal TERM --dry-run
 ```
 
 模拟创建链接：
 
 ```powershell
-python -m agentutils ln source.txt linked.txt --dry-run
-python -m agentutils link source.txt hard-linked.txt --dry-run
+aicoreutils ln source.txt linked.txt --dry-run
+aicoreutils link source.txt hard-linked.txt --dry-run
 ```
 
 模拟创建 FIFO：
 
 ```powershell
-python -m agentutils mkfifo pipe-name --dry-run
+aicoreutils mkfifo pipe-name --dry-run
 ```
 
 模拟拆分文件：
 
 ```powershell
-python -m agentutils split data.txt --lines 100 --prefix part- --dry-run
+aicoreutils split data.txt --lines 100 --prefix part- --dry-run
 ```
 
 模拟修改权限：
 
 ```powershell
-python -m agentutils chmod 600 secret.txt --dry-run
-python -m agentutils chown 0:0 secret.txt --dry-run
-python -m agentutils chgrp 0 secret.txt --dry-run
+aicoreutils chmod 600 secret.txt --dry-run
+aicoreutils chown 0:0 secret.txt --dry-run
+aicoreutils chgrp 0 secret.txt --dry-run
 ```
 
 截断文件到 0 字节：
 
 ```powershell
-python -m agentutils truncate log.txt --size 0
+aicoreutils truncate log.txt --size 0
 ```
 
 创建临时文件：
 
 ```powershell
-python -m agentutils mktemp --prefix agent. --suffix .tmp
+aicoreutils mktemp --prefix agent. --suffix .tmp
 ```
 
 模拟创建节点或安装文件：
 
 ```powershell
-python -m agentutils mknod placeholder --type regular --dry-run
-python -m agentutils install source.txt bin/tool --parents --dry-run
-python -m agentutils ginstall --directory bin --dry-run
+aicoreutils mknod placeholder --type regular --dry-run
+aicoreutils install source.txt bin/tool --parents --dry-run
+aicoreutils ginstall --directory bin --dry-run
+```
+
+管道与 stdin 输入：
+
+```powershell
+# 管道输入 — 大多数文本命令支持 stdin
+echo "hello world" | aicoreutils wc
+echo "abc" | aicoreutils tr a-z A-Z
+echo "line1" | aicoreutils base64
+printf "b\na\nc\n" | aicoreutils sort
+printf "a\na\nb\n" | aicoreutils uniq --count
+printf "name\tage\n" | aicoreutils cut --fields 1
+echo "key\tval" | aicoreutils paste --delimiter "|" - -
+cat file.txt | aicoreutils head --lines 5
+tail -f log.txt | aicoreutils tee out.txt
 ```
 
 把 stdin 写入文件：
 
 ```powershell
-Get-Content input.txt | python -m agentutils tee output.txt
-```
-
-删除空目录：
-
-```powershell
-python -m agentutils rmdir empty-dir --dry-run
+aicoreutils tee output.txt < input.txt
 ```
 
 输出原始文本流，用于管道组合：
 
 ```powershell
-Get-Content data.txt | python -m agentutils sort --raw
+aicoreutils sort data.txt --raw | aicoreutils head --lines 10 --raw
 ```
 
 模拟删除目录，不实际修改文件系统：
 
 ```powershell
-python -m agentutils shred secret.txt --dry-run
-python -m agentutils rm coreutils-9.10 --recursive --dry-run
+aicoreutils shred secret.txt --dry-run
+aicoreutils rm coreutils-9.10 --recursive --dry-run
 ```
 
 ### 输出格式
@@ -362,13 +376,13 @@ text pipeline operations:
 Print the prioritized catalog:
 
 ```powershell
-python -m agentutils catalog --pretty
+aicoreutils catalog --pretty
 ```
 
 Print the JSON protocol and exit codes:
 
 ```powershell
-python -m agentutils schema --pretty
+aicoreutils schema --pretty
 ```
 
 ### Common Examples
@@ -376,236 +390,257 @@ python -m agentutils schema --pretty
 List the current directory:
 
 ```powershell
-python -m agentutils ls .
-python -m agentutils dir .
-python -m agentutils vdir .
+aicoreutils ls .
+aicoreutils dir .
+aicoreutils vdir .
 ```
 
 List recursively with bounded depth and output size:
 
 ```powershell
-python -m agentutils ls . --recursive --max-depth 2 --limit 100
+aicoreutils ls . --recursive --max-depth 2 --limit 100
 ```
 
 Read the first 4096 bytes of a file:
 
 ```powershell
-python -m agentutils cat docs/reference/AGENTUTILS.md --max-bytes 4096
+aicoreutils cat docs/reference/AGENTUTILS.md --max-bytes 4096
 ```
 
 Count lines, words, characters, and bytes:
 
 ```powershell
-python -m agentutils wc docs/reference/AGENTUTILS.md
+aicoreutils wc docs/reference/AGENTUTILS.md
 ```
 
 Test that a path is a non-empty file:
 
 ```powershell
-python -m agentutils test docs/reference/AGENTUTILS.md --file --non-empty
-python -m agentutils [ -f docs/reference/AGENTUTILS.md ]
+aicoreutils test docs/reference/AGENTUTILS.md --file --non-empty
+aicoreutils [ -f docs/reference/AGENTUTILS.md ]
 ```
 
 Resolve a path:
 
 ```powershell
-python -m agentutils readlink --canonicalize docs/reference/AGENTUTILS.md
+aicoreutils readlink --canonicalize docs/reference/AGENTUTILS.md
 ```
 
 Extract path components:
 
 ```powershell
-python -m agentutils basename src/aicoreutils/cli.py --suffix .py
-python -m agentutils dirname src/aicoreutils/cli.py
+aicoreutils basename src/aicoreutils/cli.py --suffix .py
+aicoreutils dirname src/aicoreutils/cli.py
 ```
 
 Calculate SHA-256:
 
 ```powershell
-python -m agentutils sha256sum docs/reference/AGENTUTILS.md
-python -m agentutils cksum payload.bin
-python -m agentutils sum payload.bin
+aicoreutils sha256sum docs/reference/AGENTUTILS.md
+aicoreutils cksum payload.bin
+aicoreutils sum payload.bin
 ```
 
 Sort text lines:
 
 ```powershell
-python -m agentutils sort data.txt --numeric
+aicoreutils sort data.txt --numeric
 ```
 
 Compare, join, or merge text columns:
 
 ```powershell
-python -m agentutils comm left.txt right.txt
-python -m agentutils join people.txt roles.txt --raw
-python -m agentutils paste a.txt b.txt --delimiter "|"
+aicoreutils comm left.txt right.txt
+aicoreutils join people.txt roles.txt --raw
+aicoreutils paste a.txt b.txt --delimiter "|"
 ```
 
 Shuffle, reverse, or convert tabs:
 
 ```powershell
-python -m agentutils shuf data.txt --seed 42
-python -m agentutils tac data.txt --raw
-python -m agentutils expand data.txt --tabs 4
-python -m agentutils unexpand data.txt --tabs 4 --all
+aicoreutils shuf data.txt --seed 42
+aicoreutils tac data.txt --raw
+aicoreutils expand data.txt --tabs 4
+aicoreutils unexpand data.txt --tabs 4 --all
 ```
 
 Number lines, wrap text, reflow paragraphs, dump bytes, or format numbers:
 
 ```powershell
-python -m agentutils nl data.txt --raw
-python -m agentutils fold data.txt --width 80
-python -m agentutils fmt notes.txt --width 72
-python -m agentutils csplit data.txt --pattern "^---$" --prefix part- --dry-run
-python -m agentutils pr notes.txt --page-length 60 --header Report --raw
-python -m agentutils ptx notes.txt --ignore-case --only agent
-python -m agentutils od payload.bin --format hex --max-bytes 64
-python -m agentutils numfmt 1536 --to-unit iec
-python -m agentutils tsort deps.txt
+aicoreutils nl data.txt --raw
+aicoreutils fold data.txt --width 80
+aicoreutils fmt notes.txt --width 72
+aicoreutils csplit data.txt --pattern "^---$" --prefix part- --dry-run
+aicoreutils pr notes.txt --page-length 60 --header Report --raw
+aicoreutils ptx notes.txt --ignore-case --only agent
+aicoreutils od payload.bin --format hex --max-bytes 64
+aicoreutils numfmt 1536 --to-unit iec
+aicoreutils tsort deps.txt
 ```
 
 Collapse adjacent duplicate lines:
 
 ```powershell
-python -m agentutils uniq data.txt --count
+aicoreutils uniq data.txt --count
 ```
 
 Select the first and third TSV fields:
 
 ```powershell
-python -m agentutils cut data.tsv --fields 1,3
+aicoreutils cut data.tsv --fields 1,3
 ```
 
-Translate literal characters:
+Translate literal characters (supports stdin, file, inline input):
 
 ```powershell
-python -m agentutils tr abc ABC --path data.txt
+aicoreutils tr --input "abc" "a-c" "A-C"
+aicoreutils tr abc ABC --path data.txt
+echo "hello" | aicoreutils tr --delete "aeiou"
 ```
 
 Encode file content:
 
 ```powershell
-python -m agentutils base64 payload.bin
-python -m agentutils basenc --base base64url payload.bin
+aicoreutils base64 payload.bin
+aicoreutils basenc --base base64url payload.bin
 ```
 
 Inspect time, environment, and system context:
 
 ```powershell
-python -m agentutils date --utc
-python -m agentutils env PYTHONPATH
-python -m agentutils whoami
-python -m agentutils groups
-python -m agentutils id
-python -m agentutils uname
-python -m agentutils arch
-python -m agentutils hostname
-python -m agentutils hostid
-python -m agentutils logname
-python -m agentutils uptime
-python -m agentutils tty
-python -m agentutils users
-python -m agentutils who
-python -m agentutils nproc
-python -m agentutils df .
-python -m agentutils du . --max-depth 2
+aicoreutils date --utc
+aicoreutils env PYTHONPATH
+aicoreutils whoami
+aicoreutils groups
+aicoreutils id
+aicoreutils uname
+aicoreutils arch
+aicoreutils hostname
+aicoreutils hostid
+aicoreutils logname
+aicoreutils uptime
+aicoreutils tty
+aicoreutils users
+aicoreutils who
+aicoreutils nproc
+aicoreutils df .
+aicoreutils du . --max-depth 2
 ```
 
 Copy bytes, sync the filesystem, or emit a no-color config:
 
 ```powershell
-python -m agentutils dd --input payload.bin --output copy.bin --count 1 --dry-run
-python -m agentutils sync --dry-run
-python -m agentutils dircolors --raw
+# dd: GNU-style key=value operands (also supports --input/--output flags)
+aicoreutils dd if=source.bin of=copy.bin bs=1024 count=1
+aicoreutils dd --input source.bin --output copy.bin --bs 512 --count 2
+aicoreutils dd if=source.bin of=copy.bin --dry-run
+aicoreutils sync --dry-run
+aicoreutils dircolors --raw
 ```
 
 Generate bounded sequences or repeated text:
 
 ```powershell
-python -m agentutils seq 1 2 9
-python -m agentutils printf "row:%s:%03d\n" alpha 7 --raw
-python -m agentutils echo hello agent --raw
-python -m agentutils factor 84
-python -m agentutils expr 3 ">" 2
-python -m agentutils pathchk "safe/path.txt" --portable
-python -m agentutils yes ok --count 3
-python -m agentutils sleep 1 --dry-run
-python -m agentutils timeout 5 -- python -c "print('ok')"
-python -m agentutils nice --dry-run -- python -c "print('ok')"
-python -m agentutils nohup --output agent.log --dry-run -- python -c "print('ok')"
-python -m agentutils kill 12345 --signal TERM --dry-run
+aicoreutils seq 1 2 9
+aicoreutils printf "row:%s:%03d\n" alpha 7 --raw
+aicoreutils echo hello agent --raw
+aicoreutils factor 84
+aicoreutils expr 3 ">" 2
+aicoreutils pathchk "safe/path.txt" --portable
+aicoreutils yes ok --count 3
+aicoreutils sleep 1 --dry-run
+aicoreutils timeout 5 -- python -c "print('ok')"
+aicoreutils nice --dry-run -- python -c "print('ok')"
+aicoreutils nohup --output agent.log --dry-run -- python -c "print('ok')"
+aicoreutils kill 12345 --signal TERM --dry-run
 ```
 
 Preview link creation:
 
 ```powershell
-python -m agentutils ln source.txt linked.txt --dry-run
-python -m agentutils link source.txt hard-linked.txt --dry-run
+aicoreutils ln source.txt linked.txt --dry-run
+aicoreutils link source.txt hard-linked.txt --dry-run
 ```
 
 Preview FIFO creation:
 
 ```powershell
-python -m agentutils mkfifo pipe-name --dry-run
+aicoreutils mkfifo pipe-name --dry-run
 ```
 
 Preview file splitting:
 
 ```powershell
-python -m agentutils split data.txt --lines 100 --prefix part- --dry-run
+aicoreutils split data.txt --lines 100 --prefix part- --dry-run
 ```
 
 Preview a mode change:
 
 ```powershell
-python -m agentutils chmod 600 secret.txt --dry-run
-python -m agentutils chown 0:0 secret.txt --dry-run
-python -m agentutils chgrp 0 secret.txt --dry-run
+aicoreutils chmod 600 secret.txt --dry-run
+aicoreutils chown 0:0 secret.txt --dry-run
+aicoreutils chgrp 0 secret.txt --dry-run
 ```
 
 Truncate a file to 0 bytes:
 
 ```powershell
-python -m agentutils truncate log.txt --size 0
+aicoreutils truncate log.txt --size 0
 ```
 
 Create a temporary file:
 
 ```powershell
-python -m agentutils mktemp --prefix agent. --suffix .tmp
+aicoreutils mktemp --prefix agent. --suffix .tmp
 ```
 
 Preview node creation or file installation:
 
 ```powershell
-python -m agentutils mknod placeholder --type regular --dry-run
-python -m agentutils install source.txt bin/tool --parents --dry-run
-python -m agentutils ginstall --directory bin --dry-run
+aicoreutils mknod placeholder --type regular --dry-run
+aicoreutils install source.txt bin/tool --parents --dry-run
+aicoreutils ginstall --directory bin --dry-run
+```
+
+Pipes and stdin input:
+
+```powershell
+# Pipe input — most text commands accept stdin
+echo "hello world" | aicoreutils wc
+echo "abc" | aicoreutils tr a-z A-Z
+echo "line1" | aicoreutils base64
+printf "b\na\nc\n" | aicoreutils sort
+printf "a\na\nb\n" | aicoreutils uniq --count
+printf "name\tage\n" | aicoreutils cut --fields 1
+cat file.txt | aicoreutils head --lines 5
+tail -f log.txt | aicoreutils tee out.txt
+# tr --input for inline text input (no pipe needed)
+aicoreutils tr --input "abc" "a-c" "A-C"
 ```
 
 Write stdin to a file:
 
 ```powershell
-Get-Content input.txt | python -m agentutils tee output.txt
+aicoreutils tee output.txt < input.txt
 ```
 
 Remove an empty directory:
 
 ```powershell
-python -m agentutils rmdir empty-dir --dry-run
+aicoreutils rmdir empty-dir --dry-run
 ```
 
 Use raw text output for pipeline composition:
 
 ```powershell
-Get-Content data.txt | python -m agentutils sort --raw
+aicoreutils sort data.txt --raw | aicoreutils head --lines 10 --raw
 ```
 
 Preview a recursive delete without changing the filesystem:
 
 ```powershell
-python -m agentutils shred secret.txt --dry-run
-python -m agentutils rm coreutils-9.10 --recursive --dry-run
+aicoreutils shred secret.txt --dry-run
+aicoreutils rm coreutils-9.10 --recursive --dry-run
 ```
 
 ### Output Format

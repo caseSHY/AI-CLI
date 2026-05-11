@@ -748,6 +748,39 @@ class TimeoutRealExecutionTests(unittest.TestCase):
         self.assertIn("returncode", result)
 
 
+class TimeoutBoundaryTests(unittest.TestCase):
+    def test_timeout_command_with_flag(self) -> None:
+        """timeout 1 true --dry-run: flag in remainder should be re-parsed."""
+        args = _parser.parse_args(["timeout", "0.5", "true", "--dry-run"])
+        result = args.func(args)
+        self.assertTrue(result["dry_run"])
+
+    def test_timeout_command_with_max_output_bytes_in_remainder(self) -> None:
+        args = _parser.parse_args(["timeout", "1", "true", "--max-output-bytes", "100"])
+        result = args.func(args)
+        self.assertIn("returncode", result)
+
+    def test_timeout_dash_dash_separator(self) -> None:
+        """timeout 1 -- command --pretty: -- ensures command gets --pretty."""
+        args = _parser.parse_args(["timeout", "0.5", "--", "true", "--pretty"])
+        result = args.func(args)
+        self.assertIn("returncode", result)
+
+    def test_timeout_flag_before_duration(self) -> None:
+        """--dry-run before duration: consumed by argparse."""
+        args = _parser.parse_args(["timeout", "--dry-run", "1", "true"])
+        result = args.func(args)
+        self.assertTrue(result["dry_run"])
+
+    def test_timeout_no_command_raises(self) -> None:
+        """timeout without any command argument must raise."""
+        from aicoreutils.core.exceptions import AgentError
+
+        args = _parser.parse_args(["timeout", "1"])
+        with self.assertRaises(AgentError):
+            args.func(args)
+
+
 class NiceRealExecutionTests(unittest.TestCase):
     def test_nice_with_true(self) -> None:
         args = _parser.parse_args(["nice", "true"])

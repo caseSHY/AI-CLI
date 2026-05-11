@@ -75,5 +75,58 @@ class FileAdminCommandsTests(unittest.TestCase):
             self.assertEqual(target.read_text(encoding="utf-8"), "secret")
 
 
+class DdCommandTests(unittest.TestCase):
+    def test_dd_gnu_style_operands(self) -> None:
+        with TemporaryDirectory() as raw:
+            cwd = Path(raw)
+            source = cwd / "in.bin"
+            source.write_bytes(b"hello world!!")
+            dest = cwd / "out.bin"
+
+            # GNU style: if=in.bin of=out.bin bs=2 count=3
+            result = parse_stdout(run_cli("dd", "if=in.bin", "of=out.bin", "bs=2", "count=3", cwd=cwd))
+            self.assertEqual(result["result"]["copied_bytes"], 6)
+            self.assertEqual(dest.read_bytes(), b"hello ")
+
+    def test_dd_gnu_operands_bs_with_suffix(self) -> None:
+        with TemporaryDirectory() as raw:
+            cwd = Path(raw)
+            source = cwd / "in.bin"
+            source.write_bytes(b"x" * 2000)
+
+            result = parse_stdout(run_cli("dd", "if=in.bin", "of=out.bin", "bs=1K", "count=1", cwd=cwd))
+            self.assertEqual(result["result"]["bs"], 1024)
+            self.assertEqual(result["result"]["copied_bytes"], 1024)
+
+    def test_dd_unknown_operand_error(self) -> None:
+        with TemporaryDirectory() as raw:
+            cwd = Path(raw)
+            result = run_cli("dd", "xxx=yyy", cwd=cwd)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("xxx=yyy", result.stderr)
+
+    def test_dd_argparse_style_still_works(self) -> None:
+        with TemporaryDirectory() as raw:
+            cwd = Path(raw)
+            source = cwd / "in.bin"
+            source.write_bytes(b"abcdefgh")
+
+            result = parse_stdout(
+                run_cli("dd", "--input", "in.bin", "--output", "out.bin", "--bs", "3", "--count", "2", cwd=cwd)
+            )
+            self.assertEqual(result["result"]["copied_bytes"], 6)
+
+    def test_dd_dry_run_with_gnu_operands(self) -> None:
+        with TemporaryDirectory() as raw:
+            cwd = Path(raw)
+            source = cwd / "in.bin"
+            source.write_bytes(b"test")
+            dest = cwd / "out.bin"
+
+            result = parse_stdout(run_cli("dd", "--dry-run", "if=in.bin", "of=out.bin", cwd=cwd))
+            self.assertTrue(result["result"]["dry_run"])
+            self.assertFalse(dest.exists())
+
+
 if __name__ == "__main__":
     unittest.main()
