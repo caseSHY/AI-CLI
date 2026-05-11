@@ -278,6 +278,24 @@ CI also runs these audit scripts (all must pass before merge):
 5. Run `scripts/check_release_version.py v<new_version>` to verify tag/version match
 6. Tag `v<new_version>` and push — `publish.yml` triggers on tag push, builds, publishes to TestPyPI then PyPI (Trusted Publishing, no API token), and creates a GitHub Release. CI (`ci.yml`) ignores tag pushes via `tags-ignore: "v*"` to avoid redundant runs.
 
+### Metadata governance
+
+`pyproject.toml` `project.version` is the **single authoritative version source**. All other files that display the version (README, server.json, glama.json, CLAUDE.md, QUICKSTART.md) must be synced from it — never manually edited to bump a version number.
+
+- `scripts/sync_metadata.py` — auto-sync version from pyproject.toml to all dependent files. Must be **idempotent**: two consecutive runs produce no diff.
+- `scripts/check_metadata_consistency.py` — read-only validation (CI and pre-publish). Exit 1 if any file disagrees with pyproject.toml. Checks: version in server.json, README badge/pin, CHANGELOG, CLAUDE.md, CURRENT_STATUS.md, QUICKSTART.md, glama.json, plus package name and repo URL.
+- `bump_version.py` handles pyproject.toml + CURRENT_STATUS.md + CHANGELOG template prepend. `sync_metadata.py` handles the rest.
+- CI `status-check` job runs `check_metadata_consistency.py` on every push/PR.
+- `publish.yml` runs it again before building the release package.
+- Tests must not hardcode the current version; read from `aicoreutils.__version__` or `importlib.metadata`.
+
+### Output safety prohibitions
+
+- **Never call `print()`** in command logic. All stdout/stderr must go through `core/output.py`: `safe_write_json()`, `safe_write_bytes()`, `safe_write_error()`.
+- **Never change `ensure_ascii=False` to `True`** except as a last-resort fallback.
+- **Never add local `try/except UnicodeEncodeError`** in individual commands. The safe output layer handles this once, centrally.
+- Raw binary mode must not re-encode bytes.
+
 ## Pre-push checklist
 
 Run these before pushing. The pre-commit hook catches format/lint/typecheck, but the full test suite is too slow for a hook:
