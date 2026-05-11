@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -15,6 +20,15 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.13"
+      - name: Verify release tag matches pyproject version
+        run: |
+          TAG_VERSION="${{ github.ref_name }}"
+          PKG_VERSION="v$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "ERROR: Tag $TAG_VERSION != pyproject.toml version $PKG_VERSION"
+            exit 1
+          fi
+          echo "Version check: $TAG_VERSION == $PKG_VERSION OK"
       - name: Install build tools
         run: uv sync && uv pip install build twine
       - name: Build package
