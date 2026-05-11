@@ -111,6 +111,8 @@ jobs:
           python-version: "3.13"
       - name: Install package
         run: uv sync --extra dev
+      - name: Verify metadata consistency
+        run: uv run python scripts/check_metadata_consistency.py
       - name: Verify CURRENT_STATUS.md consistency
         run: uv run python scripts/generate_status.py
       - name: Verify command risk/test matrix

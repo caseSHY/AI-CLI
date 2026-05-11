@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Coreutils but not a full clone. It exposes 114 commands (111 catalog: P0 14 + P1 19 + P2 33 + P3 45, plus 3 unique meta-commands: catalog/schema/tool-list) via CLI and an MCP server. Package: `aicoreutils` (v1.2.1), Python >= 3.11, zero runtime dependencies. Version is single-sourced from pyproject.toml via `importlib.metadata`.
+AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Coreutils but not a full clone. It exposes 114 commands (111 catalog: P0 14 + P1 19 + P2 33 + P3 45, plus 3 unique meta-commands: catalog/schema/tool-list) via CLI and an MCP server. Package: `aicoreutils` (v1.2.2), Python >= 3.11, zero runtime dependencies. Version is single-sourced from pyproject.toml via `importlib.metadata`.
 
 ## Commands
 
@@ -173,7 +173,7 @@ All functions write UTF-8 bytes to `stream.buffer`, with `errors="backslashrepla
 ```
 src/aicoreutils/    Python package (core -> utils -> commands -> parser, with registry/)
 docs/               Documentation (reference, guides, architecture, development, status, audits; QUICKSTART.md, COMPATIBILITY.md)
-tests/              Test suite (39 test files, 1017 tests, stress/, support/, golden/)
+tests/              Test suite (40 test files, 1062 tests, stress/, support/, golden/)
 examples/           Examples and agent tasks
 scripts/            CI audit, release gate, bump version, generate status
 .github/scripts/    WSL CI helpers and golden output updater
@@ -239,6 +239,9 @@ result = args.func(args)  # calls command_sort directly, coverage counts
 
 ### Recent GNU compatibility additions
 
+- `dd if=/of=/bs=/count=` — GNU-style key=value operands (since v1.2.2); `--input`/`--output` flags still supported
+- `tr --input TEXT` — inline text input, takes priority over stdin/`--path`; stdin pipe still works
+- `timeout` remainder flag re-parsing — `timeout 1 true --dry-run` now correctly re-extracts flags from the command remainder
 - `sort --stable` / `sort --check` — Python sort is already stable; check mode returns `{sorted, disorder_line}`
 - `chmod/chown/chgrp --reference` — copy mode/owner/group from a reference file
 - `md5sum/sha*sum/b2sum --check` — verify checksums from a checksum file, JSON `{ok, failed, entries}`
@@ -271,8 +274,9 @@ CI also runs these audit scripts (all must pass before merge):
 1. All CI checks pass (lint, typecheck, tests × 3 platforms × 3 Python versions)
 2. `scripts/release_gate.py` passes
 3. Bump version with `scripts/bump_version.py <new_version>`
-4. Update `CHANGELOG.md`
-5. Tag `v<new_version>` and push — CI publishes to PyPI automatically
+4. Update `CHANGELOG.md`, `README.md`, `server.json` version references
+5. Run `scripts/check_release_version.py v<new_version>` to verify tag/version match
+6. Tag `v<new_version>` and push — `publish.yml` triggers on tag push, builds, publishes to TestPyPI then PyPI (Trusted Publishing, no API token), and creates a GitHub Release. CI (`ci.yml`) ignores tag pushes via `tags-ignore: "v*"` to avoid redundant runs.
 
 ## Pre-push checklist
 

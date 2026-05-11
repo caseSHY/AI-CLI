@@ -22,7 +22,7 @@ aicoreutils ls .
 {
   "ok": true,
   "tool": "aicoreutils",
-  "version": "1.1.2",
+  "version": "1.2.2",
   "command": "ls",
   "result": { "entries": [...] },
   "warnings": []
@@ -103,7 +103,7 @@ Outputs a JSON envelope:
 {
   "ok": true,
   "tool": "aicoreutils",
-  "version": "1.1.2",
+  "version": "1.2.2",
   "command": "ls",
   "result": { "entries": [...] },
   "warnings": []

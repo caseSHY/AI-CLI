@@ -29,6 +29,8 @@ jobs:
             exit 1
           fi
           echo "Version check: $TAG_VERSION == $PKG_VERSION OK"
+      - name: Verify metadata consistency
+        run: uv run python scripts/check_metadata_consistency.py
       - name: Install build tools
         run: uv sync && uv pip install build twine
       - name: Build package

@@ -1,7 +1,8 @@
 {
-    "$schema": "https://glama.ai/mcp/schemas/server.json",
-    "maintainers": [
-        "caseSHY"
-    ],
-    "description": "JSON-first Coreutils CLI for AI agents — 114 commands with improved tool definitions for TDQS compliance."
+  "$schema": "https://glama.ai/mcp/schemas/server.json",
+  "maintainers": [
+    "caseSHY"
+  ],
+  "description": "JSON-first Coreutils CLI for AI agents — 114 commands with improved tool definitions for TDQS compliance.",
+  "version": "1.2.2"
 }
