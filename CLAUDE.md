@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Coreutils but not a full clone. It exposes 114 commands (111 catalog: P0 14 + P1 19 + P2 33 + P3 45, plus 3 unique meta-commands: catalog/schema/tool-list) via CLI and an MCP server. Package: `aicoreutils` (v1.2.2), Python >= 3.11, zero runtime dependencies. Version is single-sourced from pyproject.toml via `importlib.metadata`.
+AICoreUtils is a **JSON-first CLI toolkit for LLM agents**, inspired by GNU Coreutils but not a full clone. It exposes 114 commands (111 catalog: P0 14 + P1 19 + P2 33 + P3 45, plus 3 unique meta-commands: catalog/schema/tool-list) via CLI and an MCP server. Package: `aicoreutils` (v1.2.3), Python >= 3.11, zero runtime dependencies. Version is single-sourced from pyproject.toml via `importlib.metadata`.
 
 ## Commands
 

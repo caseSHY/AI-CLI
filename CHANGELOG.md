@@ -1,6 +1,28 @@
 # Changelog
 
-All notable changes to AICoreUtils.## [1.2.2] - 2026-05-11 — **LTS**
+All notable changes to AICoreUtils.
+
+## [1.2.3] - 2026-05-11 — **LTS**
+
+### Added
+- `dd if=/of=/bs=/count=` GNU-style key=value operands (also supports --input/--output flags)
+- `tr --input TEXT` inline text input (priority over stdin/--path; stdin pipe still works)
+- `scripts/sync_metadata.py` — one-stop version sync from pyproject.toml to all dependent files
+- `scripts/check_metadata_consistency.py` — CI validation of version/name/URL across 8 files
+- `scripts/check_release_version.py` — pre-publish tag vs pyproject.toml version verification
+
+### Changed
+- `timeout` re-parses `--dry-run`/`--max-output-bytes` from REMAINDER after the command name
+- CLAUDE.md: added metadata governance, output safety prohibitions, CI/CD constraints
+- CLAUDE.local.md: added dead code deletion principles, command-specific constraints, testing rules
+- `ci.yml` ignores tag pushes (`tags-ignore: "v*"`) to avoid redundant CI runs
+- `publish.yml` adds `workflow_dispatch`, concurrency, version check step
+- USAGE guide: `python -m agentutils` → `aicoreutils`; added pipe/stdin examples
+
+### Fixed
+- `docs/QUICKSTART.md` stale JSON envelope version 1.1.2 → 1.2.2
+
+## [1.2.2] - 2026-05-11 — **LTS**
 
 ### Fixed
 - **Windows cp936 stdout 编码修复** — 新增 `core/output.py` 安全输出层，所有 JSON/text/error 输出统一通过 `stream.buffer.write(utf8_bytes)` 绕过平台文本编码层。emoji、韩文、数学符号等在 Windows 中文环境下不再触发 `UnicodeEncodeError`
@@ -11,7 +33,6 @@ All notable changes to AICoreUtils.## [1.2.2] - 2026-05-11 — **LTS**
 
 ### Changed
 - `envelope.py:write_json()` 委托给 `safe_write_json()`；`stream.py:StreamWriter` 改为 bytes 写入；`_parser.py:main()` 5 个输出点全部改用安全函数；`mcp_server.py:_send()` 添加 bytes 写入 + fallback
-
 
 ## [1.2.1] - 2026-05-11 — **Production/Stable**
 

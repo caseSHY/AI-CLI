@@ -8,12 +8,12 @@
     "source": "github"
   },
   "homepage": "https://github.com/caseSHY/AI-CLI",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "aicoreutils",
-      "version": "1.2.2",
+      "version": "1.2.3",
       "transport": {
         "type": "stdio",
         "command": "aicoreutils-mcp"
@@ -21,6 +21,11 @@
       "runtime": "python"
     }
   ],
-  "tags": ["cli", "coreutils", "filesystem", "developer-tools"],
+  "tags": [
+    "cli",
+    "coreutils",
+    "filesystem",
+    "developer-tools"
+  ],
   "license": "MIT"
 }

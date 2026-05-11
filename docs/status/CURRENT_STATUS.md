@@ -10,10 +10,10 @@
 |---|---|
 <!-- status-managed:start cn-baseline -->
 | **最后验证日期** | 2026-05-11 |
-| **验证对象** | 本地工作区（`b39c148`，已推送至 GitHub，GitHub Actions CI 运行中） |
+| **验证对象** | 本地工作区（`fa017df`，已推送至 GitHub，GitHub Actions CI 运行中） |
 | **Python 版本** | Windows: 3.14.4; WSL: 3.14.4; CI: 3.11/3.12/3.13 |
 | **操作系统** | Windows 11 (开发) + WSL Ubuntu-26.04 (Ubuntu 26.04 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
-| **项目版本** | 1.2.2 |
+| **项目版本** | 1.2.3 |
 <!-- status-managed:end cn-baseline -->
 
 ### 测试
@@ -95,10 +95,10 @@
 |---|---|
 <!-- status-managed:start en-baseline -->
 | **Last verified** | 2026-05-11 |
-| **Verified target** | local working tree (`b39c148`, pushed to GitHub, GitHub Actions CI in progress) |
+| **Verified target** | local working tree (`fa017df`, pushed to GitHub, GitHub Actions CI in progress) |
 | **Python version** | Windows: 3.14.4; WSL: 3.14.4; CI: 3.11/3.12/3.13 |
 | **OS** | Windows 11 (dev) + WSL Ubuntu-26.04 (Ubuntu 26.04 LTS), CI: ubuntu-latest + macos-latest + windows-latest |
-| **Project version** | 1.2.2 |
+| **Project version** | 1.2.3 |
 <!-- status-managed:end en-baseline -->
 
 ### Tests
